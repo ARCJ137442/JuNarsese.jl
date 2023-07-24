@@ -16,8 +16,20 @@ using Test
     @test "$d" == "#非独立变量"
     @test "$o" == "^操作"
 
+    @test w"词项" == Word(:词项)
+
     # 外延 内涵 集
     exSet = w & (d & o)
     inSet = d | w | o
-    @show exSet "$exSet and $inSet"
+    @show exSet inSet "$exSet and $inSet"
+
+    @test exSet == ExtSet(w,d,o)
+
+    # 像&乘积
+    A,B,C = "A B C" |> split .|> String .|> Symbol .|> Word
+    @show A ∩ B == ExtIntersection(A,B)
+    @show A / B ⋄ C  A \ C ⋄ A \ B
+    @test A \ C ⋄ A \ B == IntImage(3, A, C, A, B)
+    @show A*B*C
+    @test A*B*C == TermProduct(A, B, C)
 end

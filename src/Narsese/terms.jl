@@ -153,6 +153,15 @@ abstract type AbstractStatement <: AbstractCompound end
 "语句の复合：集合操作⇒复合集"
 abstract type AbstractStatementSet <: AbstractCompound end
 
+"兜底判等逻辑"
+Base.:(==)(t1::AbstractTerm, t2::AbstractTerm) = (
+    typeof(t1) == typeof(t2) && ( # 同类型
+        getproperty(t1, propertyname) == getproperty(t2, propertyname) # 所有属性相等
+        for propertyname in t1 |> propertynames # 使用t1的，在同类型的前提下
+    ) |> all
+)
+
+
 # 具体结构定义
 
 begin "单体词项"
@@ -174,12 +183,18 @@ begin "单体词项"
 
     "复合集 {} []"
     struct TermSet{EIType <: AbstractEI} <: AbstractTermSet
-        terms::Vector{AbstractTerm}
-
-        function TermSet{EIType}(terms::Vararg{AbstractTerm}) where EIType
-            new(terms |> collect |> deepcopy)
-        end
+        terms::Set{AbstractTerm}
     end
+
+    "任意长参数"
+    function TermSet{EIType}(terms::Vararg{AbstractTerm}) where EIType
+        TermSet{EIType}(terms .|> deepcopy |> Set{AbstractTerm})
+    end
+
+    "判断相等"
+    Base.:(==)(t1::TermSet{EIType}, t2::TermSet{EIType}) where EIType = (
+        t1.terms == t2.terms
+    )
 
     """
     词项逻辑集{外延/内涵, 交/并/差}
@@ -212,15 +227,41 @@ begin "单体词项"
 
     end
 
-    "像{外延/内涵} (\\, a, b, _, c)"
+    "判断相等"
+    Base.:(==)(t1::TermLogicalSet{EIType, LO}, t2::TermLogicalSet{EIType, LO}) where {EIType, LO} = (
+        t1.terms == t2.terms
+    )
+
+    """
+    像{外延/内涵} (/, a, b, _, c) (\\\\, a, b, _, c)
+    - 【20230724 22:06:36】注意：词项在terms中的索引，不代表其在实际情况下的索引
+
+    例：`TermImage{Extension}([a,b,c], 3)` = (/, a, b, _, c)
+    """
     struct TermImage{EIType <: AbstractEI} <: AbstractTermSet
         terms::Vector{AbstractTerm}
-        ralation_index::Unsigned # 「_」的位置
+        relation_index::Unsigned # 「_」的位置(一个占位符，保证词项中只有一个「_」)
     end
+
+    "多参数构造"
+    function TermImage{EIType}(relation_index, terms::Vararg{AbstractTerm}) where EIType
+        TermImage{EIType}(terms |> collect |> deepcopy, relation_index |> unsigned)
+    end
+
+    "判断相等"
+    Base.:(==)(t1::TermImage{EIType}, t2::TermImage{EIType}) where EIType = (
+        t1.relation_index == t2.relation_index && 
+        t1.terms == t2.terms
+    )
 
     "乘积(无内涵外延之分) (*, ...)"
     struct TermProduct <: AbstractTermSet
         terms::Vector{AbstractTerm}
+    end
+
+    "多参数构造"
+    function TermProduct(terms::Vararg{AbstractTerm})
+        TermProduct(terms |> collect |> deepcopy)
     end
 
 end
@@ -230,6 +271,11 @@ begin "语句词项"
     "语句{继承/相似/蕴含/等价} --> <-> ==> <=>"
     struct Statement{Type <: AbstractStatementType} <: AbstractStatement
         terms::Vector{AbstractTerm}
+    end
+
+    "多参数构造"
+    function Statement{Type}(terms::Vararg{AbstractTerm}) where Type
+        Statement{Type}(terms |> collect |> deepcopy)
     end
 
     """
@@ -257,9 +303,7 @@ begin "语句词项"
 
         "语句非 Negation"
         function StatementLogicalSet{Not}(ϕ::AbstractStatement)
-            new{Not}(
-                AbstractStatement[ϕ]
-            )
+            new{Not}(AbstractStatement[ϕ])
         end
 
     end
