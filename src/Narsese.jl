@@ -6,7 +6,6 @@ Narsese
 module Narsese
 
 include("Narsese/terms.jl")
-include("Narsese/aliases.jl")
-include("Narsese/constructor_shotcuts.jl")
+include("Narsese/sentence.jl")
 
 end

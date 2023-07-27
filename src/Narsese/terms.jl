@@ -309,5 +309,11 @@ begin "语句词项"
     
 end
 
-# 添加方法
+# 别名
+include("terms/aliases.jl")
+
+# 方法
 include("terms/methods.jl")
+
+# 快捷构造方式
+include("terms/constructor_shotcuts.jl")
