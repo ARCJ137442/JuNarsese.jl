@@ -83,16 +83,15 @@ begin "复合词项"
 
     """
     像(外/内\\)，再加「占位符」
-    - TODO: 因为运算符的「二元性」，这里可能构造出不合法的运算符
     - 这里需要「临时非法」，方可在后面构造出「合法」（必须含有一个「占位符」）
     - 实际上只有第一个符号决定了类型，如下例中的「c / b」
          - 考虑把「连接符」用「-」表示？
 
-    示例：`c / b ⋄ c` ⇔ (/, a, b, _, c)
+    示例：`a / b ⋄ c` ⇔ (/, a, b, _, c)
     """
-    Base.:(/)(t1::Term, t2::Term) = ExtImage(Term[t1, t2], 0)
+    Base.:(/)(t1::Term, t2::Term) = ExtImage(0, t1, t2)
     # 「0」作为「没有占位符」的状态标记
-    Base.:(\)(t1::Term, t2::Term) = IntImage(Term[t1, t2], 0)
+    Base.:(\)(t1::Term, t2::Term) = IntImage(0, t1, t2)
 
     """
     只作为一个「连接符」而存在
@@ -113,8 +112,8 @@ begin "复合词项"
     """
     function ⋄(t1::TermImage{EI}, t2::Term) where EI <: AbstractEI
         TermImage{EI}(
-            [t1.terms..., t2], 
-            length(t1.terms)+1 # 因为这个量不可变，所以需要构造新词项（TODO：考虑用mutable+const？）
+            length(t1.terms)+1, # 因为这个量不可变，所以需要构造新词项（TODO：考虑用mutable+const？）
+            t1.terms..., t2, 
         )
     end
 
@@ -129,41 +128,25 @@ begin "复合词项"
 
     # 各类语句
     """
-    语句「继承」
-    """
-    →(t1::Term, t2::Term) = Inheriance(t1, t2) # 默认是外延交(后续就直接递推)
-    →(t1::Inheriance, t2::Term) = Inheriance(t1.terms..., t2)
-    →(t1::Term, t2::Inheriance) = Inheriance(t1, t2.terms...)
-    →(t1::Inheriance, t2::Inheriance) = Inheriance(t1.terms..., t2.terms...)
+    各类语句的「快速构造方式」
+    1. 继承
+    2. 相似
+    3. 蕴含
+    4. 等价
 
+    - 📌【20230727 19:57:39】现在只支持二元构造
+    - 📌关于这些语句「是否是对称的」，交给下一层次的「NAL」处理
+        - 本质上只是「视觉上看起来对称」而已
     """
-    语句「相似」
-    """
-    ↔(t1::Term, t2::Term) = Similarity(t1, t2) # 默认是外延交(后续就直接递推)
-    ↔(t1::Similarity, t2::Term) = Similarity(t1.terms..., t2)
-    ↔(t1::Term, t2::Similarity) = Similarity(t1, t2.terms...)
-    ↔(t1::Similarity, t2::Similarity) = Similarity(t1.terms..., t2.terms...)
-
-    """
-    语句「蕴含」
-    """
-    ⇒(t1::Term, t2::Term) = Implication(t1, t2) # 默认是外延交(后续就直接递推)
-    ⇒(t1::Implication, t2::Term) = Implication(t1.terms..., t2)
-    ⇒(t1::Term, t2::Implication) = Implication(t1, t2.terms...)
-    ⇒(t1::Implication, t2::Implication) = Implication(t1.terms..., t2.terms...)
-
-    """
-    语句「等价」
-    """
-    ⇔(t1::Term, t2::Term) = Equivalance(t1, t2) # 默认是外延交(后续就直接递推)
-    ⇔(t1::Equivalance, t2::Term) = Equivalance(t1.terms..., t2)
-    ⇔(t1::Term, t2::Equivalance) = Equivalance(t1, t2.terms...)
-    ⇔(t1::Equivalance, t2::Equivalance) = Equivalance(t1.terms..., t2.terms...)
+    →(t1::Term, t2::Term) = Inheriance(t1, t2)
+    ↔(t1::Term, t2::Term) = Similarity(t1, t2)
+    ⇒(t1::Term, t2::Term) = Implication(t1, t2)
+    ⇔(t1::Term, t2::Term) = Equivalance(t1, t2)
 
     """
     语句「非」
     """
-    ¬(t::Statement) = Negation(t)
+    ¬(t::AbstractStatement) = Negation(t)
 
     """
     语句「与」

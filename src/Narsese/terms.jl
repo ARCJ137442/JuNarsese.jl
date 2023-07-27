@@ -1,23 +1,29 @@
 #= 提供基本的词项定义
 
 架构总览
-- 词项
-    - 原子
-    - 变量{类型}
-    - 复合
-        - 语句
-            - 
-        - 复合词项
-            - 集合
-            - 交集
-            - 差集
+- 词项（抽象）
+    - 原子（抽象）
+        - 词语
+        - 变量{类型}
+        - 操作符
+    - 复合（抽象）
+        - 词项集（抽象）
+            - 词项集
+            - 词项逻辑集
             - 像
             - 乘积
+        - 语句（抽象）
+            - 语句{类型}
+            - 语句集（抽象）
+                - 语句逻辑集
 
 具体在Narsese的文本表示，参见string.jl
 
 参考：
 - OpenJunars 詞項層級結構
+
+情况：
+- 📌现在不使用「deepcopy」对词项进行深拷贝：将「拷贝与否」交给调用者
 =#
 
 #= 📝NAL: 关于「为何没有『外延并/内涵并』的问题」：
@@ -48,7 +54,7 @@
     通过使用参数化类型和条件约束，Julia可以根据不同的类型参数生成不同的实例，并在必要时进行类型转换。这使得代码更加灵活且具有通用性，能够处理多种类型的数据。
 =#
 
-#= 📝Julia：面向「唯一标识符」时，使用Symbol替代String
+#= 📝Julia: 面向「唯一标识符」时，使用Symbol替代String
 
     📌核心：Symbol使用「字符串内联」机制，把每个字符串作为唯一索引，且比对时无需逐个字符比对
     - 因此：Symbol在用作「唯一标识符」时，比String更有效率
@@ -87,6 +93,11 @@
         ]
     # 0.053276 seconds (38.77 k allocations: 3.656 MiB, 98.21% compilation time)
     ```
+=#
+
+#= 📝Julia: 嵌套数组的二次展开，直接使用「[(arr...)...]」
+    例：对「嵌套数组对象」`a = [(1,2),[3,4,5]]`
+    - 有`[(a...)...] == [1,2,3,4,5]`
 =#
 
 # 导出
@@ -151,15 +162,9 @@ abstract type AbstractTermSet <: AbstractCompound end
 abstract type AbstractStatement <: AbstractCompound end
 
 "语句の复合：集合操作⇒复合集"
-abstract type AbstractStatementSet <: AbstractCompound end
+abstract type AbstractStatementSet <: AbstractStatement end
 
-"兜底判等逻辑"
-Base.:(==)(t1::AbstractTerm, t2::AbstractTerm) = (
-    typeof(t1) == typeof(t2) && ( # 同类型
-        getproperty(t1, propertyname) == getproperty(t2, propertyname) # 所有属性相等
-        for propertyname in t1 |> propertynames # 使用t1的，在同类型的前提下
-    ) |> all
-)
+
 
 
 # 具体结构定义
@@ -188,13 +193,8 @@ begin "单体词项"
 
     "任意长参数"
     function TermSet{EIType}(terms::Vararg{AbstractTerm}) where EIType
-        TermSet{EIType}(terms .|> deepcopy |> Set{AbstractTerm})
+        TermSet{EIType}(terms |> Set{AbstractTerm})
     end
-
-    "判断相等"
-    Base.:(==)(t1::TermSet{EIType}, t2::TermSet{EIType}) where EIType = (
-        t1.terms == t2.terms
-    )
 
     """
     词项逻辑集{外延/内涵, 交/并/差}
@@ -202,110 +202,112 @@ begin "单体词项"
     - Or : 并集 ∪& ∪|
         - 注意：此处不会使用，会自动转换（见📝「为何不使用外延/内涵 并？」）
     - Not: 差集 - ~
+        - 有序(其余皆无序)
     """
     # 此处「&」「|」是对应的「外延交&」「外延并|」
     struct TermLogicalSet{EIType <: AbstractEI, LogicOperation <: AbstractLogicOperation} <: AbstractTermSet
-        terms::Vector{AbstractTerm}
+        terms::Union{Vector{AbstractTerm}, Set{AbstractTerm}}
 
-        "交集 Intersection{外延/内涵} ∩& ∩|"
+        "(无序)交集 Intersection{外延/内涵} ∩& ∩|"
         function TermLogicalSet{EIType, And}(terms::Vararg{AbstractTerm}) where EIType # 此EIType构造时还会被检查类型
-            new{EIType, And}( # 把元组转换成对应数据结构，再深拷贝(参考自OpenJunars)
-                terms |> collect |> deepcopy
+            new{EIType, And}( # 把元组转换成对应数据结构
+                terms |> Set{AbstractTerm}
             )
         end
 
-        "并集 Union{外延/内涵} ∪& ∪|" # 【20230724 14:12:33】暂且自动转换成交集（返回值类型参数转换不影响）（参考《NAL》定理7.4）
+        "(无序，重定向)并集 Union{外延/内涵} ∪& ∪|" # 【20230724 14:12:33】暂且自动转换成交集（返回值类型参数转换不影响）（参考《NAL》定理7.4）
         TermLogicalSet{Extension, Or}(terms...) = TermLogicalSet{Intension, And}(terms...) # 外延并=内涵交
         TermLogicalSet{Intension, Or}(terms...) = TermLogicalSet{Extension, And}(terms...) # 内涵并=外延交
 
-        "差集 Difference{外延/内涵} - ~" # 注意：这是二元的 参数命名参考自OpenJunars
+        "(有序)差集 Difference{外延/内涵} - ~" # 注意：这是二元的 参数命名参考自OpenJunars
         function TermLogicalSet{EIType, Not}(ϕ₁::AbstractTerm, ϕ₂::AbstractTerm) where EIType # 此EIType构造时还会被检查类型
             new{EIType, Not}( # 把元组转换成对应数据结构，再深拷贝
-                AbstractTerm[ϕ₁, ϕ₂] |> deepcopy
+                AbstractTerm[ϕ₁, ϕ₂]
             )
         end
 
     end
 
-    "判断相等"
-    Base.:(==)(t1::TermLogicalSet{EIType, LO}, t2::TermLogicalSet{EIType, LO}) where {EIType, LO} = (
-        t1.terms == t2.terms
-    )
-
     """
     像{外延/内涵} (/, a, b, _, c) (\\\\, a, b, _, c)
+    - 有序
     - 【20230724 22:06:36】注意：词项在terms中的索引，不代表其在实际情况下的索引
 
     例：`TermImage{Extension}([a,b,c], 3)` = (/, a, b, _, c)
     """
     struct TermImage{EIType <: AbstractEI} <: AbstractTermSet
-        terms::Vector{AbstractTerm}
+        terms::Tuple{Vararg{AbstractTerm}}
         relation_index::Unsigned # 「_」的位置(一个占位符，保证词项中只有一个「_」)
+
+        "限制占位符位置（0除外）"
+        function TermImage{EIType}(terms::Tuple{Vararg{T}}, relation_index::Unsigned) where {EIType, T <: AbstractTerm}
+            # 检查
+            relation_index == 0 || @assert relation_index <= length(terms) + 1
+            # 构造
+            new{EIType}(terms, relation_index)
+        end
     end
 
-    "多参数构造"
-    function TermImage{EIType}(relation_index, terms::Vararg{AbstractTerm}) where EIType
-        TermImage{EIType}(terms |> collect |> deepcopy, relation_index |> unsigned)
+    "多参数构造(倒过来，占位符位置放在最前面)"
+    function TermImage{EIType}(relation_index::Integer, terms::Vararg{AbstractTerm}) where EIType
+        TermImage{EIType}(terms, relation_index |> unsigned)
     end
 
-    "判断相等"
-    Base.:(==)(t1::TermImage{EIType}, t2::TermImage{EIType}) where EIType = (
-        t1.relation_index == t2.relation_index && 
-        t1.terms == t2.terms
-    )
-
-    "乘积(无内涵外延之分) (*, ...)"
+    """
+    乘积 (*, ...)
+    - 有序
+    - 无内涵外延之分
+    - 用于关系词项「(*, 水, 盐) --> 前者可被后者溶解」
+    """
     struct TermProduct <: AbstractTermSet
         terms::Vector{AbstractTerm}
     end
 
     "多参数构造"
     function TermProduct(terms::Vararg{AbstractTerm})
-        TermProduct(terms |> collect |> deepcopy)
+        TermProduct(terms |> collect)
     end
 
 end
 
 begin "语句词项"
 
-    "语句{继承/相似/蕴含/等价} --> <-> ==> <=>"
+    """
+    语句{继承/相似/蕴含/等价} --> <-> ==> <=>
+    - 现只支持「二元」语句，只表达两个词项之间的关系
+    """
     struct Statement{Type <: AbstractStatementType} <: AbstractStatement
-        terms::Vector{AbstractTerm}
-    end
-
-    "多参数构造"
-    function Statement{Type}(terms::Vararg{AbstractTerm}) where Type
-        Statement{Type}(terms |> collect |> deepcopy)
+        ϕ1::AbstractTerm
+        ϕ2::AbstractTerm
     end
 
     """
     语句逻辑集：{与/或/非}
-    - And: 语句与 ∧ &&
-    - Or : 语句或 ∨ ||
+    - And: 语句与 ∧ && Conjunction
+    - Or : 语句或 ∨ || Disjunction
     - Not: 语句非 ¬ --
-    """ # 为了与「TermSet」
+
+    注意：都是「对称」的⇒集合
+    """ # 与「TermSet」不同的是：只使用最多两个词项（语句）
     struct StatementLogicalSet{LogicOperation <: AbstractLogicOperation} <: AbstractStatementSet
-        terms::Vector{AbstractStatement}
 
-        "语句与 Conjunction"
-        function StatementLogicalSet{And}(statements::Vararg{AbstractStatement})
-            new{And}( # 先转换，再深拷贝
-                statements |> collect |> deepcopy
-            )
-        end
+        terms::Set{AbstractStatement}
 
-        "语句或 Disjunction"
-        function StatementLogicalSet{Or}(statements::Vararg{AbstractStatement})
-            new{Or}( # 先转换，再深拷贝
-                statements |> collect |> deepcopy
-            )
+        "语句与 Conjunction / 语句或 Disjunction"
+        function StatementLogicalSet{T}(
+            terms::Vararg{AbstractStatement}, # 实质上是个元组
+        ) where {T <: Union{And, Or}} # 与或都行
+            new{T}(terms |> Set) # 收集元组成集合
         end
 
         "语句非 Negation"
         function StatementLogicalSet{Not}(ϕ::AbstractStatement)
-            new{Not}(AbstractStatement[ϕ])
+            new{Not}(AbstractStatement[ϕ] |> Set{AbstractStatement}) # 只有一个
         end
 
     end
     
 end
+
+# 添加方法
+include("terms/methods.jl")
