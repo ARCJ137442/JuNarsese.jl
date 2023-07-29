@@ -83,42 +83,20 @@ begin "复合词项"
 
     """
     像(外/内\\)，再加「占位符」
-    - 这里需要「临时非法」，方可在后面构造出「合法」（必须含有一个「占位符」）
-    - 实际上只有第一个符号决定了类型，如下例中的「c / b」
-         - 考虑把「连接符」用「-」表示？
+    - 根据词项序列构造像
 
     示例：`a / b ⋄ c` ⇔ (/, a, b, _, c)
-    """
-    Base.:(/)(t1::Term, t2::Term) = ExtImage(0, t1, t2)
-    # 「0」作为「没有占位符」的状态标记
-    Base.:(\)(t1::Term, t2::Term) = IntImage(0, t1, t2)
-
-    """
-    只作为一个「连接符」而存在
-    - ⚠不创建新Term，而是改变已知Term t1
-    """
-    function Base.:(/)(t1::TermImage{EI}, t2::Term) where EI <: AbstractEI
-        push!(t1.terms, t2)
-        t1
-    end
-
-    "一样的连接符"
-    Base.:(\)(t1::TermImage{EI}, t2::Term) where EI <: AbstractEI = t1 / t2
-
-    """
-    根据词项序列构造像
-    - 例：`/(A, B, ⋄, C)` == "(/, A, B, _, C"
     """
     function _construct_image(::Type{EI}, terms::Tuple)::TermImage where EI <: AbstractEI
         # 获取索引
         for (i, t) in enumerate(terms)
-            if t == ⋄ # 等于「占位符」
-                return TermImage{EI}(
-                    Tuple{AbstractTerm}(
+            if (t == ⋄) || isnothing(t) || ismissing(t) # 判断「占位符」的条件 📌注意用括号避免运算符歧义「syntax: "⋄" is not a unary operator」
+                return TermImage{EI}( # 一次性生成，然后break
+                    Tuple{Vararg{Term}}( # 📌不能使用Tuple{AbstractTerm}，这样会删掉后续的元素
                         term
                         for term in terms
                         if term isa AbstractTerm # 过滤
-                    )
+                    ),
                     i,
                 )
             end
@@ -126,32 +104,22 @@ begin "复合词项"
         return nothing # 会报错
     end
 
-    # TODO: 可以使用多元函数/(A,B,⋄,C)这样构造
+    "使用多元函数构造"
     Base.:(/)(terms...) = _construct_image(Extension, terms)
 
-    "一样的连接符"
+    "一样的构造符"
     Base.:(\)(terms...) = _construct_image(Intension, terms)
 
     """
     【20230724 22:03:40】注意：「⋄」不是Base包里面的
-    - 后续可能length(t1) ≠ length(t1.terms)
-    - 此处之「+1」是为了把「_」安插在「新词项的本来位置」
+    - 【20230730 0:39:07】只需要声明下已定义即可
     """
-    function ⋄(t1::TermImage{EI}, t2::Term) where EI <: AbstractEI
-        TermImage{EI}(
-            length(t1.terms)+1, # 因为这个量不可变，所以需要构造新词项（TODO：考虑用mutable+const？）
-            t1.terms..., t2, 
-        )
-    end
-
+    function ⋄ end
     """
     乘积(*)
     - 还是「链式构造」
     """
-    Base.:(*)(t1::Term, t2::Term) = TermProduct(t1, t2)
-    Base.:(*)(t1::TermProduct, t2::Term) = TermProduct(t1.terms..., t2)
-    Base.:(*)(t1::Term, t2::TermProduct) = TermProduct(t1, t2.terms...)
-    Base.:(*)(t1::TermProduct, t2::TermProduct) = TermProduct(t1.terms..., t2.terms...)
+    Base.:(*)(terms::Vararg{Term}) = TermProduct(terms...)
 
     # 各类语句
     """

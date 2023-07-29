@@ -34,7 +34,7 @@ using Test
         @test StringParser_basical(string(q), Variable) == q
         @test StringParser_basical(string(o), Operator) == o
     
-        @test StringParser_basical(A / B ⋄ C) == "(/, A, B, _, C)"
+        @test /(A, B, ⋄, C) |> StringParser_basical == "(/, A, B, _, C)"
     
         # 语句 #
     

@@ -249,11 +249,11 @@ begin "单体词项"
         relation_index::Unsigned # 「_」的位置(一个占位符，保证词项中只有一个「_」)
 
         "限制占位符位置（0除外）"
-        function TermImage{EIType}(terms::Tuple{Vararg{T}}, relation_index::Unsigned) where {EIType, T <: AbstractTerm}
+        function TermImage{EIType}(terms::Tuple{Vararg{T}}, relation_index::Integer) where {EIType, T <: AbstractTerm}
             # 检查
-            relation_index == 0 || @assert relation_index <= length(terms) + 1
+            relation_index == 0 || @assert relation_index ≤ length(terms) + 1
             # 构造
-            new{EIType}(terms, relation_index)
+            new{EIType}(terms, unsigned(relation_index))
         end
     end
 

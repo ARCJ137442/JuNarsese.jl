@@ -51,14 +51,13 @@ using Test
     @show eI iI
 
     @test eI.relation_index == 2 && iI.relation_index == 3
-    @test ExtImage(1, A,B,C) ≠ eI == ExtImage(2, A,B,C) ≠ ExtImage(2, A,C,B) # 唯一相等性
-    @test IntImage(1, C,B,A) ≠ (C \ B ⋄ A) == iI == IntImage(3, C,B,A) ≠ IntImage(3, C,A,B) # 唯一相等性
+    @test ExtImage(1, A,B,C) ≠ /(A, ⋄, B, C) == eI == ExtImage(2, A,B,C) ≠ ExtImage(2, A,C,B) # 唯一相等性
+    @test IntImage(1, C,B,A) ≠ \(C, B, ⋄, A) == iI == IntImage(3, C,B,A) ≠ IntImage(3, C,A,B) # 唯一相等性
 
-    # TODO: 对「索引在1~2」的像，似乎没有办法？
     # 乘积
 
     @show p = TermProduct(A,B,C)
-    @test p == (A*B*C) ≠ (B*A*C)
+    @test p == *(A, B, C) == (A*B*C) ≠ (B*A*C) # 有序性 老式构造方法仍可使用
 
     # 语句
 
