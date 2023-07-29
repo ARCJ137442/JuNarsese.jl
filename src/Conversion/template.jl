@@ -23,17 +23,57 @@ export Term2Data, Data2Term # 泛型构造函数
 """
 abstract type AbstractParser end
 
-"默认方法" # 📌【20230727 15:59:03】只写在一行会报错「UndefVarError: `T` not defined」
+"""
+（默认）返回其对应「词项↔数据」中「数据」的类型
+""" # 📌【20230727 15:59:03】只写在一行会报错「UndefVarError: `T` not defined」
 function Base.eltype(::Type{T})::DataType where {T <: AbstractParser}
     Any
 end
 
-# 统一定义的逻辑: 用「泛型类」化二元函数为一元函数 #
+"""
+词项→数据 声明
+"""
+function term2data end
 
-abstract type Term2Data{ParserSymbol} end
-abstract type Data2Term{ParserSymbol, TermType} end
+"""
+数据→词项 声明
+"""
+function data2term end
 
-"自动转换方法"
-Term2Data{Parser}(source) where {Parser <: AbstractParser} = term2data(Parser, source)
-Data2Term{Parser}(source) where {Parser <: AbstractParser} = data2term(Parser, Term, source)
-Data2Term{Parser, TType}(source) where {Parser <: AbstractParser, TType <: Term} = data2term(Parser, TType, source)
+"""
+直接调用(类型)：根据参数类型自动转换
+- 用处：便于简化成「一元函数」以便使用管道运算符
+- 自动转换逻辑：
+    - 数据→词项
+    - 词项→数据
+- 参数 target：词项/数据
+"""
+function (parserType::Type{TParser})(
+    target, # 目标对象（可能是「数据」也可能是「词项」）
+    TermType::Type{TType} = Term, # 只有「数据→词项」时使用（默认为「Term」即「解析成任意词项」）
+) where {TParser <: AbstractParser, TType <: Term}
+    if target isa eltype(parserType)
+        return data2term(parserType, TermType, target)
+    else
+        return term2data(parserType, target)
+    end
+end
+
+"""
+直接调用(实例)：根据参数类型自动转换
+- 用处：便于简化成「一元函数」以便使用管道运算符
+- 自动转换逻辑：
+    - 数据→词项
+    - 词项→数据
+- 参数 target：词项/数据
+"""
+function (parser::AbstractParser)(
+    target, # 目标对象（可能是「数据」也可能是「词项」）
+    TermType::Type{TType} = Term, # 只有「数据→词项」时使用（默认为「Term」即「解析成任意词项」）
+) where {TType <: Term}
+    if target isa eltype(parser)
+        return data2term(parser, TermType, target)
+    else
+        return term2data(parser, target)
+    end
+end

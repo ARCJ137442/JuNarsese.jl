@@ -13,7 +13,7 @@ using Test
     A,B,C = "A B C" |> split .|> String .|> Symbol .|> Word
     @show s1 = (A → B) ∧ (B → C) ⇒ (A → C)
     @show s2 = (A → B) ∨ (C → B) ⇒ ((A | C) → B)
-    @show s3 = Data2Term{ShortcutParser}(
+    @show s3 = ShortcutParser.(
         """( w"A"q * w"B"i ) → w"C"o """
     )
 
@@ -28,13 +28,13 @@ using Test
         @test "$q" == "?查询变量"
         @test "$o" == "^操作"
     
-        @test Data2Term{StringParser, Word    }(string(w)) == w
-        @test Data2Term{StringParser, Variable}(string(i)) == i
-        @test Data2Term{StringParser, Variable}(string(d)) == d
-        @test Data2Term{StringParser, Variable}(string(q)) == q
-        @test Data2Term{StringParser, Operator}(string(o)) == o
+        @test StringParser_basical(string(w), Word,   ) == w
+        @test StringParser_basical(string(i), Variable) == i
+        @test StringParser_basical(string(d), Variable) == d
+        @test StringParser_basical(string(q), Variable) == q
+        @test StringParser_basical(string(o), Operator) == o
     
-        @test Term2Data{StringParser}(A / B ⋄ C) == "(/, A, B, _, C)"
+        @test StringParser_basical(A / B ⋄ C) == "(/, A, B, _, C)"
     
         # 语句 #
     
@@ -60,15 +60,25 @@ using Test
     end
 
     @testset "ASTParser" begin
-        s = [w, i, d, q, o, s1, s2, s3] .|> Term2Data{ASTParser}
+        s = ASTParser.([w, i, d, q, o, s1, s2, s3])
         s .|> dump
-        @show s .|> Data2Term{ASTParser}
-        @test s .|> Data2Term{ASTParser} == [w, i, d, q, o, s1, s2, s3]
+        @show ASTParser.(s)
+        @test ASTParser.(s) == [w, i, d, q, o, s1, s2, s3]
     end
 
     @testset "S11nParser" begin
-        s = [w, i, d, q, o, s1, s2, s3] .|> Term2Data{S11nParser}
+        s = S11nParser.([w, i, d, q, o, s1, s2, s3])
         @show join(s .|> String, "\n\n")
-        # @show s .|> Data2Term{S11nParser} # EOFError: read end of file
+        # @show S11nParser(s) # EOFError: read end of file
+    end
+
+    @testset "JSONParser" begin
+        s = JSONParser{Dict}.([w, i, d, q, o, s1, s2, s3])
+        s .|> println
+        @test JSONParser{Dict}.(s) == [w, i, d, q, o, s1, s2, s3] # 确保无损转换
+        
+        s = JSONParser{Vector}.([w, i, d, q, o, s1, s2, s3])
+        s .|> println
+        @test JSONParser{Vector}.(s) == [w, i, d, q, o, s1, s2, s3] # 确保无损转换
     end
 end

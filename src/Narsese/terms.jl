@@ -175,16 +175,25 @@ begin "单体词项"
     struct Word <: AbstractAtom
         name::Symbol # 为何不用String？见上文笔记
     end
+    """
+    支持从String构造
+    - 目的：处理从（AST）解析中返回的字符串参数
+    """
+    Word(name::String) = name |> Symbol |> Word
 
     "变量词项（用类型参数包括三种类型）"
     struct Variable{Type <: AbstractVariableType} <: AbstractAtom
         name::Symbol
     end
+    "支持从String构造"
+    Variable{T}(name::String) where {T<:AbstractVariableType} = name |> Symbol |> Variable{T}
 
     "操作词项(Action)"
     struct Operator <: AbstractAtom
         name::Symbol
     end
+    "支持从String构造"
+    Operator(name::String) = name |> Symbol |> Operator
 
     "复合集 {} []"
     struct TermSet{EIType <: AbstractEI} <: AbstractTermSet

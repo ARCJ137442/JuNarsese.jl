@@ -106,6 +106,33 @@ begin "复合词项"
     Base.:(\)(t1::TermImage{EI}, t2::Term) where EI <: AbstractEI = t1 / t2
 
     """
+    根据词项序列构造像
+    - 例：`/(A, B, ⋄, C)` == "(/, A, B, _, C"
+    """
+    function _construct_image(::Type{EI}, terms::Tuple)::TermImage where EI <: AbstractEI
+        # 获取索引
+        for (i, t) in enumerate(terms)
+            if t == ⋄ # 等于「占位符」
+                return TermImage{EI}(
+                    Tuple{AbstractTerm}(
+                        term
+                        for term in terms
+                        if term isa AbstractTerm # 过滤
+                    )
+                    i,
+                )
+            end
+        end
+        return nothing # 会报错
+    end
+
+    # TODO: 可以使用多元函数/(A,B,⋄,C)这样构造
+    Base.:(/)(terms...) = _construct_image(Extension, terms)
+
+    "一样的连接符"
+    Base.:(\)(terms...) = _construct_image(Intension, terms)
+
+    """
     【20230724 22:03:40】注意：「⋄」不是Base包里面的
     - 后续可能length(t1) ≠ length(t1.terms)
     - 此处之「+1」是为了把「_」安插在「新词项的本来位置」

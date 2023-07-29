@@ -19,7 +19,6 @@ include("Conversion/template.jl")
 # Julia内置格式
 include("Conversion/internal/string_shortcut.jl")
 include("Conversion/internal/ast.jl")
-include("Conversion/internal/latex.jl")
 include("Conversion/internal/string.jl")
 include("Conversion/internal/serialization.jl")
 
