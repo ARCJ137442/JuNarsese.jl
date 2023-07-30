@@ -36,7 +36,7 @@ struct StringParser <: AbstractParser
     compound_symbols::Dict{DataType, String}
 
     """
-    语句类型 => 联结词(字符串)
+    陈述类型 => 联结词(字符串)
     """
     copulas::Dict{DataType, String}
 
@@ -110,7 +110,7 @@ StringParser_basical::StringParser = StringParser(
         IntImage => "\\",
         # 乘积
         TermProduct => "*",
-        # 语句逻辑集
+        # 陈述逻辑集
         Conjunction => "&&",
         Disjunction => "||",
         Negation => "--",
@@ -179,7 +179,7 @@ StringParser_latex::StringParser = StringParser(
         IntImage => "\\",
         # 乘积
         TermProduct => "\\times",
-        # 语句逻辑集
+        # 陈述逻辑集
         Conjunction => "\\wedge",
         Disjunction => "\\vee",
         Negation => "\\neg",
@@ -241,7 +241,7 @@ Base.show(io::IO, t::Term) = print(io, term2data(StringParser_basical, t)) # �
 
 # 正式开始 #
 
-begin "语句形式"
+begin "陈述形式"
 
     """
     原子词项：前缀+内容
@@ -252,7 +252,7 @@ begin "语句形式"
     end
 
     """
-    语句：<词项+连接符+词项>
+    陈述：<词项+连接符+词项>
     例子："<A ==> B>
     """
     function form_statement(first::String, copula::String, last::String)::String
@@ -330,9 +330,9 @@ end
 
 begin "复合词项↔字符串"
 
-    # 语句
+    # 陈述
     """
-    语句→字符串
+    陈述→字符串
     """
     function term2data(parser::StringParser, s::Statement{Type}) where Type
         form_statement(
@@ -342,7 +342,7 @@ begin "复合词项↔字符串"
         )
     end
 
-    # TODO 字符串→语句
+    # TODO 字符串→陈述
     
     # 词项集↔字符串
     "词项集→字符串：join+外框"
@@ -389,7 +389,7 @@ begin "复合词项↔字符串"
     三项通用：
     1. 词项逻辑集
     2. 乘积
-    3. 语句逻辑集
+    3. 陈述逻辑集
     """
     term2data(
         parser::StringParser, 

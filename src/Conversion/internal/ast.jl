@@ -114,7 +114,7 @@ term2data(::TAParser, i::TermImage)::Expr = form_basical(
 )
 
 """
-语句的打包方法
+陈述的打包方法
 """
 term2data(::TAParser, s::Statement) = form_basical(
     typeof(s),
@@ -123,8 +123,8 @@ term2data(::TAParser, s::Statement) = form_basical(
 )
 
 """
-抽象语句集的打包方法
-- 语句逻辑集
+抽象陈述集的打包方法
+- 陈述逻辑集
 """
 term2data(::TAParser, s::AStatementSet)::Expr = form_basical(
     typeof(s),

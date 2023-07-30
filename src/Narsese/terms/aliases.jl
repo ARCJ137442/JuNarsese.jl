@@ -73,13 +73,13 @@ const IVar = Variable{Independent}
 const DVar = Variable{Dependent}
 const QVar = Variable{Query}
 
-# 各类型语句
+# 各类型陈述
 const Inheriance = Statement{STInheriance}
 const Similarity = Statement{STSimilarity}
 const Implication = Statement{STImplication}
 const Equivalance = Statement{STEquivalance}
 
-# 语句逻辑集
+# 陈述逻辑集
 const Negation = StatementLSet{Not}
 const Conjunction = StatementLSet{And}
 const Disjunction = StatementLSet{Or}

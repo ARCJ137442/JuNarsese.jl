@@ -1,5 +1,5 @@
 #=
-构建「Narsese语句」的支持
+构建「Narsese陈述」的支持
 =#
 
 include("sentence/stamp.jl")

@@ -12,10 +12,10 @@
             - 词项逻辑集
             - 像
             - 乘积
-        - 语句（抽象）
-            - 语句{类型}
-            - 语句集（抽象）
-                - 语句逻辑集
+        - 陈述（抽象）
+            - 陈述{类型}
+            - 陈述集（抽象）
+                - 陈述逻辑集
 
 具体在Narsese的文本表示，参见string.jl
 
@@ -118,26 +118,26 @@ export Statement, StatementLogicalSet
 # 作为「类型标记」的类型参数 #
 
 "变量类型" # 【20230724 11:38:25】💭不知道OpenJunars中为何要让「AbstractVariableType」继承AbstractTerm
-abstract type AbstractVariableType end
+abstract type AbstractVariableType end # NAL-6
 abstract type VariableTypeIndependent <: AbstractVariableType end # 独立变量 & 对于
 abstract type VariableTypeDependent <: AbstractVariableType end # 非独变量 # 存在
 abstract type VariableTypeQuery <: AbstractVariableType end # 查询变量 ? 疑问
 
-"语句类型：继承&相似、蕴含&等价"
+"陈述类型：继承&相似、蕴含&等价"
 abstract type AbstractStatementType end
-abstract type StatementTypeInheriance <: AbstractStatementType end
-abstract type StatementTypeSimilarity <: AbstractStatementType end
-abstract type StatementTypeImplication <: AbstractStatementType end
-abstract type StatementTypeEquivalance <: AbstractStatementType end
+abstract type StatementTypeInheriance <: AbstractStatementType end # NAL-1
+abstract type StatementTypeSimilarity <: AbstractStatementType end # NAL-2
+abstract type StatementTypeImplication <: AbstractStatementType end # NAL-5
+abstract type StatementTypeEquivalance <: AbstractStatementType end # NAL-5
 
 "集合论/一阶逻辑操作：与或非" # 原创
 abstract type AbstractLogicOperation end
-abstract type And <: AbstractLogicOperation end # 词项→交，语句→与
-abstract type Or <: AbstractLogicOperation end # 词项→并，语句→或
-abstract type Not <: AbstractLogicOperation end # 词项→非，语句→非
+abstract type And <: AbstractLogicOperation end # 词项→交，陈述→与
+abstract type Or <: AbstractLogicOperation end # 词项→并，陈述→或
+abstract type Not <: AbstractLogicOperation end # 词项→非，陈述→非
 
 "区分「外延」与「内涵」" # TODO：抽象类型如何命名更恰当？
-abstract type AbstractEI end
+abstract type AbstractEI end # NAL-2
 abstract type Extension <: AbstractEI end
 abstract type Intension <: AbstractEI end
 
@@ -149,19 +149,19 @@ abstract type Intension <: AbstractEI end
 abstract type AbstractTerm end
 
 
-"所有的原子词项"
+"[NAL-1]所有的原子词项"
 abstract type AbstractAtom <: AbstractTerm end
 
-"复合词项の基石"
+"[NAL-2]复合词项の基石"
 abstract type AbstractCompound <: AbstractTerm end
 
-"词项の复合：集合操作⇒复合集"
+"[NAL-2]词项の复合：集合操作⇒复合集"
 abstract type AbstractTermSet <: AbstractCompound end
 
-"语句as词项"
+"[NAL-5]抽象陈述：陈述→词项"
 abstract type AbstractStatement <: AbstractCompound end
 
-"语句の复合：集合操作⇒复合集"
+"[NAL-5]复合陈述"
 abstract type AbstractStatementSet <: AbstractStatement end
 
 
@@ -171,7 +171,7 @@ abstract type AbstractStatementSet <: AbstractStatement end
 
 begin "单体词项"
 
-    "最简单的「词语」词项"
+    "[NAL-1]最简单的「词语」词项"
     struct Word <: AbstractAtom
         name::Symbol # 为何不用String？见上文笔记
     end
@@ -181,21 +181,21 @@ begin "单体词项"
     """
     Word(name::String) = name |> Symbol |> Word
 
-    "变量词项（用类型参数包括三种类型）"
+    "[NAL-6]变量词项（用类型参数包括三种类型）"
     struct Variable{Type <: AbstractVariableType} <: AbstractAtom
         name::Symbol
     end
     "支持从String构造"
     Variable{T}(name::String) where {T<:AbstractVariableType} = name |> Symbol |> Variable{T}
 
-    "操作词项(Action)"
+    "[NAL-8]操作词项(Action)"
     struct Operator <: AbstractAtom
         name::Symbol
     end
     "支持从String构造"
     Operator(name::String) = name |> Symbol |> Operator
 
-    "复合集 {} []"
+    "[NAL-2]复合集 {} []"
     struct TermSet{EIType <: AbstractEI} <: AbstractTermSet
         terms::Set{AbstractTerm}
     end
@@ -206,7 +206,7 @@ begin "单体词项"
     end
 
     """
-    词项逻辑集{外延/内涵, 交/并/差}
+    [NAL-3]词项逻辑集 {外延/内涵, 交/并/差}
     - And: 交集 ∩& ∩|
     - Or : 并集 ∪& ∪|
         - 注意：此处不会使用，会自动转换（见📝「为何不使用外延/内涵 并？」）
@@ -238,7 +238,22 @@ begin "单体词项"
     end
 
     """
-    像{外延/内涵} (/, a, b, _, c) (\\\\, a, b, _, c)
+    [NAL-4]乘积 (*, ...)
+    - 有序
+    - 无内涵外延之分
+    - 用于关系词项「(*, 水, 盐) --> 前者可被后者溶解」
+    """
+    struct TermProduct <: AbstractTermSet
+        terms::Vector{AbstractTerm}
+    end
+
+    "多参数构造"
+    function TermProduct(terms::Vararg{AbstractTerm})
+        TermProduct(terms |> collect)
+    end
+
+    """
+    [NAL-4]像{外延/内涵} (/, a, b, _, c) (\\\\, a, b, _, c)
     - 有序
     - 【20230724 22:06:36】注意：词项在terms中的索引，不代表其在实际情况下的索引
 
@@ -262,56 +277,45 @@ begin "单体词项"
         TermImage{EIType}(terms, relation_index |> unsigned)
     end
 
-    """
-    乘积 (*, ...)
-    - 有序
-    - 无内涵外延之分
-    - 用于关系词项「(*, 水, 盐) --> 前者可被后者溶解」
-    """
-    struct TermProduct <: AbstractTermSet
-        terms::Vector{AbstractTerm}
-    end
-
-    "多参数构造"
-    function TermProduct(terms::Vararg{AbstractTerm})
-        TermProduct(terms |> collect)
-    end
-
 end
 
-begin "语句词项"
+begin "陈述词项"
 
     """
-    语句{继承/相似/蕴含/等价} --> <-> ==> <=>
-    - 现只支持「二元」语句，只表达两个词项之间的关系
+    [NAL=1|NAL-5]陈述Statement{继承/相似/蕴含/等价} --> <-> ==> <=>
+    - 现只支持「二元」陈述，只表达两个词项之间的关系
     """
     struct Statement{Type <: AbstractStatementType} <: AbstractStatement
-        ϕ1::AbstractTerm
-        ϕ2::AbstractTerm
+        ϕ1::AbstractTerm # subject 主词
+        ϕ2::AbstractTerm # predicate 谓词
     end
+    "Pair→陈述"
+    Statement(p::Base.Pair) = Statement(p.first, p.second)
+    "陈述→Pair"
+    Base.Pair(s::Statement) = (s.ϕ1 => s.ϕ2)
 
     """
-    语句逻辑集：{与/或/非}
-    - And: 语句与 ∧ && Conjunction
-    - Or : 语句或 ∨ || Disjunction
-    - Not: 语句非 ¬ --
+    [NAL-5]陈述逻辑集：{与/或/非}
+    - And: 陈述与 ∧ && Conjunction
+    - Or : 陈述或 ∨ || Disjunction
+    - Not: 陈述非 ¬ --
 
-    注意：都是「对称」的⇒集合
-    """ # 与「TermSet」不同的是：只使用最多两个词项（语句）
+    注意：都是「对称」的⇒集合(无序)
+    """ # 与「TermSet」不同的是：只使用最多两个词项（陈述）
     struct StatementLogicalSet{LogicOperation <: AbstractLogicOperation} <: AbstractStatementSet
 
         terms::Set{AbstractStatement}
 
-        "语句与 Conjunction / 语句或 Disjunction"
+        "陈述与 Conjunction / 陈述或 Disjunction"
         function StatementLogicalSet{T}(
             terms::Vararg{AbstractStatement}, # 实质上是个元组
         ) where {T <: Union{And, Or}} # 与或都行
             new{T}(terms |> Set) # 收集元组成集合
         end
 
-        "语句非 Negation"
+        "陈述非 Negation"
         function StatementLogicalSet{Not}(ϕ::AbstractStatement)
-            new{Not}(AbstractStatement[ϕ] |> Set{AbstractStatement}) # 只有一个
+            new{Not}((ϕ,) |> Set{AbstractStatement}) # 只有一个
         end
 
     end

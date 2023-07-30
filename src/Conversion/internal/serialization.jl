@@ -38,5 +38,5 @@ end
 function term2data(::SParser, t::Term)::Bytes8
     b::IOBuffer = IOBuffer()
     Serialization.serialize(b, t)
-    return b.data
+    return b.data::Bytes8 # 断言其必须是Bytes8
 end

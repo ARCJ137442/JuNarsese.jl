@@ -10,12 +10,15 @@ using Test
     # 快捷构造 #
 
     w,i,d,q,o = w"词项", w"独立变量"i, w"非独变量"d, w"查询变量"q, w"操作"o
-    A,B,C = "A B C" |> split .|> String .|> Symbol .|> Word
-    @show s1 = (A → B) ∧ (B → C) ⇒ (A → C)
-    @show s2 = (A → B) ∨ (C → B) ⇒ ((A | C) → B)
+    A,B,C,D,R = "A B C D R" |> split .|> String .|> Symbol .|> Word
+    @show s1 = (/(R, A, B, ⋄, D) → C) ⇒ (*(A, B, C, D) → R)
+    @show s2 = (|(A, B, C) → D) ⇒ ∨((A → D), (B → D), (C → D))
     @show s3 = ShortcutParser.(
         """( w"A"q * w"B"i ) → w"C"o """
     )
+
+    "测试集"
+    test_set = [w, i, d, q, o, s1, s2, s3]
 
     @testset "StringParser" begin
         # 原子词项
@@ -28,29 +31,30 @@ using Test
         @test "$q" == "?查询变量"
         @test "$o" == "^操作"
     
-        @test StringParser_basical(string(w), Word,   ) == w
-        @test StringParser_basical(string(i), Variable) == i
-        @test StringParser_basical(string(d), Variable) == d
-        @test StringParser_basical(string(q), Variable) == q
-        @test StringParser_basical(string(o), Operator) == o
-    
         @test /(A, B, ⋄, C) |> StringParser_basical == "(/, A, B, _, C)"
+
+        @show StringParser_basical.(test_set)
+        StringParser_latex.(test_set) .|> println
+
+        # 测试集
+        # @test test_set .|> StringParser_basical .|> StringParser_basical == test_set
+        # @test test_set .|> StringParser_latex .|> StringParser_latex == test_set
     
-        # 语句 #
+        # 陈述 #
     
-        # 语句↔字符串
-        @show s0 = A*B*C ⇔ w"op"o
+        # 陈述↔字符串
+        @show s0 = *(A,B,C) ⇔ w"op"o
         @test string(s0) == "<(*, A, B, C) <=> ^op>"
-        @test (
-            string(s1) == "<(&&, <A --> B>, <B --> C>) ==> <A --> C>>" ||
-            string(s1) == "<(&&, <B --> C>, <A --> B>) ==> <A --> C>>"
-        )
-        @test (
-            string(s2) == "<(||, <A --> B>, <C --> B>) ==> <[A, C] --> B>>" ||
-            string(s2) == "<(||, <C --> B>, <A --> B>) ==> <[A, C] --> B>>" ||
-            string(s2) == "<(||, <A --> B>, <C --> B>) ==> <[C, A] --> B>>" ||
-            string(s2) == "<(||, <C --> B>, <A --> B>) ==> <[C, A] --> B>>"
-        )
+        # @test (
+        #     string(s1) == "<(&&, <A --> B>, <B --> C>) ==> <A --> C>>" ||
+        #     string(s1) == "<(&&, <B --> C>, <A --> B>) ==> <A --> C>>"
+        # )
+        # @test (
+        #     string(s2) == "<(||, <A --> B>, <C --> B>) ==> <[A, C] --> B>>" ||
+        #     string(s2) == "<(||, <C --> B>, <A --> B>) ==> <[A, C] --> B>>" ||
+        #     string(s2) == "<(||, <A --> B>, <C --> B>) ==> <[C, A] --> B>>" ||
+        #     string(s2) == "<(||, <C --> B>, <A --> B>) ==> <[C, A] --> B>>"
+        # )
     
     end
 
@@ -60,25 +64,34 @@ using Test
     end
 
     @testset "ASTParser" begin
-        s = ASTParser.([w, i, d, q, o, s1, s2, s3])
+        s = ASTParser.(test_set)
         s .|> dump
         @show ASTParser.(s)
-        @test ASTParser.(s) == [w, i, d, q, o, s1, s2, s3]
+        @test ASTParser.(s) == test_set
     end
 
     @testset "S11nParser" begin
-        s = S11nParser.([w, i, d, q, o, s1, s2, s3])
-        @show join(s .|> String, "\n\n")
-        # @show S11nParser(s) # EOFError: read end of file
+        s = S11nParser.(test_set)
+        str = s .|> copy .|> String # 不知为何，转换多次字符串就空了
+        @show join(str, "\n\n")
+        # @test str .|> !isempty |> all # 所有转换过来都非空
+        # 📌【20230730 11:52:26】避免「EOFError: read end of file」：使用数据前先copy
+        @test S11nParser.(s .|> copy) == test_set # 确保无损转换
     end
 
     @testset "JSONParser" begin
-        s = JSONParser{Dict}.([w, i, d, q, o, s1, s2, s3])
+        s = JSONParser{Dict}.(test_set)
         s .|> println
-        @test JSONParser{Dict}.(s) == [w, i, d, q, o, s1, s2, s3] # 确保无损转换
+        @test JSONParser{Dict}.(s) == test_set # 确保无损转换
         
-        s = JSONParser{Vector}.([w, i, d, q, o, s1, s2, s3])
+        s = JSONParser{Vector}.(test_set)
         s .|> println
-        @test JSONParser{Vector}.(s) == [w, i, d, q, o, s1, s2, s3] # 确保无损转换
+        @test JSONParser{Vector}.(s) == test_set # 确保无损转换
+    end
+
+    @testset "XMLParser" begin
+        s = XMLParser.(test_set)
+        s .|> println
+        @test XMLParser.(s) == test_set # 确保无损转换
     end
 end

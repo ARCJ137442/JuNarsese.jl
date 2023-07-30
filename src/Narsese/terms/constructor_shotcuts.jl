@@ -39,40 +39,31 @@ begin "复合词项"
     """
     外延集
     
-    示例：A & B & C (&, A, B, C)
+    示例：&(A, B, C) -> {A, B, C}
     """
-    Base.:(&)(t1::Term, t2::Term) = ExtSet(t1, t2)
-    Base.:(&)(t1::ExtSet, t2::Term) = ExtSet(t1.terms..., t2)
-    Base.:(&)(t1::Term, t2::ExtSet) = t2 & t1 # 交换律
-    Base.:(&)(t1::ExtSet, t2::ExtSet) = ExtSet(t1.terms..., t2.terms...)
+    Base.:(&)(terms::Vararg{Term}) = IntSet(terms...)
 
     """
     内涵集
     
-    示例：A | B | C -> (|, A, B, C)
+    示例：|(A, B, C) -> [A, B, C]
     """
-    Base.:(|)(t1::Term, t2::Term) = IntSet(t1, t2)
-    Base.:(|)(t1::IntSet, t2::Term) = IntSet(t1.terms..., t2)
-    Base.:(|)(t1::Term, t2::IntSet) = t2 | t1 # 交换律
-    Base.:(|)(t1::IntSet, t2::IntSet) = IntSet(t1.terms..., t2.terms...)
+    Base.:(|)(terms::Vararg{Term}) = IntSet(terms...)
 
     """
     外延交=内涵并
     
-    示例：注意：Julia保留了「&&」运算符，也无法使用「∩& ∩|」
+    示例：∩(A, B, C) -> (&, A, B, C)
+    注意：Julia保留了「&&」运算符，也无法使用「∩& ∩|」
     """
-    Base.:(∩)(t1::Term, t2::Term) = ExtIntersection(t1, t2) # 默认是外延交(后续就直接递推)
-    Base.:(∩)(t1::TermLogicalSet{EI, And}, t2::Term) where EI <: AbstractEI = TermLogicalSet{EI, And}(t1.terms..., t2)
-    Base.:(∩)(t1::Term, t2::TermLogicalSet{EI, And}) where EI <: AbstractEI = t2 ∩ t1 # 交换律
-    Base.:(∩)(t1::TermLogicalSet{EI, And}, t2::TermLogicalSet{EI, And}) where EI <: AbstractEI = TermLogicalSet{EI, And}(t1.terms..., t2.terms...)
+    Base.:(∩)(terms::Vararg{Term}) = ExtIntersection(terms...) # 默认是外延交
 
     """
     内涵交=外延并
+
+    示例：∪(A, B, C) -> (|, A, B, C)
     """
-    Base.:(∪)(t1::Term, t2::Term) = IntIntersection(t1, t2) # 默认是外延交(后续就直接递推)
-    Base.:(∪)(t1::TermLogicalSet{EI, And}, t2::Term) where EI <: AbstractEI = TermLogicalSet{EI, And}(t1.terms..., t2)
-    Base.:(∪)(t1::Term, t2::TermLogicalSet{EI, And}) where EI <: AbstractEI = t2 ∪ t1 # 交换律
-    Base.:(∪)(t1::TermLogicalSet{EI, And}, t2::TermLogicalSet{EI, And}) where EI <: AbstractEI = TermLogicalSet{EI, And}(t1.terms..., t2.terms...)
+    Base.:(∪)(terms::Vararg{Term}) = IntIntersection(terms...) # 内涵交
 
     """
     内涵/外延 差
@@ -121,42 +112,37 @@ begin "复合词项"
     """
     Base.:(*)(terms::Vararg{Term}) = TermProduct(terms...)
 
-    # 各类语句
+    # 各类陈述
     """
-    各类语句的「快速构造方式」
+    各类陈述的「快速构造方式」
     1. 继承
     2. 相似
     3. 蕴含
     4. 等价
 
     - 📌【20230727 19:57:39】现在只支持二元构造
-    - 📌关于这些语句「是否是对称的」，交给下一层次的「NAL」处理
+    - 📌关于这些陈述「是否是对称的」，交给下一层次的「NAL」处理
         - 本质上只是「视觉上看起来对称」而已
     """
     →(t1::Term, t2::Term) = Inheriance(t1, t2)
     ↔(t1::Term, t2::Term) = Similarity(t1, t2)
     ⇒(t1::Term, t2::Term) = Implication(t1, t2)
     ⇔(t1::Term, t2::Term) = Equivalance(t1, t2)
+    # TODO 链式方法
 
     """
-    语句「非」
+    陈述「非」
     """
     ¬(t::AbstractStatement) = Negation(t)
 
     """
-    语句「与」
+    陈述「与」
     """
-    ∧(t1::Term, t2::Term) = Conjunction(t1, t2) # 默认是外延交(后续就直接递推)
-    ∧(t1::Conjunction, t2::Term) = Conjunction(t1.terms..., t2)
-    ∧(t1::Term, t2::Conjunction) = Conjunction(t1, t2.terms...)
-    ∧(t1::Conjunction, t2::Conjunction) = Conjunction(t1.terms..., t2.terms...)
+    ∧(terms::Vararg{Term}) = Conjunction(terms...)
 
     """
-    语句「或」
+    陈述「或」
     """
-    ∨(t1::Term, t2::Term) = Disjunction(t1, t2) # 默认是外延交(后续就直接递推)
-    ∨(t1::Disjunction, t2::Term) = Disjunction(t1.terms..., t2)
-    ∨(t1::Term, t2::Disjunction) = Disjunction(t1, t2.terms...)
-    ∨(t1::Disjunction, t2::Disjunction) = Disjunction(t1.terms..., t2.terms...)
+    ∨(terms::Vararg{Term}) = Disjunction(terms...)
 
 end

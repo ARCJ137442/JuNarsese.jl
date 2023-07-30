@@ -59,9 +59,9 @@ using Test
     @show p = TermProduct(A,B,C)
     @test p == *(A, B, C) == (A*B*C) ≠ (B*A*C) # 有序性 老式构造方法仍可使用
 
-    # 语句
+    # 陈述
 
-    # 语句逻辑集
+    # 陈述逻辑集
     @show s1 = ((A→B) ∧ ((A→B)⇒(B→C))) ⇒ (B→C)
     @test s1 == Implication( # 等价性
         Conjunction(

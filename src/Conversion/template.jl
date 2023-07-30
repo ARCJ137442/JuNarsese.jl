@@ -12,7 +12,7 @@ export term2data, data2term # 数据互转
 export Term2Data, Data2Term # 泛型构造函数
 
 """
-语句转换器的抽象类型模板
+陈述转换器的抽象类型模板
 
 使用方法：
 1. 其它「类型转换器」注册一个type继承AbstractParser

@@ -44,7 +44,7 @@ begin "判断相等"
         (t1.terms .== t2.terms) |> all # 所有元素相等
     end
 
-    "语句相等"
+    "陈述相等"
     function Base.:(==)(s1::Statement{T1}, s2::Statement{T2})::Bool where {T1, T2}
         T1 == T2 && # 类型相等
         s1.ϕ1 == s2.ϕ1 &&
@@ -52,14 +52,14 @@ begin "判断相等"
     end
 
     """
-    抽象语句集相等：类型&各语句 相等
+    抽象陈述集相等：类型&各陈述 相等
     """
     function Base.:(==)(s1::AbstractStatementSet, s2::AbstractStatementSet)::Bool
         typeof(s1) == typeof(s2) && # 类型相等
         (s1.terms .== s2.terms) |> all # 集合相等⇒所有对象值相等（不存在「引用问题」）
     end
 
-    "特殊重载：语句逻辑集相等（参数类型&词项集 相等）"
+    "特殊重载：陈述逻辑集相等（参数类型&词项集 相等）"
     function Base.:(==)(s1::StatementLogicalSet{O1}, s2::StatementLogicalSet{O2})::Bool where {O1, O2}
         O1 == O2 && # 参数类型相等
         (s1.terms .== s2.terms) |> all
@@ -67,13 +67,13 @@ begin "判断相等"
 end
 
 # 收集(`Base.collect`): 收集其中包含的所有（原子）词项 #
-begin "收集其中包含的所有（原子）词项"
+begin "收集其中包含的所有（原子）词项，并返回向量"
 
     "原子词项のcollect：只有它自己"
     Base.collect(aa::AbstractAtom) = AbstractTerm[aa]
 
     """
-    抽象词项集/抽象语句集のcollect：获取terms参数
+    抽象词项集/抽象陈述集のcollect：获取terms参数
     - 词项集
     - 词项逻辑集
     - 像
@@ -88,7 +88,7 @@ begin "收集其中包含的所有（原子）词项"
     ]
 
     """
-    语句のcollect：获取两项中的所有词项
+    陈述のcollect：获取两项中的所有词项
     - 不会拷贝
     """
     Base.collect(s::Statement) = AbstractTerm[
