@@ -1,7 +1,12 @@
 #=
 提供所有与字符串相关的方法
 =#
-export StringParser_basical, StringParser_latex
+#= 📝Julia: 参数类型的「不变性」：具体类型，具体实现，不因参数互为子类
+> Julia 的类型参数是不变的，而不是协变的（或甚至是逆变的）
+> 即使 Float64 <: Real 也没有 Point{Float64} <: Point{Real}
+=#
+
+export StringParser_ascii, StringParser_latex
 
 """
 定义「字符串转换器」
@@ -14,9 +19,9 @@ export StringParser_basical, StringParser_latex
 struct StringParser <: AbstractParser
 
     "原子到字符串的字典"
-    atom_prefixes::Dict{DataType, String}
+    atom_prefixes::Dict
     "反转的字典"
-    prefixes2atom::Dict{String, DataType}
+    prefixes2atom::Dict
 
     "像占位符的位置"
     placeholder_string::String
@@ -25,7 +30,7 @@ struct StringParser <: AbstractParser
     词项集类型 => (前缀, 后缀)
     用于`前缀 * 词项组 * 后缀`
     """
-    term_set_brackets::Dict{DataType, Tuple{String, String}}
+    term_set_brackets::Dict
 
     """
     词项类型 => 符号
@@ -33,38 +38,32 @@ struct StringParser <: AbstractParser
 
     - 暂时不写「并」：在「代码表示」（乃至Latex原文）中都没有对应的符号
     """
-    compound_symbols::Dict{DataType, String}
+    compound_symbols::Dict
 
     """
-    陈述类型 => 联结词(字符串)
+    陈述类型 => 系词(字符串)
     """
-    copulas::Dict{DataType, String}
+    copulas::Dict
 
     """
-    副联结词
+    时态 => 时态表示（字符串）
     """
-    secondary_copulas::Dict{DataType, String}
+    tenses::Dict
 
     """
-    时态
+    标点 => 标点表示（字符串）
     """
-    tenses::Dict{DataType, String}
-
-    """
-    标点
-    """
-    punctuations::Dict{DataType, String}
+    punctuations::Dict
 
     "构造函数"
     function StringParser(
-        atom_prefixes::Dict{DataType, String},
+        atom_prefixes::Dict,
         placeholder_string::String,
-        term_set_brackets::Dict{DataType, Tuple{String, String}},
-        compound_symbols::Dict{DataType, String},
-        copulas::Dict{DataType, String},
-        # secondary_copulas::Dict{DataType, String},
-        # tenses::Dict{DataType, String},
-        # punctuations::Dict{DataType, String},
+        term_set_brackets::Dict,
+        compound_symbols::Dict,
+        copulas::Dict,
+        tenses::Dict,
+        punctuations::Dict,
         )
         new(
             atom_prefixes,
@@ -75,9 +74,8 @@ struct StringParser <: AbstractParser
             term_set_brackets,
             compound_symbols,
             copulas,
-            # secondary_copulas,
-            # tenses,
-            # punctuations,
+            tenses,
+            punctuations,
         )
     end
 
@@ -87,7 +85,7 @@ end
 （默认）实例化，并作为一个「转换器」导出
 - 来源：文档 `NARS ASCII Input.pdf`
 """
-StringParser_basical::StringParser = StringParser(
+StringParser_ascii::StringParser = StringParser(
     Dict(
         Word => "", # 置空
         IVar => "\$",
@@ -120,36 +118,33 @@ StringParser_basical::StringParser = StringParser(
         STSimilarity => "<->",
         STImplication => "==>",
         STEquivalance => "<=>",
-    ),
-    #=
-    Dict( # 副联结词（语法糖）
-        # 实例&属性
-        SecondaryCopula{Extension, STInheriance}            => "{--",
-        SecondaryCopula{STInheriance, Intension}            => "--]",
-        SecondaryCopula{Extension, STInheriance, Intension} => "{-]",
-        # 时序蕴含
-        SecondaryCopula{STImplication, Past}    => raw"=\>",
-        SecondaryCopula{STImplication, Present} => raw"=/>",
-        SecondaryCopula{STImplication, Future}  => raw"=|>",
-        # 时序等价
-        SecondaryCopula{STEquivalance, Past}    => raw"<\>",
-        SecondaryCopula{STEquivalance, Present} => raw"<|>",
-        SecondaryCopula{STEquivalance, Future}  => raw"</>",
+        # 副系词: 实例&属性
+        Instance           => "{--",
+        Property           => "--]",
+        InstanceProperty   => "{-]",
+        # 副系词: 时序蕴含
+        ImplicationPast    => raw"=\>",
+        ImplicationPresent => raw"=/>",
+        ImplicationFuture  => raw"=|>",
+        # 副系词: 时序等价
+        EquivalancePast    => raw"<\>",
+        EquivalancePresent => raw"<|>",
+        EquivalanceFuture  => raw"</>",
     ),
     Dict( # 时态
+        Eternal     => "",
         Past       => ":\\:",
         Present    => ":|:",
         Future     => ":/:",
-        Sequential => "&/",
-        Parallel   => "&|",
+        # Sequential => "&/", # 这两个只是因为与之相关，所以才放这里
+        # Parallel   => "&|",
     ),
     Dict( # 标点
-        Judgment => ".",
+        Judgement => ".",
         Question => "?",
         Goal     => "!",
         Query    => "@",
     ),
-    =#
 )
 
 """
@@ -189,36 +184,33 @@ StringParser_latex::StringParser = StringParser(
         STSimilarity => "\\leftrightarrow",
         STImplication => "\\Rightarrow",
         STEquivalance => "\\LeftRightArrow",
-    ),
-    #=
-    Dict( # 副联结词（语法糖）
-        # 实例&属性
-        SecondaryCopula{Extension, STInheriance}            => raw"\circ\!\!\!\rightarrow",
-        SecondaryCopula{STInheriance, Intension}            => raw"\rightarrow\!\!\!\circ",
-        SecondaryCopula{Extension, STInheriance, Intension} => raw"\circ\!\!\!\rightarrow\!\!\!\circ",
-        # 时序蕴含
-        SecondaryCopula{STImplication, Past}    => raw"\\!\!\!\!\Rightarrow",
-        SecondaryCopula{STImplication, Present} => raw"|\!\!\!\!\Rightarrow",
-        SecondaryCopula{STImplication, Future}  => raw"/\!\!\!\!\Rightarrow",
-        # 时序等价
-        SecondaryCopula{STEquivalance, Past}    => raw"\\!\!\!\!\Leftrightarrow",
-        SecondaryCopula{STEquivalance, Present} => raw"|\!\!\!\!\Leftrightarrow",
-        SecondaryCopula{STEquivalance, Future}  => raw"/\!\!\!\!\Leftrightarrow",
+        # 副系词: 实例&属性
+        Instance           => raw"\circ\!\!\!\rightarrow",
+        Property           => raw"\rightarrow\!\!\!\circ",
+        InstanceProperty   => raw"\circ\!\!\!\rightarrow\!\!\!\circ",
+        # 副系词: 时序蕴含
+        ImplicationPast    => raw"\\!\!\!\!\Rightarrow",
+        ImplicationPresent => raw"|\!\!\!\!\Rightarrow",
+        ImplicationFuture  => raw"/\!\!\!\!\Rightarrow",
+        # 副系词: 时序等价
+        EquivalancePast    => raw"\\!\!\!\!\Leftrightarrow",
+        EquivalancePresent => raw"|\!\!\!\!\Leftrightarrow",
+        EquivalanceFuture  => raw"/\!\!\!\!\Leftrightarrow",
     ),
     Dict( # 时态
+        Eternal     => "",
         Past         => raw"\\!\!\!\!\Rightarrow",
         Present      => raw"|\!\!\!\!\Rightarrow",
         Future       => raw"/\!\!\!\!\Rightarrow",
-        Sequential   => ",",
-        Parallel     => ";",
+        # Sequential   => ",", # 这两个只是因为与之相关，所以才放这里
+        # Parallel     => ";",
     ),
     Dict( # 标点
-        Judgment => ".",
+        Judgement => ".",
         Question => "?",
         Goal     => "!",
         Query    => "\\questiondown",
     ),
-    =#
 )
 
 
@@ -230,14 +222,14 @@ Base.eltype(::StringParser) = String
 # using ..Narsese
 
 # 【特殊链接】词项↔字符串 #
-Base.parse(::Type{T}, s::String) where T <: Term = data2term(StringParser_basical, T, s)
+Base.parse(::Type{T}, s::String) where T <: Term = data2term(StringParser_ascii, T, s)
 
-Base.string(t::Term)::String = term2data(StringParser_basical, t) # 若想一直用term2data，则其也需要注明类型变成term2data(String, t)
-Base.repr(t::Term)::String = term2data(StringParser_basical, t)
-Base.show(io::IO, t::Term) = print(io, term2data(StringParser_basical, t)) # 📌没有注明「::IO」会引发歧义
+Base.string(t::Term)::String = term2data(StringParser_ascii, t) # 若想一直用term2data，则其也需要注明类型变成term2data(String, t)
+Base.repr(t::Term)::String = term2data(StringParser_ascii, t)
+Base.show(io::IO, t::Term) = print(io, term2data(StringParser_ascii, t)) # 📌没有注明「::IO」会引发歧义
 
 "构造函数支持"
-(::Type{Narsese.Term})(s::String) = data2term(StringParser_basical, Term, s)
+(::Type{Narsese.Term})(s::String) = data2term(StringParser_ascii, Term, s)
 
 # 正式开始 #
 
@@ -252,7 +244,7 @@ begin "陈述形式"
     end
 
     """
-    陈述：<词项+连接符+词项>
+    陈述：<词项+系词+词项>
     例子："<A ==> B>
     """
     function form_statement(first::String, copula::String, last::String)::String
@@ -298,7 +290,7 @@ begin "原子↔字符串"
         - 协议：默认类型有一个「类型(名字)」的构造方法
     """
     function data2term(parser::StringParser, ::Type{Atom}, s::String)::Atom
-        type::DataType = get(parser.prefixes2atom, s[1], Word)
+        type::Type = get(parser.prefixes2atom, s[1], Word)
         s[2:end] |> Symbol |> type
     end
 
@@ -364,12 +356,12 @@ begin "复合词项↔字符串"
     """
     function data2term(parser::StringParser, ::Type{TermSet{EI}}, s::String)::TermSet{EI} where {EI <: AbstractEI}
         TermSet{EI}(
-            split(s[2:end-1],",") .|> String .|> Data2Term{StringParser_basical, Term}
+            split(s[2:end-1],",") .|> String .|> Data2Term{StringParser_ascii, Term}
         )
     end
 
     "左括号→类型"
-    BRACE_TYPE_DICT::Dict{String, Type} = Dict(
+    BRACE_TYPE_DICT::Dict = Dict(
         "{" => TermSet{Extension},
         "[" => TermSet{Intension},
     )
@@ -377,7 +369,7 @@ begin "复合词项↔字符串"
     "更一般的情况"
     function data2term(parser::StringParser, ::Type{TermSet}, s::String)::TermSet
         data2term(
-            StringParser_basical, 
+            StringParser_ascii, 
             TermSet{BRACE_TYPE_DICT[s[1]]},
             s
         )
@@ -418,4 +410,8 @@ begin "复合词项↔字符串"
         ", "
     )
 
+end
+
+begin "语句" # TODO
+    
 end

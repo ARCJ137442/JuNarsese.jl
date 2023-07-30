@@ -40,8 +40,8 @@ begin "复合词项"
     外延集
     
     示例：&(A, B, C) -> {A, B, C}
-    """
-    Base.:(&)(terms::Vararg{Term}) = IntSet(terms...)
+    """ # TODO: 修复「syntax: invalid syntax &(1, 2) around」
+    Base.:(&)(terms::Vararg{Term}) = ExtSet(terms...)
 
     """
     内涵集

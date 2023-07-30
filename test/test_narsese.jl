@@ -24,8 +24,8 @@ using Test
     @test o == Operator(:操作)
 
     # 词项集
-    exSet = w & (d & o)
-    inSet = d | q | i
+    exSet = Base.:(&)(w, d, o)
+    inSet = Base.:(|)(d, q, i) # 【20230730 23:34:29】TODO: 必须改掉这样的语法
     @show exSet inSet "$exSet and $inSet"
 
     @test exSet == ExtSet(w,o,d) # 无序
@@ -88,4 +88,13 @@ using Test
         ),
         Inheriance(w"苏格拉底", w"会死")
     )
+
+    # 语句
+    @show se = Sentence{Judgement}(
+        A → B,
+        Truth64(1, 0.5),
+        StampBasic()
+    )
+
+    # TODO 其它语句测试
 end

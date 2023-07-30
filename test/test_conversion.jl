@@ -31,13 +31,13 @@ using Test
         @test "$q" == "?查询变量"
         @test "$o" == "^操作"
     
-        @test /(A, B, ⋄, C) |> StringParser_basical == "(/, A, B, _, C)"
+        @test /(A, B, ⋄, C) |> StringParser_ascii == "(/, A, B, _, C)"
 
-        @show StringParser_basical.(test_set)
+        @show StringParser_ascii.(test_set)
         StringParser_latex.(test_set) .|> println
 
         # 测试集
-        # @test test_set .|> StringParser_basical .|> StringParser_basical == test_set
+        # @test test_set .|> StringParser_ascii .|> StringParser_ascii == test_set
         # @test test_set .|> StringParser_latex .|> StringParser_latex == test_set
     
         # 陈述 #

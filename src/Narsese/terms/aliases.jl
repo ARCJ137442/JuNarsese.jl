@@ -17,9 +17,9 @@ export TImage, TProduct
 export SLSet, StatementLSet, SLogicSet
 
 export AVType, AVariableType
-export Independent, VTIndependent
-export Dependent, VTDependent
-export Query, VTQuery
+# export Independent, VTIndependent
+# export Dependent, VTDependent
+# export Query, VTQuery
 export ALOperation, ALogicOperation
 
 export IVar, DVar, QVar
@@ -36,9 +36,9 @@ export TermSetLike
 # 正式开始 #
 
 const AVType = AVariableType = AbstractVariableType
-const Independent = VTIndependent = VariableTypeIndependent
-const Dependent = VTDependent = VariableTypeDependent
-const Query = VTQuery = VariableTypeQuery
+const VTIndependent = VariableTypeIndependent
+const VTDependent = VariableTypeDependent
+const VTQuery = VariableTypeQuery # 【20230730 22:54:28】删去非VT别名，因：与「标点」的「Query请求」重名
 
 const ALOperation = ALogicOperation = AbstractLogicOperation
 
@@ -69,9 +69,9 @@ const STEquivalance = StatementTypeEquivalance
 # 对接OpenJunars #
 
 # 各类型变量
-const IVar = Variable{Independent}
-const DVar = Variable{Dependent}
-const QVar = Variable{Query}
+const IVar = Variable{VTIndependent}
+const DVar = Variable{VTDependent}
+const QVar = Variable{VTQuery}
 
 # 各类型陈述
 const Inheriance = Statement{STInheriance}

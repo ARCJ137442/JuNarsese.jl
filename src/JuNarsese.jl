@@ -26,7 +26,7 @@ include("Util.jl")
 include("Narsese.jl")
 @reexport using .Narsese
 
-include("Conversion.jl")
+include("Conversion.jl") # TODO: 有待分离独立成包
 @reexport using .Conversion
 
 

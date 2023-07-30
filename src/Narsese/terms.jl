@@ -319,6 +319,8 @@ begin "陈述词项"
         end
 
     end
+
+    # TODO 序列合取，平行合取
     
 end
 
@@ -329,4 +331,4 @@ include("terms/aliases.jl")
 include("terms/methods.jl")
 
 # 快捷构造方式
-include("terms/constructor_shotcuts.jl")
+include("terms/constructor_shortcuts.jl")
