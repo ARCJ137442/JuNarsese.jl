@@ -14,6 +14,7 @@ export Var, Op
 export TSet
 export TLSet, TermLSet, TLogicSet
 export TImage, TProduct
+export ASLSet, AStatementLSet, ASLogicSet
 export SLSet, StatementLSet, SLogicSet
 
 export AVType, AVariableType
@@ -23,15 +24,20 @@ export AVType, AVariableType
 export ALOperation, ALogicOperation
 
 export IVar, DVar, QVar
-export STInheriance, STSimilarity, STImplication, STEquivalance
-export Inheriance, Similarity, Implication, Equivalance
+export STInheriance, STSimilarity, STImplication, STEquivalance,
+         Inheriance,   Similarity,   Implication,   Equivalance
 export Negation, Conjunction, Disjunction
-export ExtSet, ExtensionSet, IntSet, IntensionSet
-export ExtImage, ExtensionImage, IntImage, IntensionImage
-export ExtIntersection, ExtensionIntersection, IntIntersection, IntensionIntersection
+export ExtSet, ExtensionSet, 
+       IntSet, IntensionSet
+export ExtImage, ExtensionImage, 
+       IntImage, IntensionImage
+export ExtIntersection, ExtensionIntersection, 
+       IntIntersection, IntensionIntersection
 export ExtUnion, ExtensionUnion, IntUnion, IntensionUnion
-export ExtDiff, ExtensionDiff, ExtDifference, ExtensionDifference, IntDiff, IntensionDiff, IntDifference, IntensionDifference
-export TermSetLike
+export ExtDiff, ExtensionDiff, ExtDifference, ExtensionDifference, 
+       IntDiff, IntensionDiff, IntDifference, IntensionDifference
+export ParConjunction, SeqConjunction
+export TermSetLike, TermOperatedSetLike
 
 # 正式开始 #
 
@@ -59,7 +65,9 @@ const TSet = TermSet
 const TLSet = TermLSet = TLogicSet = TermLogicalSet
 const TImage = TermImage
 const TProduct = TermProduct
+const ASLSet = AStatementLSet = ASLogicSet = AbstractStatementLogicalSet
 const SLSet = StatementLSet = SLogicSet = StatementLogicalSet
+const STSet = StatementTSet = STemporalSet = StatementTemporalSet
 
 const STInheriance = StatementTypeInheriance
 const STSimilarity = StatementTypeSimilarity
@@ -79,7 +87,7 @@ const Similarity = Statement{STSimilarity}
 const Implication = Statement{STImplication}
 const Equivalance = Statement{STEquivalance}
 
-# 陈述逻辑集
+# 词项集
 const Negation = StatementLSet{Not}
 const Conjunction = StatementLSet{And}
 const Disjunction = StatementLSet{Or}
@@ -101,6 +109,11 @@ const IntUnion = IntensionUnion = TermLSet{Intension, Or}
 const ExtDiff = ExtensionDiff = ExtDifference = ExtensionDifference = TermLogicalSet{Extension, Not}
 const IntDiff = IntensionDiff = IntDifference = IntensionDifference = TermLogicalSet{Intension, Not}
 
-# 集合类的词项(「逻辑非」不含在内)
-const TermSetLike = Union{TermSet, TermLSet, StatementLSet{And}, StatementLSet{Or}}
+# 陈述时序集（原创）
+const ParConjunction = STSet{Parallel}
+const SeqConjunction = STSet{Sequential}
 
+# 集合类的词项: 形如`(操作符, 词项...)`与其它「有`terms`字段，且有多个元素的集合」
+const TermLogicalSetLike = Union{TermLSet, StatementLSet{And}, StatementLSet{Or}, StatementTSet} # 「逻辑非」不含在内
+const TermOperatedSetLike = Union{TermLogicalSetLike, TermImage, TermProduct}
+const TermSetLike = Union{TermSet, TermOperatedSetLike} # 与OpenJunars不同的是，还包括「乘积」与「像」

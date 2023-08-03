@@ -23,17 +23,28 @@ struct StringParser <: AbstractParser
     "反转的字典"
     prefixes2atom::Dict
 
-    "像占位符的位置"
-    placeholder_string::String
+    "显示「像占位符」的符号"
+    placeholder_t2d::String
+    "识别「像占位符」的符号"
+    placeholder_d2t::String
+
+    """
+    用于「词项→字符串」的逗号（显示用）
+    """
+    comma_t2d::String
+    "用于「字符串→词项」的逗号（识别用）"
+    comma_d2t::String
 
     """
     词项集类型 => (前缀, 后缀)
     用于`前缀 * 词项组 * 后缀`
     """
     term_set_brackets::Dict
+    "前缀 => 词项集类型"
+    brackets_term_set::Dict
 
     """
-    词项类型 => 符号
+    词项集类型 => 符号
     用于`(符号, 内部词项...)`
 
     - 暂时不写「并」：在「代码表示」（乃至Latex原文）中都没有对应的符号
@@ -55,10 +66,11 @@ struct StringParser <: AbstractParser
     """
     punctuations::Dict
 
-    "构造函数"
+    "内部构造方法"
     function StringParser(
         atom_prefixes::Dict,
-        placeholder_string::String,
+        placeholder_t2d::String, placeholder_d2t::String,
+        comma_t2d::String, comma_d2t::String, 
         term_set_brackets::Dict,
         compound_symbols::Dict,
         copulas::Dict,
@@ -70,8 +82,12 @@ struct StringParser <: AbstractParser
             Dict( # 自动反转字典
                 @reverse_dict_content atom_prefixes
             ),
-            placeholder_string,
+            placeholder_t2d, placeholder_d2t,
+            comma_t2d, comma_d2t,
             term_set_brackets,
+            Dict( # 自动反转字典
+                @reverse_dict_content term_set_brackets
+            ),
             compound_symbols,
             copulas,
             tenses,
@@ -86,23 +102,24 @@ end
 - 来源：文档 `NARS ASCII Input.pdf`
 """
 StringParser_ascii::StringParser = StringParser(
-    Dict(
-        Word => "", # 置空
-        IVar => "\$",
-        DVar => "#",
-        QVar => "?",
+    Dict( # 原子前缀
+        Word     => "", # 置空
+        IVar     => "\$",
+        DVar     => "#",
+        QVar     => "?",
         Operator => "^", # 操作
     ),
-    "_",
-    Dict(
+    "_", "_",
+    ", ", ",",
+    Dict( # 集合括弧
         TermSet{Extension} => ("{", "}"), # 外延集
         TermSet{Intension} => ("[", "]"), # 内涵集
     ),
-    Dict(
+    Dict( # 集合操作
         ExtIntersection => "&",
         IntIntersection => "|",
-        ExtDifference => "-",
-        IntDifference => "~",
+        ExtDifference   => "-",
+        IntDifference   => "~",
         # 像
         ExtImage => "/",
         IntImage => "\\",
@@ -111,13 +128,16 @@ StringParser_ascii::StringParser = StringParser(
         # 陈述逻辑集
         Conjunction => "&&",
         Disjunction => "||",
-        Negation => "--",
+        Negation    => "--",
+        # 陈述时序集
+        ParConjunction  => "&|",
+        SeqConjunction  => "&/",
     ),
-    Dict(
-        STInheriance => "-->",
-        STSimilarity => "<->",
-        STImplication => "==>",
-        STEquivalance => "<=>",
+    Dict( # 系词
+        STInheriance       => "-->",
+        STSimilarity       => "<->",
+        STImplication      => "==>",
+        STEquivalance      => "<=>",
         # 副系词: 实例&属性
         Instance           => "{--",
         Property           => "--]",
@@ -132,7 +152,7 @@ StringParser_ascii::StringParser = StringParser(
         EquivalanceFuture  => raw"</>",
     ),
     Dict( # 时态
-        Eternal     => "",
+        Eternal    => "",
         Past       => ":\\:",
         Present    => ":|:",
         Future     => ":/:",
@@ -141,9 +161,9 @@ StringParser_ascii::StringParser = StringParser(
     ),
     Dict( # 标点
         Judgement => ".",
-        Question => "?",
-        Goal     => "!",
-        Query    => "@",
+        Question  => "?",
+        Goal      => "!",
+        Query     => "@",
     ),
 )
 
@@ -152,38 +172,42 @@ StringParser_ascii::StringParser = StringParser(
 - 来源：文档 `NARS ASCII Input.pdf`
 """
 StringParser_latex::StringParser = StringParser(
-    Dict(
-        Word => "", # 置空
-        IVar => "\$",
-        DVar => "\\#",
-        QVar => "?",
+    Dict( # 原子前缀
+        Word     => "", # 置空
+        IVar     => "\$",
+        DVar     => "\\#",
+        QVar     => "?",
         Operator => "\\Uparrow", # 操作
     ),
-    "\\diamond",
-    Dict(
+    "\\diamond", "\\diamond",
+    ", ", ",",
+    Dict( # 集合括弧
         TermSet{Extension} => ("{", "}"), # 外延集
         TermSet{Intension} => ("[", "]"), # 内涵集
     ),
-    Dict(
+    Dict( # 集合操作
         ExtIntersection => "\\cap",
         IntIntersection => "\\cup",
-        ExtDifference => "\\minus",
-        IntDifference => "\\minus",
+        ExtDifference   => "\\minus",
+        IntDifference   => "\\minus",
         # 像
-        ExtImage => "/",
-        IntImage => "\\",
+        ExtImage        => "/",
+        IntImage        => "\\",
         # 乘积
-        TermProduct => "\\times",
+        TermProduct     => "\\times",
         # 陈述逻辑集
-        Conjunction => "\\wedge",
-        Disjunction => "\\vee",
-        Negation => "\\neg",
+        Conjunction     => "\\wedge",
+        Disjunction     => "\\vee",
+        Negation        => "\\neg",
+        # 陈述时序集 📌【20230803 12:06:10】此处的显示方式在Latex与ASCII中有所不同
+        ParConjunction  => ";",
+        SeqConjunction  => ",",
     ),
-    Dict(
-        STInheriance => "\\rightarrow",
-        STSimilarity => "\\leftrightarrow",
-        STImplication => "\\Rightarrow",
-        STEquivalance => "\\LeftRightArrow",
+    Dict( # 系词
+        STInheriance       => "\\rightarrow",
+        STSimilarity       => "\\leftrightarrow",
+        STImplication      => "\\Rightarrow",
+        STEquivalance      => "\\LeftRightArrow",
         # 副系词: 实例&属性
         Instance           => raw"\circ\!\!\!\rightarrow",
         Property           => raw"\rightarrow\!\!\!\circ",
@@ -198,18 +222,16 @@ StringParser_latex::StringParser = StringParser(
         EquivalanceFuture  => raw"/\!\!\!\!\Leftrightarrow",
     ),
     Dict( # 时态
-        Eternal     => "",
+        Eternal      => "",
         Past         => raw"\\!\!\!\!\Rightarrow",
         Present      => raw"|\!\!\!\!\Rightarrow",
         Future       => raw"/\!\!\!\!\Rightarrow",
-        # Sequential   => ",", # 这两个只是因为与之相关，所以才放这里
-        # Parallel     => ";",
     ),
     Dict( # 标点
         Judgement => ".",
-        Question => "?",
-        Goal     => "!",
-        Query    => "\\questiondown",
+        Question  => "?",
+        Goal      => "!",
+        Query     => "\\questiondown",
     ),
 )
 
@@ -224,9 +246,13 @@ Base.eltype(::StringParser) = String
 # 【特殊链接】词项↔字符串 #
 Base.parse(::Type{T}, s::String) where T <: Term = data2term(StringParser_ascii, T, s)
 
-Base.string(t::Term)::String = term2data(StringParser_ascii, t) # 若想一直用term2data，则其也需要注明类型变成term2data(String, t)
-Base.repr(t::Term)::String = term2data(StringParser_ascii, t)
-Base.show(io::IO, t::Term) = print(io, term2data(StringParser_ascii, t)) # 📌没有注明「::IO」会引发歧义
+@redirect_SRS t::Term term2data(StringParser_ascii, t) # 若想一直用term2data，则其也需要注明类型变成term2data(String, t)
+
+# 【特殊链接】语句(时间戳/真值)↔字符串 #
+@redirect_SRS s::ASentence term2data(StringParser_ascii, s)
+@redirect_SRS s::Stamp term2data(StringParser_ascii, s)
+@redirect_SRS t::Truth term2data(StringParser_ascii, t)
+
 
 "构造函数支持"
 (::Type{Narsese.Term})(s::String) = data2term(StringParser_ascii, Term, s)
@@ -266,9 +292,28 @@ begin "陈述形式"
     function form_logical_set(symbol::String, contents, separator::String)::String
         "($symbol$separator$(join(contents, separator)))"
     end
+
+    "_autoIgnoreEmpty: 字串为空⇒不变，字串非空⇒加前导分隔符"
+    function _aie(s::String, sept::String=" ")
+        isempty(s) ? s : sept * s
+    end
+
+    raw"""
+    语句：词项+标点+时态+真值
+    - 自动为「空参数」省去空格
+        - 本为："$(term_str)$punctuation $tense $truth"
+    """
+    function form_sentence(
+        term_str::String, punctuation::String, 
+        tense::String, truth::String
+        )::String
+        "$(term_str)$punctuation" * "$(_aie(tense))$(_aie(truth))"
+    end
 end
 
-"总「解析」方法"
+"""
+总「解析」方法
+"""
 function data2term(parser::StringParser, ::Type{Term}, s::String)
     @info "WIP!"
 end
@@ -341,7 +386,7 @@ begin "复合词项↔字符串"
     term2data(parser::StringParser, t::TermSet)::String = form_term_set(
         parser.term_set_brackets[typeof(t)]..., # 前后缀
         t.terms .|> string, # 内容
-        ", "
+        parser.comma_t2d
     )
 
     # 字符串→词项
@@ -356,21 +401,20 @@ begin "复合词项↔字符串"
     """
     function data2term(parser::StringParser, ::Type{TermSet{EI}}, s::String)::TermSet{EI} where {EI <: AbstractEI}
         TermSet{EI}(
-            split(s[2:end-1],",") .|> String .|> Data2Term{StringParser_ascii, Term}
+            data2term.(
+                parser, Term, # 内部元素再根据需要转换
+                split(s[2:end-1], parser.comma_d2t) .|> String # 根据逗号切分
+            )
         )
     end
 
-    "左括号→类型"
-    BRACE_TYPE_DICT::Dict = Dict(
-        "{" => TermSet{Extension},
-        "[" => TermSet{Intension},
-    )
-
-    "更一般的情况"
+    """
+    更一般的情况: 字符串→词项集
+    """
     function data2term(parser::StringParser, ::Type{TermSet}, s::String)::TermSet
         data2term(
-            StringParser_ascii, 
-            TermSet{BRACE_TYPE_DICT[s[1]]},
+            parser, 
+            TermSet{parser.brackets_term_set[s[1]]},
             s
         )
     end
@@ -385,11 +429,11 @@ begin "复合词项↔字符串"
     """
     term2data(
         parser::StringParser, 
-        t::Union{TermLSet,TermProduct,StatementLSet}
+        t::TermOperatedSetLike
     ) = form_logical_set(
         parser.compound_symbols[typeof(t)],
         t.terms .|> string,
-        ", "
+        parser.comma_t2d
     )
 
     # TODO 字符串→词项
@@ -404,14 +448,27 @@ begin "复合词项↔字符串"
         parser.compound_symbols[typeof(t)],
         [
             t.terms[1:t.relation_index-1]...,
-            parser.placeholder_string,
+            parser.placeholder_t2d,
             t.terms[t.relation_index:end]...,
         ],
-        ", "
+        parser.comma_t2d
     )
 
 end
 
-begin "语句" # TODO
+begin "语句" # TODO: 这到底是不是「term」？可能需要改名
+
+    function term2data(parser::StringParser, t::Truth)
+        "%$(t.f); $(t.c)%"
+    end
     
+    function term2data(parser::StringParser, s::ASentence{punctuation}) where punctuation
+        form_sentence(
+            term2data(parser, s.term),
+            parser.punctuations[punctuation],
+            parser.tenses[Base.get(s, Tense)],
+            term2data(parser, s.truth)
+        )
+    end
+
 end

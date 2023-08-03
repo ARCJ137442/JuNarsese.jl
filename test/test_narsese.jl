@@ -11,7 +11,7 @@ using Test
     # 快捷构造 #
 
     w,i,d,q,o = w"词项", w"独立变量"i, w"非独变量"d, w"查询变量"q, w"操作"o
-    A,B,C = "A B C" |> split .|> String .|> Symbol .|> Word
+    A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
 
     # 原子词项
 
@@ -89,12 +89,29 @@ using Test
         Inheriance(w"苏格拉底", w"会死")
     )
 
+    # 陈述时序集
+    @show s3 = ⩚(s1, s2) s4 = ⩜(s1, s2) s5 = ⩜(A→B, B→C, C→D) ⇒ (A→D)
+    @test s3 == ParConjunction(s1, s2) == ⩚(s2, s1) # 无序性
+    @test s4 == SeqConjunction(s1, s2) ≠  ⩜(s2, s1) # 有序性
+    @test s5 == Implication(
+        SeqConjunction(
+            A→B, B→C, C→D
+        ),
+        Inheriance(A, D)
+    ) ≠ (⩜(A→B, C→D, B→C) ⇒ (A→D))
+
     # 语句
-    @show se = Sentence{Judgement}(
-        A → B,
+    se = Sentence{Question}(
+        s5,
         Truth64(1, 0.5),
         StampBasic()
     )
-
-    # TODO 其它语句测试
+    se0 = Sentence{Goal}(
+        ExtSet(w"SELF") → IntSet(w"good"),
+        Truth64(1, 0.5),
+        StampBasic{Present}()
+    )
+    se2 = Sentence{Judgement}(s2)
+    @show se se0 se2
+    
 end

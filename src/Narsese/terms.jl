@@ -9,21 +9,24 @@
     - 复合（抽象）
         - 词项集（抽象）
             - 词项集
-            - 词项逻辑集
+            - 词项逻辑集{逻辑操作}
             - 像
             - 乘积
         - 陈述（抽象）
             - 陈述{类型}
             - 陈述集（抽象）
-                - 陈述逻辑集
+                - 陈述逻辑集{逻辑操作}（抽象）
+                    - 陈述逻辑集{逻辑操作}
+                    - 陈述时序集{时序关系}
 
 具体在Narsese的文本表示，参见string.jl
 
 参考：
-- OpenJunars 詞項層級結構
+- OpenJunars 词项层级结构
 
 情况：
 - 📌现在不使用「deepcopy」对词项进行深拷贝：将「拷贝与否」交给调用者
+- 【20230803 11:31:40】暂不将整个文件拆分为「Narsese1-8」的形式，而是以[NAL-X]的格式标注其来源
 =#
 
 #= 📝NAL: 关于「为何没有『外延并/内涵并』的问题」：
@@ -106,12 +109,13 @@ export AbstractVariableType, VariableTypeIndependent, VariableTypeDependent, Var
 export AbstractStatementType, StatementTypeInheriance, StatementTypeSimilarity, StatementTypeImplication, StatementTypeEquivalance
 export AbstractLogicOperation, And, Or, Not
 export AbstractEI, Extension, Intension
+export AbstractTemporalRelation, Sequential, Parallel
 
 export AbstractTerm, AbstractAtom, AbstractCompound, AbstractStatement
 export AbstractTermSet, AbstractStatementSet
 
 export Word, Variable, Operator, TermSet, TermLogicalSet, TermImage, TermProduct
-export Statement, StatementLogicalSet
+export Statement, AbstractStatementLogicalSet, StatementLogicalSet, StatementTemporalSet
 
 
 
@@ -136,12 +140,15 @@ abstract type And <: AbstractLogicOperation end # 词项→交，陈述→与
 abstract type Or <: AbstractLogicOperation end # 词项→并，陈述→或
 abstract type Not <: AbstractLogicOperation end # 词项→非，陈述→非
 
-"区分「外延」与「内涵」" # TODO：抽象类型如何命名更恰当？
+"区分「外延」与「内涵」"
 abstract type AbstractEI end # NAL-2
 abstract type Extension <: AbstractEI end
 abstract type Intension <: AbstractEI end
 
-
+"区分「序列」与「平行」"
+abstract type AbstractTemporalRelation end
+abstract type Sequential <: AbstractTemporalRelation end
+abstract type Parallel <: AbstractTemporalRelation end
 
 # 正式对象 #
 
@@ -164,6 +171,8 @@ abstract type AbstractStatement <: AbstractCompound end
 "[NAL-5]复合陈述"
 abstract type AbstractStatementSet <: AbstractStatement end
 
+"[NAL-5]抽象陈述逻辑集: {与/或/非}"
+abstract type AbstractStatementLogicalSet{LogicOperation <: AbstractLogicOperation} <: AbstractStatementSet end
 
 
 
@@ -197,11 +206,11 @@ begin "单体词项"
 
     "[NAL-2]复合集 {} []"
     struct TermSet{EIType <: AbstractEI} <: AbstractTermSet
-        terms::Set{AbstractTerm}
+        terms::Set{<:AbstractTerm}
     end
 
     "任意长参数"
-    function TermSet{EIType}(terms::Vararg{AbstractTerm}) where EIType
+    function TermSet{EIType}(terms::Vararg{AbstractTerm}) where {EIType <: AbstractEI}
         TermSet{EIType}(terms |> Set{AbstractTerm})
     end
 
@@ -215,7 +224,7 @@ begin "单体词项"
     """
     # 此处「&」「|」是对应的「外延交&」「外延并|」
     struct TermLogicalSet{EIType <: AbstractEI, LogicOperation <: AbstractLogicOperation} <: AbstractTermSet
-        terms::Union{Vector{AbstractTerm}, Set{AbstractTerm}}
+        terms::Union{Vector{<:AbstractTerm}, Set{<:AbstractTerm}}
 
         "(无序)交集 Intersection{外延/内涵} ∩& ∩|"
         function TermLogicalSet{EIType, And}(terms::Vararg{AbstractTerm}) where EIType # 此EIType构造时还会被检查类型
@@ -244,7 +253,7 @@ begin "单体词项"
     - 用于关系词项「(*, 水, 盐) --> 前者可被后者溶解」
     """
     struct TermProduct <: AbstractTermSet
-        terms::Vector{AbstractTerm}
+        terms::Vector{<:AbstractTerm}
     end
 
     "多参数构造"
@@ -260,7 +269,7 @@ begin "单体词项"
     例：`TermImage{Extension}([a,b,c], 3)` = (/, a, b, _, c)
     """
     struct TermImage{EIType <: AbstractEI} <: AbstractTermSet
-        terms::Tuple{Vararg{AbstractTerm}}
+        terms::Tuple{Vararg{<:AbstractTerm}}
         relation_index::Unsigned # 「_」的位置(一个占位符，保证词项中只有一个「_」)
 
         "限制占位符位置（0除外）"
@@ -302,14 +311,14 @@ begin "陈述词项"
 
     注意：都是「对称」的⇒集合(无序)
     """ # 与「TermSet」不同的是：只使用最多两个词项（陈述）
-    struct StatementLogicalSet{LogicOperation <: AbstractLogicOperation} <: AbstractStatementSet
+    struct StatementLogicalSet{LogicOperation <: AbstractLogicOperation} <: AbstractStatementLogicalSet{LogicOperation}
 
-        terms::Set{AbstractStatement}
+        terms::Set{<:AbstractStatement}
 
         "陈述与 Conjunction / 陈述或 Disjunction"
         function StatementLogicalSet{T}(
             terms::Vararg{AbstractStatement}, # 实质上是个元组
-        ) where {T <: Union{And, Or}} # 与或都行
+            ) where {T <: Union{And, Or}} # 与或都行
             new{T}(terms |> Set) # 收集元组成集合
         end
 
@@ -320,8 +329,34 @@ begin "陈述词项"
 
     end
 
-    # TODO 序列合取，平行合取
-    
+    """
+    [NAL-7]陈述时序集：{序列/平行} <: 抽象陈述逻辑集{合取}
+    - 与 `&/`: 序列合取(有序)
+    - 或 `&|`: 平行合取(无序)
+
+    📌技术点: 此中的数据`terms`为一个指向「向量/集合」的引用
+    - 即便其类型确定，它仍然是一个「指针」，不会造成效率干扰
+    """ # 与「TermSet」不同的是：只使用最多两个词项（陈述）
+    struct StatementTemporalSet{TemporalRelation <: AbstractTemporalRelation} <: AbstractStatementLogicalSet{And}
+
+        terms::Union{Set{<:AbstractStatement}, Vector{<:AbstractStatement}}
+
+        "序列合取 Sequential Conjunction"
+        function StatementTemporalSet{Sequential}(
+            terms::Vararg{AbstractStatement}, # 实质上是个元组
+            )
+            new{Sequential}(terms |> collect) # 收集元组成向量
+        end
+
+        "平行合取 Parallel Conjunction"
+        function StatementTemporalSet{Parallel}(
+            terms::Vararg{AbstractStatement}, # 实质上是个元组
+            )
+            new{Parallel}(terms |> Set) # 收集元组成集合
+        end
+
+    end
+
 end
 
 # 别名

@@ -54,15 +54,20 @@ begin "判断相等"
     """
     抽象陈述集相等：类型&各陈述 相等
     """
-    function Base.:(==)(s1::AbstractStatementSet, s2::AbstractStatementSet)::Bool
+    function Base.:(==)(s1::AStatementSet, s2::AStatementSet)::Bool
         typeof(s1) == typeof(s2) && # 类型相等
         s1.terms == s2.terms # 集合相等⇒所有对象值相等（不存在「引用问题」「顺序问题」）
     end
 
-    "特殊重载：陈述逻辑集相等（参数类型&词项集 相等）"
-    function Base.:(==)(s1::StatementLogicalSet{O1}, s2::StatementLogicalSet{O2})::Bool where {O1, O2}
+    "特殊重载：抽象陈述逻辑集相等（参数类型&词项集 相等）"
+    function Base.:(==)(s1::AStatementLSet{O1}, s2::AStatementLSet{O2})::Bool where {O1, O2}
         O1 == O2 && # 参数类型相等
         s1.terms == s2.terms # 对集合无需比较「逐一相等」，无需「.==」强制按顺序判断
+    end
+
+    "特殊重载：陈述逻辑集相等（参数类型&词项集 相等）"
+    function Base.:(==)(s1::StatementTSet, s2::StatementTSet)::Bool
+        s1.terms == s2.terms # 直接比较`terms`属性（类型不等自然不等）
     end
 end
 
@@ -78,6 +83,8 @@ begin "收集其中包含的所有（原子）词项，并返回向量"
     - 词项逻辑集
     - 像
     - 乘积
+    - 陈述逻辑集
+    - 陈述时序集
     
     ⚠不会拷贝
     """

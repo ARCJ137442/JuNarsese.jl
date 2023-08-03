@@ -35,7 +35,8 @@ include("sentence/stamp.jl")
 include("sentence/secondary_copulas.jl")
 
 # 导出 #
-export AbstractSentence, Sentence
+export AbstractSentence, ASentence
+export Sentence
 
 # 代码 #
 
@@ -48,13 +49,27 @@ export AbstractSentence, Sentence
     - stamp       时间戳: 包含一切「时序信息」
 - 以上属性分别定义了相应的get方法
 """
-abstract type AbstractSentence end
+abstract type AbstractSentence{punctuation <: Punctuation} end
+const ASentence = AbstractSentence # 别名
 
 "一个简单实现: 语句{标点}"
-struct Sentence{punctuation <: Punctuation} <: AbstractSentence
+struct Sentence{punctuation <: Punctuation} <: AbstractSentence{punctuation}
     term::Term
     truth::Truth
     stamp::Stamp
+
+    """
+    提供默认值的构造函数
+    - 真值の默认: Truth64(1.0, 0.5)
+    - 时间戳の默认: StampBasic{Eternal}()
+    """
+    function Sentence{punctuation}(
+        term::Term,
+        truth::Truth = Truth64(1.0, 0.5),
+        stamp::Stamp = StampBasic{Eternal}()
+        ) where {punctuation <: Punctuation}
+        new(term, truth, stamp)
+    end
 end
 
 """

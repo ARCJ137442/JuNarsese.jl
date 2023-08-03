@@ -6,6 +6,7 @@ export @w_str
 export ⋄
 export →, ⇒, ↔, ⇔
 export ∧, ∨, ¬
+export ⩚, ⩜
 
 begin "单体词项"
     
@@ -106,6 +107,7 @@ begin "复合词项"
     - 【20230730 0:39:07】只需要声明下已定义即可
     """
     function ⋄ end
+
     """
     乘积(*)
     - 还是「链式构造」
@@ -131,18 +133,30 @@ begin "复合词项"
     # TODO 链式方法
 
     """
-    陈述「非」
+    陈述逻辑「非」
     """
     ¬(t::AbstractStatement) = Negation(t)
 
     """
-    陈述「与」
+    陈述逻辑「与」
     """
     ∧(terms::Vararg{Term}) = Conjunction(terms...)
 
     """
-    陈述「或」
+    陈述逻辑「或」
     """
     ∨(terms::Vararg{Term}) = Disjunction(terms...)
+
+    """
+    陈述时序「平行」（原创）
+    - LaTeX: `\\wedgemidvert`
+    """
+    ⩚(terms::Vararg{Term}) = ParConjunction(terms...)
+
+    """
+    陈述时序「序列」（原创）
+    - LaTeX: `\\midbarwedge`
+    """
+    ⩜(terms::Vararg{Term}) = SeqConjunction(terms...)
 
 end
