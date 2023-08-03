@@ -5,6 +5,8 @@ using JuNarsese
 
 using Test
 
+A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
+@assert (∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D))) == (∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)))
 
 @testset "Narsese" begin
 
@@ -50,6 +52,8 @@ using Test
     iI = IntImage(3, C,B,A) # (\, C, B, _, A)
     @show eI iI
 
+    @test eI == ExtImage(2, A,B,C) # 非唯一性
+    @test iI == IntImage(3, C,B,A) # 非唯一性
     @test eI.relation_index == 2 && iI.relation_index == 3
     @test ExtImage(1, A,B,C) ≠ /(A, ⋄, B, C) == eI == ExtImage(2, A,B,C) ≠ ExtImage(2, A,C,B) # 唯一相等性
     @test IntImage(1, C,B,A) ≠ \(C, B, ⋄, A) == iI == IntImage(3, C,B,A) ≠ IntImage(3, C,A,B) # 唯一相等性
@@ -63,6 +67,8 @@ using Test
 
     # 陈述逻辑集
     @show s1 = ((A→B) ∧ ((A→B)⇒(B→C))) ⇒ (B→C)
+    @test s1 == (((A→B) ∧ ((A→B)⇒(B→C))) ⇒ (B→C)) # 非唯一性
+    @test ((A→B) ∨ ((A→B)∧(B→C))) == ((A→B) ∨ ((A→B)∧(B→C))) # 非唯一性: 嵌套集合的刁钻
     @test s1 == Implication( # 等价性
         Conjunction(
             Inheriance(A,B),
@@ -90,28 +96,63 @@ using Test
     )
 
     # 陈述时序集
-    @show s3 = ⩚(s1, s2) s4 = ⩜(s1, s2) s5 = ⩜(A→B, B→C, C→D) ⇒ (A→D)
+    @show s3 = ⩚(s1, s2) s4 = ⩜(s1, s2)
     @test s3 == ParConjunction(s1, s2) == ⩚(s2, s1) # 无序性
     @test s4 == SeqConjunction(s1, s2) ≠  ⩜(s2, s1) # 有序性
+    @show s5 = ∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)
+    @test s5 == (∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)) # 非唯一性
     @test s5 == Implication(
-        SeqConjunction(
-            A→B, B→C, C→D
+        Disjunction(
+            SeqConjunction(
+                A→B, B→C, C→D
+            ),
+            ParConjunction(
+                A→B, B→C, C→D
+            ),
         ),
         Inheriance(A, D)
-    ) ≠ (⩜(A→B, C→D, B→C) ⇒ (A→D))
+    )
+    @test s5 == (∨(⩚(A→B, B→C, C→D), ⩜(A→B, B→C, C→D)) ⇒ (A→D))
+    @test s5 == (∨(⩚(A→B, C→D, B→C), ⩜(A→B, B→C, C→D)) ⇒ (A→D))
+    @test s5 ≠ (∨(⩚(A→B, B→C, C→D), ⩜(B→C, A→B, C→D)) ⇒ (A→D))
+
+    # 极端嵌套情况
+    s6 = *(
+        ⩚(
+            ⩜(A→B, B→C, C→D), 
+            ∨(ExtSet(A, B, C)→D, w→o), ⩚(A→B, B→C, C→D)
+        ), 
+        ∧(s1, s2), 
+        \(A, ⋄, s3, C) → s2,
+        /(s1, ⋄, B, s5) → s3,
+        ¬(Base.:(&)(w, i, d, q, o) → IntSet(A, ∩(A, B, C)))
+    ) → s5
+    @show s6
 
     # 语句
     se = Sentence{Question}(
         s5,
-        Truth64(1, 0.5),
+        Truth64(1, 0.9),
         StampBasic()
     )
     se0 = Sentence{Goal}(
         ExtSet(w"SELF") → IntSet(w"good"),
-        Truth64(1, 0.5),
+        Truth64(1, 0.9),
         StampBasic{Present}()
     )
     se2 = Sentence{Judgement}(s2)
     @show se se0 se2
+
+    @test @JuNarsese.Util.exceptedError Sentence{Judgement}(
+        s5,
+        Truth64(1.1, 0.9), # f越界
+        StampBasic()
+    )
+
+    @test @JuNarsese.Util.exceptedError Sentence{Judgement}(
+        s5,
+        Truth64(0, -1.0), # c越界
+        StampBasic()
+    )
     
 end

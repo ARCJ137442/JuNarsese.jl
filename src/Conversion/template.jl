@@ -9,7 +9,7 @@ using ..Narsese
 
 # 导出
 export term2data, data2term # 数据互转
-export Term2Data, Data2Term # 泛型构造函数
+export Term2Data, Data2Term # 泛型构造方法
 
 """
 陈述转换器的抽象类型模板

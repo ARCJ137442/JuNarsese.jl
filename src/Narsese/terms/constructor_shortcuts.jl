@@ -73,11 +73,12 @@ begin "复合词项"
     Base.:(-)(t1::Term, t2::Term) = ExtDiff(t1, t2) # 默认是外延交(后续就直接递推)
     Base.:(~)(t1::Term, t2::Term) = IntDiff(t1, t2) # 默认是外延交(后续就直接递推)
 
-    """
-    像(外/内\\)，再加「占位符」
+    raw"""
+    像(外/内\)，再加「占位符」
     - 根据词项序列构造像
 
     示例：`a / b ⋄ c` ⇔ (/, a, b, _, c)
+    ```
     """
     function _construct_image(::Type{EI}, terms::Tuple)::TermImage where EI <: AbstractEI
         # 获取索引
@@ -87,7 +88,7 @@ begin "复合词项"
                     Tuple{Vararg{Term}}( # 📌不能使用Tuple{AbstractTerm}，这样会删掉后续的元素
                         term
                         for term in terms
-                        if term isa AbstractTerm # 过滤
+                        if term isa Term # 过滤
                     ),
                     i,
                 )

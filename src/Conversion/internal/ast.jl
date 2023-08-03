@@ -16,7 +16,7 @@ Base.eltype(::TAParser) = Expr
 
 Base.Expr(t::Term)::Expr = term2data(ASTParser, t)
 
-"构造函数支持"
+"构造方法支持"
 (::Type{Narsese.Term})(e::Expr) = data2term(ASTParser, Term, e)
 
 # 正式开始 #
@@ -40,9 +40,9 @@ end
 
 """
 Expr→词项
-- 类名→类→构造函数
-- 构造函数(参数...)
-    - 协议：构造函数必须要有「构造函数(参数...)」的方法
+- 类名→类→构造方法
+- 构造方法(参数...)
+    - 协议：构造方法必须要有「构造方法(参数...)」的方法
     - 或：构造出来的表达式，需要与构造方法一致
 
 原理：使用递归「从上往下构造」
@@ -54,7 +54,7 @@ function parse_basical(ex::Expr)::Term
             ex.args[i] = parse_basical(v) # 递归
         end
     end
-    # 返回构造函数构造的词项: 直接将参数按顺序填入其中
+    # 返回构造方法构造的词项: 直接将参数按顺序填入其中
     return type(ex.args...)
 end
 

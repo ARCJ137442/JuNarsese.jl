@@ -269,13 +269,24 @@ begin "单体词项"
     例：`TermImage{Extension}([a,b,c], 3)` = (/, a, b, _, c)
     """
     struct TermImage{EIType <: AbstractEI} <: AbstractTermSet
-        terms::Tuple{Vararg{<:AbstractTerm}}
+        terms::Tuple{Vararg{AbstractTerm}}
         relation_index::Unsigned # 「_」的位置(一个占位符，保证词项中只有一个「_」)
 
-        "限制占位符位置（0除外）"
-        function TermImage{EIType}(terms::Tuple{Vararg{T}}, relation_index::Integer) where {EIType, T <: AbstractTerm}
+        """
+        限制占位符位置（0除外）
+        
+        📌莫使用`Tuple{Vararg{T}} where T <: AbstractTerm`
+        - 理：Julia参数类型的「不变性」，参数类型的子类关系不会反映到整体上
+            - 例: `Tuple{Int} <: Tuple{Integer} == false`
+        - 因：此用法会限制Tuple中「只能由一种类型」
+            - 因而产生「无方法错误」（其中有「!Matched::Tuple{Vararg{T}}」）
+        - 解：直接使用`Tuple{AbstractTerm}`
+            - 其可以包含任意词项，而不会被限制到某个具体类型中
+            - 例如：只用`Tuple{Integer}`而不用`Tuple{Int}`
+        """
+        function TermImage{EIType}(terms::Tuple{Vararg{AbstractTerm}}, relation_index::Integer) where {EIType}
             # 检查
-            relation_index == 0 || @assert relation_index ≤ length(terms) + 1
+            relation_index == 0 || @assert relation_index ≤ length(terms) + 1 "索引`$relation_index`越界！"
             # 构造
             new{EIType}(terms, unsigned(relation_index))
         end

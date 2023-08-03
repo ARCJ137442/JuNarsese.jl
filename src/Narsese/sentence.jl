@@ -59,7 +59,7 @@ struct Sentence{punctuation <: Punctuation} <: AbstractSentence{punctuation}
     stamp::Stamp
 
     """
-    提供默认值的构造函数
+    提供默认值的构造方法
     - 真值の默认: Truth64(1.0, 0.5)
     - 时间戳の默认: StampBasic{Eternal}()
     """

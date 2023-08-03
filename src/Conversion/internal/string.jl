@@ -180,7 +180,7 @@ StringParser_latex::StringParser = StringParser(
         Operator => "\\Uparrow", # 操作
     ),
     "\\diamond", "\\diamond",
-    ", ", ",",
+    " ", " ", # 【20230803 14:14:50】Latex格式中没有逗号，使用\u202f的空格「 」以分割
     Dict( # 集合括弧
         TermSet{Extension} => ("{", "}"), # 外延集
         TermSet{Intension} => ("[", "]"), # 内涵集
@@ -199,7 +199,7 @@ StringParser_latex::StringParser = StringParser(
         Conjunction     => "\\wedge",
         Disjunction     => "\\vee",
         Negation        => "\\neg",
-        # 陈述时序集 📌【20230803 12:06:10】此处的显示方式在Latex与ASCII中有所不同
+        # 陈述时序集
         ParConjunction  => ";",
         SeqConjunction  => ",",
     ),
@@ -254,7 +254,7 @@ Base.parse(::Type{T}, s::String) where T <: Term = data2term(StringParser_ascii,
 @redirect_SRS t::Truth term2data(StringParser_ascii, t)
 
 
-"构造函数支持"
+"构造方法支持"
 (::Type{Narsese.Term})(s::String) = data2term(StringParser_ascii, Term, s)
 
 # 正式开始 #
@@ -309,27 +309,45 @@ begin "陈述形式"
         )::String
         "$(term_str)$punctuation" * "$(_aie(tense))$(_aie(truth))"
     end
+
+    """
+    根据开括号的位置，寻找同级的闭括号(返回第一个位置)
+    """
+    function find_braces(
+        s::AbstractString, i_begin::Integer, 
+        s_start::AbstractString, s_end::AbstractString
+        )::Integer
+        # 顺序查找
+        l_start::Integer = length(s_start)
+        level::Unsigned = 0
+        sl::AbstractString = ""
+        for i in (i_begin+1):length(s)
+            sl = s[i:i+l_start-1] # ⚠此处可能溢出
+            if sl == s_start
+                level += 1
+            elseif sl == s_end
+                level == 0 && return i # 当同级括号闭上时
+                level -= 1
+            end
+        end
+        return -1 # 无效值
+    end
 end
 
 """
-总「解析」方法
+所有词项的「总解析方法」
 """
 function data2term(parser::StringParser, ::Type{Term}, s::String)
-    @info "WIP!"
+    # 去空格
+    s1::String = replace(s, " " => "")
+
+    @info "WIP!" s1
 end
 
 begin "原子↔字符串"
 
-    "（通用）原子→字符串：前缀+名"
-    function term2data(parser::StringParser, a::Narsese.Atom)::String
-        form_atom(
-            parser.atom_prefixes[typeof(a)],
-            string(a.name)
-        )
-    end
-
     """
-    （通用）字符串→原子
+    原子词项的「总解析方法」
     1. 识别前缀(自动查字典)
     2. 统一构造
         - 协议：默认类型有一个「类型(名字)」的构造方法
@@ -339,33 +357,37 @@ begin "原子↔字符串"
         s[2:end] |> Symbol |> type
     end
 
-    # 词语↔字符串
-    "字符串→词语：沿用其名"
-    data2term(parser::StringParser, ::Type{Word}, s::String)::Word = s |> Symbol |> Word
-
-    # 变量↔字符串
-
-    """
-    字符串→变量
-    1. 由头符号识别变量类型（独立、非独、询问）
-    2. 把去头后的名字变为「变量标识名」
-
-    示例：`data2term(StringParser, Variable, "#exists") == w"exists"d`
-    """
-    function data2term(parser::StringParser, ::Type{Variable}, s::String)::Variable
-        parser.prefixes2atom[s[1] |> string](s[2:end] |> Symbol)
-    end
-
-    # 操作符↔字符串
-
-    "字符串→操作：截取⇒转换"
-    function data2term(parser::StringParser, ::Type{Operator}, s::String)::Operator
-        s[2:end] |> Symbol |> Operator
+    "原子→字符串：前缀+名"
+    function term2data(parser::StringParser, a::Narsese.Atom)::String
+        form_atom(
+            parser.atom_prefixes[typeof(a)],
+            string(a.name)
+        )
     end
 
 end
 
 begin "复合词项↔字符串"
+
+    "从开括号到闭括号"
+    CLOSURE_DICT::Dict = Dict(
+        "(" => ")",
+        "[" => "]",
+        "{" => "}",
+        "<" => ">",
+    )
+
+    """
+    复合词项的「总解析方法」(语句除外)
+    - 总是「无空格」的
+    """
+    function data2term(parser::StringParser, ::Type{Compound}, s::String)
+        s_open::AbstractString = s[1]
+        i_close::Integer = first(findlast(CLOSURE_DICT[s_open], s))
+        content::AbstractString = s[2:i_close]
+        
+        @info "WIP!"
+    end
 
     # 陈述
     """
@@ -373,9 +395,9 @@ begin "复合词项↔字符串"
     """
     function term2data(parser::StringParser, s::Statement{Type}) where Type
         form_statement(
-            string(s.ϕ1), 
+            term2data(parser, s.ϕ1), 
             parser.copulas[Type], 
-            string(s.ϕ2),
+            term2data(parser, s.ϕ2),
         )
     end
 
@@ -385,7 +407,11 @@ begin "复合词项↔字符串"
     "词项集→字符串：join+外框"
     term2data(parser::StringParser, t::TermSet)::String = form_term_set(
         parser.term_set_brackets[typeof(t)]..., # 前后缀
-        t.terms .|> string, # 内容
+        [
+            term2data(parser, term)
+            for term in t.terms
+        ], # 内容
+        # ↑📌不能使用「term2data.(parser, t.terms)」：报错「MethodError: no method matching length(::JuNarsese.Conversion.StringParser)」
         parser.comma_t2d
     )
 
@@ -422,17 +448,21 @@ begin "复合词项↔字符串"
     # 词项逻辑集：交并差
 
     """
-    三项通用：
+    通用：形如`(操作符, 词项...)`的复合词项
     1. 词项逻辑集
     2. 乘积
     3. 陈述逻辑集
+    4. 陈述时序集
     """
     term2data(
         parser::StringParser, 
         t::TermOperatedSetLike
     ) = form_logical_set(
         parser.compound_symbols[typeof(t)],
-        t.terms .|> string,
+        [
+            term2data(parser, term)
+            for term in t.terms
+        ], # 内容
         parser.comma_t2d
     )
 

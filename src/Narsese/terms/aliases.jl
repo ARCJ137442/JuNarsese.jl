@@ -115,5 +115,5 @@ const SeqConjunction = STSet{Sequential}
 
 # 集合类的词项: 形如`(操作符, 词项...)`与其它「有`terms`字段，且有多个元素的集合」
 const TermLogicalSetLike = Union{TermLSet, StatementLSet{And}, StatementLSet{Or}, StatementTSet} # 「逻辑非」不含在内
-const TermOperatedSetLike = Union{TermLogicalSetLike, TermImage, TermProduct}
+const TermOperatedSetLike = Union{TermLogicalSetLike, TermImage, TermProduct, StatementLSet{Not}}
 const TermSetLike = Union{TermSet, TermOperatedSetLike} # 与OpenJunars不同的是，还包括「乘积」与「像」

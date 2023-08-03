@@ -13,16 +13,43 @@ export Truth16, Truth32, Truth64, TruthBig
 """
 可配置的「真值」类型
 - 允许背后对f、c值类型的自定义
+    - 二者必须是[0,1]的浮点数
 """
 struct Truth{
-    F_TYPE <: AbstractFloat, # f值必须是浮点数
-    C_TYPE <: AbstractFloat, # c值必须是浮点数
+    F_TYPE <: AbstractFloat,
+    C_TYPE <: AbstractFloat,
     }
     f::F_TYPE
     c::C_TYPE
+
+    "内部构造方法: 检查数值是否越界"
+    function Truth{F_TYPE, C_TYPE}(f::F_TYPE, c::C_TYPE) where {
+        F_TYPE <: AbstractFloat,
+        C_TYPE <: AbstractFloat,
+        }
+
+        # 检查边界
+        @assert 0 ≤ f ≤ 1 "数值`$f`越界！"# 闭区间
+        @assert 0 ≤ c ≤ 1 "数值`$c`越界！"# 【20230803 14:43:07】不涉及NAL，不限制开区间
+        
+        # 构造
+        new{F_TYPE, C_TYPE}(f, c)
+    end
 end
 
-"外部构造函数：只指定一个参数类型，相当于复制两个类型"
+"外部构造方法：对于任意实数，都尝试转换为目标类型"
+function Truth{F_TYPE, C_TYPE}(f::Real, c::Real) where {
+    F_TYPE <: AbstractFloat,
+    C_TYPE <: AbstractFloat,
+    }
+
+    Truth{F_TYPE, C_TYPE}(
+        convert(F_TYPE, f),
+        convert(C_TYPE, c),
+    )
+end
+
+"外部构造方法：只指定一个参数类型，相当于复制两个类型"
 Truth{V_TYPE}(args...) where {V_TYPE} = Truth{V_TYPE, V_TYPE}(args...)
 
 # 别名：各类精度的真值 #

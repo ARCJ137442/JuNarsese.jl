@@ -16,9 +16,22 @@ using Test
     @show s3 = ShortcutParser.(
         """( w"A"q * w"B"i ) → w"C"o """
     )
+    @show s4 = ⩜(s1, s2) ∨ ⩚(s1, s2)
+    @show s5 = ∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)
 
+    # 极端嵌套情况
+    s6 = *(
+        ⩚(
+            ⩜(A→B, B→C, C→D), 
+            ∨(ExtSet(A, B, C)→D, w→o), ⩚(A→B, B→C, C→D)
+        ), 
+        ∧(s1, s2), 
+        \(A, ⋄, s3, C) → s2,
+        /(s1, ⋄, B, s5) → s3,
+        ¬(Base.:(&)(w, i, d, q, o) → IntSet(A, ∩(A, B, C)))
+    ) → s5
     "测试集"
-    test_set = [w, i, d, q, o, s1, s2, s3]
+    test_set = [w, i, d, q, o, s1, s2, s3, s4, s5, s6]
 
     @testset "StringParser" begin
         # 原子词项
