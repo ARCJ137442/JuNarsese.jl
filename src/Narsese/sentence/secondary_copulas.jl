@@ -17,8 +17,6 @@ S{Int64}
 
 export SecondaryCopula
 export Instance, Property, InstanceProperty
-export ImplicationPast, ImplicationPresent, ImplicationFuture
-export EquivalancePast, EquivalancePresent, EquivalanceFuture
 
 
 """
@@ -26,22 +24,42 @@ export EquivalancePast, EquivalancePresent, EquivalanceFuture
 - 相对于「主系词」而言
 - 实际解析时要转换成「状态+主系词」的形式
 - 仅使用「参数类型」提供一个「元素组合」的标签
+- 扩展「陈述类型」，然后扩展构造函数，使之与「陈述{陈述类型}匹配」
+- 📌【20230804 14:52:41】现把「时序蕴含/等价」升级为「主系词」
 """
-abstract type SecondaryCopula{U,V,W} end
+abstract type SecondaryCopula{U,V,W} <: AbstractStatementType end
 
 # 三个「实例/属性」副系词: {-- | --] | {-]
 const Instance         = SecondaryCopula{Extension, STInheriance}
 const Property         = SecondaryCopula{STInheriance, Intension}
 const InstanceProperty = SecondaryCopula{Extension, STInheriance, Intension}
 
-# 三个「带时态蕴含」
-const ImplicationPast    = SecondaryCopula{STImplication, Past}
-const ImplicationPresent = SecondaryCopula{STImplication, Present}
-const ImplicationFuture  = SecondaryCopula{STImplication, Future}
+begin "构造函数扩展：提供自动解析の方法"
 
-# 三个「带时态等价」
-const EquivalancePast    = SecondaryCopula{Equivalance, Past}
-const EquivalancePresent = SecondaryCopula{Equivalance, Present}
-const EquivalanceFuture  = SecondaryCopula{Equivalance, Future}
-
-# TODO: `ImplicationPast <: Implication == false`, 是否要再定义「所属」关系？
+    # 实例&属性
+    
+    """
+    实例 `A {-- B` ⇔ `{A} --> B`
+    """
+    Statement{Instance}(ϕ1::Term, ϕ2::Term) = Inheriance(
+        ExtSet(ϕ1),
+        ϕ2
+    )
+    
+    """
+    属性 `A --] B` ⇔ `A --> [B]`
+    """
+    Statement{Property}(ϕ1::Term, ϕ2::Term) = Inheriance(
+        ϕ1,
+        IntSet(ϕ2)
+    )
+    
+    """
+    实例-属性 `A {-] B` ⇔ `{A} --> [B]`
+    """
+    Statement{InstanceProperty}(ϕ1::Term, ϕ2::Term) = Inheriance(
+        ExtSet(ϕ1),
+        IntSet(ϕ2)
+    )
+    
+end

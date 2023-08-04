@@ -14,10 +14,10 @@ Base.eltype(::TAParser) = Expr
 
 # 【特殊链接】词项↔字符串 #
 
-Base.Expr(t::Term)::Expr = term2data(ASTParser, t)
+Base.Expr(t::Term)::Expr = narsese2data(ASTParser, t)
 
 "构造方法支持"
-(::Type{Narsese.Term})(e::Expr) = data2term(ASTParser, Term, e)
+(::Type{Narsese.Term})(e::Expr) = data2narsese(ASTParser, Term, e)
 
 # 正式开始 #
 
@@ -79,14 +79,14 @@ end
 总「解析」方法：直接调用parse_basical
 - 任意词项类型都适用
 """
-function data2term(::TAParser, ::Type{T}, ex::Expr)::T where {T <: Term}
+function data2narsese(::TAParser, ::Type{T}, ex::Expr)::T where {T <: Term}
     return parse_basical(ex)
 end
 
 """
 原子词项的打包方法：(:类名, "名称")
 """
-term2data(::TAParser, a::Atom)::Expr = form_basical(
+narsese2data(::TAParser, a::Atom)::Expr = form_basical(
     typeof(a),
     a.name
 )
@@ -97,7 +97,7 @@ term2data(::TAParser, a::Atom)::Expr = form_basical(
 - 词项逻辑集
 - 乘积
 """
-term2data(::TAParser, ts::ATermSet)::Expr = form_basical(
+narsese2data(::TAParser, ts::ATermSet)::Expr = form_basical(
     typeof(ts),
     (ts.terms .|> Base.Expr)... # 无论有序还是无序
 )
@@ -107,7 +107,7 @@ term2data(::TAParser, ts::ATermSet)::Expr = form_basical(
 - 内容
 - 占位符索引
 """
-term2data(::TAParser, i::TermImage)::Expr = form_basical(
+narsese2data(::TAParser, i::TermImage)::Expr = form_basical(
     typeof(i),
     i.relation_index, # 占位符索引
     (i.terms .|> Base.Expr)... # 所有内容
@@ -116,7 +116,7 @@ term2data(::TAParser, i::TermImage)::Expr = form_basical(
 """
 陈述的打包方法
 """
-term2data(::TAParser, s::Statement) = form_basical(
+narsese2data(::TAParser, s::Statement) = form_basical(
     typeof(s),
     Base.Expr(s.ϕ1),
     Base.Expr(s.ϕ2),
@@ -126,7 +126,7 @@ term2data(::TAParser, s::Statement) = form_basical(
 抽象陈述集的打包方法
 - 陈述逻辑集
 """
-term2data(::TAParser, s::AStatementSet)::Expr = form_basical(
+narsese2data(::TAParser, s::AStatementSet)::Expr = form_basical(
     typeof(s),
     (s.terms .|> Base.Expr)... # 无论有序还是无序
 )

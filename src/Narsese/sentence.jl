@@ -22,9 +22,6 @@
 # 真值
 include("sentence/truth.jl")
 
-# 时态
-include("sentence/tense.jl")
-
 # 标点
 include("sentence/punctuation.jl")
 
@@ -73,12 +70,33 @@ struct Sentence{punctuation <: Punctuation} <: AbstractSentence{punctuation}
 end
 
 """
-各类get方法
-- 丰富Base.get方法，而非添加新方法
-- 使用`get(语句, 目标类型)::目标类型`的形式
+外部构造方法：词项+真值+时态
+- 面向「字符串解析器」
+
+TODO: 对不同NARS实现，支持自定义构造时间戳
 """
-Base.get(s::AbstractSentence, ::Type{Term})::Term = s.term
-Base.get(s::AbstractSentence, ::Type{Truth})::Truth = s.truth
-Base.get(s::AbstractSentence, ::Type{Stamp})::Stamp = s.stamp
-Base.get(s::AbstractSentence, ::Type{Tense})::Type{T} where {T <: Tense} = typeof(s.stamp).parameters[1] # 获取第一个类型参数
-Base.get(s::AbstractSentence, ::Type{Punctuation})::Type{T} where {T <: Punctuation} = typeof(s).parameters[1] # 获取第一个类型参数
+function Sentence{punctuation}(
+    term::Term,
+    truth::Truth,
+    ::Type{tense}
+    ) where {punctuation <: Punctuation, tense <: Tense}
+    Sentence{punctuation}(
+        term, truth, 
+        StampBasic{tense}() # 自动构建与时态对应的时间戳
+    )
+end
+
+begin "方法集"
+    
+    """
+    各类get方法
+    - 丰富Base.get方法，而非添加新方法
+    - 使用`get(语句, 目标类型)::目标类型`的形式
+    """
+    Base.get(s::AbstractSentence, ::Type{Term})::Term = s.term
+    Base.get(s::AbstractSentence, ::Type{Truth})::Truth = s.truth
+    Base.get(s::AbstractSentence, ::Type{Stamp})::Stamp = s.stamp
+    Base.get(s::AbstractSentence, ::Type{Tense})::Type{T} where {T <: Tense} = typeof(s.stamp).parameters[1] # 获取第一个类型参数
+    Base.get(s::AbstractSentence, ::Type{Punctuation})::Type{T} where {T <: Punctuation} = typeof(s).parameters[1] # 获取第一个类型参数
+    
+end

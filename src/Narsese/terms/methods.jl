@@ -154,3 +154,20 @@ begin "收集其中包含的所有（原子）词项，并返回向量"
     ]
 
 end
+
+# 时态
+begin "时态：用于获取「时序蕴含/等价」中的「时态信息」"
+    
+    """
+    获取「时序蕴含/等价」陈述中的时态
+    - 格式：`get(陈述, Tense)`
+    - 默认值：对其它语句返回「Eternal」
+    - ⚠和语句的时态可能不一致「参见OpenNARS」
+    """
+    function Base.get(::Statement{ST}, ::Type{Tense}) where {ST <: AbstractStatementType}
+        if ST <: TemporalStatementTypes # 若其为「有时态系词」
+            return ST.parameters[1] # 获取ST{T <: Tense}的第一个类型参数，直接作为返回值
+        end
+        return Eternal
+    end
+end

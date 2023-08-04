@@ -20,7 +20,7 @@ Base.eltype(::TSCParser) = String
 总「解析」方法
 - ！问题：遇到没有语法对应的「词项」无法处理
 """
-function data2term(::TSCParser, ::Type{Term}, s::String)
+function data2narsese(::TSCParser, ::Type{Term}, s::String)
     try # 尝试解析
         expr::Expr = s |> Meta.parse
         # TODO: 替换其中的符号，使原子词项正常显示

@@ -26,6 +26,11 @@ export ALOperation, ALogicOperation
 export IVar, DVar, QVar
 export STInheriance, STSimilarity, STImplication, STEquivalance,
          Inheriance,   Similarity,   Implication,   Equivalance
+export TemporalStatementTypes
+export STImplicationPast, STImplicationPresent, STImplicationFuture
+export   ImplicationPast,   ImplicationPresent,   ImplicationFuture
+export STEquivalancePast, STEquivalancePresent, STEquivalanceFuture
+export   EquivalancePast,   EquivalancePresent,   EquivalanceFuture
 export Negation, Conjunction, Disjunction
 export ExtSet, ExtensionSet, 
        IntSet, IntensionSet
@@ -49,30 +54,39 @@ const VTQuery = VariableTypeQuery # 【20230730 22:54:28】删去非VT别名，�
 const ALOperation = ALogicOperation = AbstractLogicOperation
 
 # 这仨可以省去Abstract前缀
-const Term = ATerm = AbstractTerm
-const Atom = AAtom = AbstractAtom
+const Term     = ATerm     = AbstractTerm
+const Atom     = AAtom     = AbstractAtom
 const Compound = ACompound = AbstractCompound
 
 const AStatement = AbstractStatement
-const ATSet = ATermSet = AbstractTermSet
-const ASSet = AStatementSet = AbstractStatementSet
+const ATSet      = ATermSet      = AbstractTermSet
+const ASSet      = AStatementSet = AbstractStatementSet
 
 # 省字母
 const Var = Variable
-const Op = Operator
+const Op  = Operator
 
-const TSet = TermSet
-const TLSet = TermLSet = TLogicSet = TermLogicalSet
-const TImage = TermImage
+const TSet     = TermSet
+const TLSet    = TermLSet       = TLogicSet    = TermLogicalSet
+const TImage   = TermImage
 const TProduct = TermProduct
-const ASLSet = AStatementLSet = ASLogicSet = AbstractStatementLogicalSet
-const SLSet = StatementLSet = SLogicSet = StatementLogicalSet
-const STSet = StatementTSet = STemporalSet = StatementTemporalSet
+const ASLSet   = AStatementLSet = ASLogicSet   = AbstractStatementLogicalSet
+const SLSet    = StatementLSet  = SLogicSet    = StatementLogicalSet
+const STSet    = StatementTSet  = STemporalSet = StatementTemporalSet
 
-const STInheriance = StatementTypeInheriance
-const STSimilarity = StatementTypeSimilarity
-const STImplication = StatementTypeImplication
-const STEquivalance = StatementTypeEquivalance
+# 陈述类型
+const STInheriance  = StatementTypeInheriance
+const STSimilarity  = StatementTypeSimilarity
+const STImplication = StatementTypeImplication{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
+const STEquivalance = StatementTypeEquivalance{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
+# 三个「带时态蕴含」
+const STImplicationPast    = StatementTypeImplication{Past}
+const STImplicationPresent = StatementTypeImplication{Present}
+const STImplicationFuture  = StatementTypeImplication{Future}
+# 三个「带时态等价」
+const STEquivalancePast    = StatementTypeEquivalance{Past}
+const STEquivalancePresent = StatementTypeEquivalance{Present}
+const STEquivalanceFuture  = StatementTypeEquivalance{Future}
 
 # 对接OpenJunars #
 
@@ -82,10 +96,23 @@ const DVar = Variable{VTDependent}
 const QVar = Variable{VTQuery}
 
 # 各类型陈述
-const Inheriance = Statement{STInheriance}
-const Similarity = Statement{STSimilarity}
+const Inheriance  = Statement{STInheriance}
+const Similarity  = Statement{STSimilarity}
 const Implication = Statement{STImplication}
 const Equivalance = Statement{STEquivalance}
+"「有时态系词」：需要有格式`ST{时态<:Tense}`"
+const TemporalStatementTypes = Union{
+    STImplication, # 所有蕴含
+    STEquivalance  # 所有等价
+}
+# 三个「带时态蕴含」
+const ImplicationPast    = Statement{STImplicationPast}
+const ImplicationPresent = Statement{STImplicationPresent}
+const ImplicationFuture  = Statement{STImplicationFuture}
+# 三个「带时态等价」
+const EquivalancePast    = Statement{STEquivalancePast}
+const EquivalancePresent = Statement{STEquivalancePresent}
+const EquivalanceFuture  = Statement{STEquivalanceFuture}
 
 # 词项集
 const Negation = StatementLSet{Not}
@@ -114,6 +141,6 @@ const ParConjunction = STSet{Parallel}
 const SeqConjunction = STSet{Sequential}
 
 # 集合类的词项: 形如`(操作符, 词项...)`与其它「有`terms`字段，且有多个元素的集合」
-const TermLogicalSetLike = Union{TermLSet, StatementLSet{And}, StatementLSet{Or}, StatementTSet} # 「逻辑非」不含在内
+const TermLogicalSetLike  = Union{TermLSet, StatementLSet{And}, StatementLSet{Or}, StatementTSet} # 「逻辑非」不含在内
 const TermOperatedSetLike = Union{TermLogicalSetLike, TermImage, TermProduct, StatementLSet{Not}}
-const TermSetLike = Union{TermSet, TermOperatedSetLike} # 与OpenJunars不同的是，还包括「乘积」与「像」
+const TermSetLike         = Union{TermSet, TermOperatedSetLike} # 与OpenJunars不同的是，还包括「乘积」与「像」

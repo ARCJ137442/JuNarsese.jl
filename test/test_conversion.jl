@@ -5,33 +5,87 @@ using JuNarsese
 
 using Test
 
+# 测试语句
+f_s = s -> StringParser_ascii[s]
+test_set = f_s.([
+    "<A-->B>. :|: %1.00;0.90% "
+    "<SELF {-] good>. :|: "
+    "<(*, A, B, C, D) --> R>. "
+])
+tss = f_s.(f_s.(test_set))
+@info "sentences: " tss
+# # TODO: 1语句相等方法 2其它解析器的语句转换支持
+# for (t1, t2) in zip(tss, test_set)
+#     if t1 ≠ t2
+#         # dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))
+#         @info t1==t2 t1 t2
+#     end
+#     @assert t1 == t2 "Not eq!\n$t1\n$t2"
+# end
+# @show test_set
+
+
+# 快捷构造 #
+
+# 原子词项
+w,i,d,q,o = w"词项", w"独立变量"i, w"非独变量"d, w"查询变量"q, w"操作"o
+A,B,C,D,R = "A B C D R" |> split .|> String .|> Symbol .|> Word
+# 像、陈述、乘积
+@show s1 = (/(R, A, B, ⋄, D) → C) ⇒ (*(A, B, C, D) → R)
+# 词项集、陈述逻辑集
+@show s2 = (|(A, B, C) → D) ⇒ ∨((A → D), (B → D), (C → D))
+# 快捷方式解析
+@show s3 = ShortcutParser.(
+    """( w"A"q * w"B"i ) → w"C"o """
+)
+# 词项集&词项逻辑集
+@show s4 = Base.:(&)(w, i, d, q, o) - Base.:(|)(w, i, d, q, o)
+@show s5 = ∩(A, B, C) - ∪(A, B, C)
+# 时序合取
+@show s6 = ∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)
+# 副系词|时序蕴含/等价
+s7 = ParConjunction(StringParser_ascii.([
+    "<A {-- B>"
+    "<A --] B>"
+    "<A {-] B>"
+    
+    raw"<A =/> B>"
+    raw"<A =|> B>"
+    raw"<A =\> B>"
+    
+    raw"<A </> B>"
+    raw"<A <|> B>"
+    raw"<A <\> B>"
+])...)
+@show s7
+# 极端嵌套情况
+s8 = *(
+    ⩚(
+        ⩜(A→B, B→C, C→D), 
+        ∨(ExtSet(A, B, C)→D, w→o), ⩚(A→B, B→C, C→D)
+    ), 
+    ∧(s1, s2), 
+    \(A, ⋄, s3, s5) → s2,
+    /(s1, ⋄, B, s4) → s3,
+    ¬(Base.:(&)(w, i, d, q, o) → IntSet(s6, ∩(A, B, C)))
+) → (s6 ⇒ s7)
+@show s8
+
+"测试集"
+test_set = [w, i, d, q, o, s1, s2, s3, s4, s5, s6, s7, s8]
+# test_set = [s7]
+# 测试@字符串
+tss = StringParser_ascii.(StringParser_ascii.(test_set))
+@show tss
+for (t1, t2) in zip(tss, test_set)
+    if t1 ≠ t2
+        dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))
+        @info t1==t2 t1 t2
+    end
+    @assert t1 == t2 "Not eq!\n$t1\n$t2"
+end
+
 @testset "Conversion" begin
-
-    # 快捷构造 #
-
-    w,i,d,q,o = w"词项", w"独立变量"i, w"非独变量"d, w"查询变量"q, w"操作"o
-    A,B,C,D,R = "A B C D R" |> split .|> String .|> Symbol .|> Word
-    @show s1 = (/(R, A, B, ⋄, D) → C) ⇒ (*(A, B, C, D) → R)
-    @show s2 = (|(A, B, C) → D) ⇒ ∨((A → D), (B → D), (C → D))
-    @show s3 = ShortcutParser.(
-        """( w"A"q * w"B"i ) → w"C"o """
-    )
-    @show s4 = ⩜(s1, s2) ∨ ⩚(s1, s2)
-    @show s5 = ∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)
-
-    # 极端嵌套情况
-    s6 = *(
-        ⩚(
-            ⩜(A→B, B→C, C→D), 
-            ∨(ExtSet(A, B, C)→D, w→o), ⩚(A→B, B→C, C→D)
-        ), 
-        ∧(s1, s2), 
-        \(A, ⋄, s3, C) → s2,
-        /(s1, ⋄, B, s5) → s3,
-        ¬(Base.:(&)(w, i, d, q, o) → IntSet(A, ∩(A, B, C)))
-    ) → s5
-    "测试集"
-    test_set = [w, i, d, q, o, s1, s2, s3, s4, s5, s6]
 
     @testset "StringParser" begin
         # 原子词项
@@ -44,15 +98,20 @@ using Test
         @test "$q" == "?查询变量"
         @test "$o" == "^操作"
     
+        # 像
         @test /(A, B, ⋄, C) |> StringParser_ascii == "(/, A, B, _, C)"
+        @test \(A, w, ⋄, q) |> StringParser_ascii == "(\\, A, 词项, _, ?查询变量)"
+        @test \(/(A, B, ⋄, C), w, ⋄, q) |> StringParser_ascii == "(\\, (/, A, B, _, C), 词项, _, ?查询变量)"
 
-        @show StringParser_ascii.(test_set)
-        StringParser_latex.(test_set) .|> println
+        # 测试集试运行
+        # @show StringParser_ascii.(test_set)
+        # StringParser_latex.(test_set) .|> println
 
         # 测试集
-        # @test test_set .|> StringParser_ascii .|> StringParser_ascii == test_set
-        # @test test_set .|> StringParser_latex .|> StringParser_latex == test_set
-    
+
+        @test test_set .|> StringParser_ascii .|> StringParser_ascii == test_set
+        @test test_set .|> StringParser_latex .|> StringParser_latex == test_set
+
         # 陈述 #
     
         # 陈述↔字符串

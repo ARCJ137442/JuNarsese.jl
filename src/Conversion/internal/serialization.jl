@@ -25,7 +25,7 @@ Base.eltype(::SParser) = Bytes8
 总「解析」方法：任意词项都可序列化
 - 任意词项类型都适用
 """
-function data2term(::SParser, ::Type{T}, bytes::Bytes8)::T where {T <: Term}
+function data2narsese(::SParser, ::Type{T}, bytes::Bytes8)::T where {T <: Term}
     newTerm::Term = Serialization.deserialize(
         IOBuffer(bytes)
     )
@@ -35,7 +35,7 @@ end
 """
 所有词项的序列化方法
 """
-function term2data(::SParser, t::Term)::Bytes8
+function narsese2data(::SParser, t::Term)::Bytes8
     b::IOBuffer = IOBuffer()
     Serialization.serialize(b, t)
     return b.data::Bytes8 # 断言其必须是Bytes8

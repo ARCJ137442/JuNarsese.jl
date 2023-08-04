@@ -4,6 +4,7 @@
 module Util
 
 export @reverse_dict_content, @redirect_SRS, @exceptedError
+export match_first
 
 # "可变长参数的自动转换支持" # 用于terms.jl的构造方法 ！添加报错：Unreachable reached at 000002d1cdac1f57
 # Base.convert(::Type{Vector{T}}, args::Tuple) where T = args |> collect |> Vector{T}
@@ -47,6 +48,19 @@ macro exceptedError(exs...)
         end
         for ex in exs
     ]...) # 别忘展开
+end
+
+"""
+根据某个「检查函数」寻找匹配的元素，并返回首个匹配的元素
+- 提供默认值, 默认为nothing
+"""
+function match_first(
+    criterion::Function,
+    collection::Union{Array, Set, Dict, Tuple}, 
+    default_value::Any = nothing,
+    )::Any
+    index = findfirst(criterion, collection)
+    return !isnothing(index) ? collection[index] : default_value
 end
 
 end

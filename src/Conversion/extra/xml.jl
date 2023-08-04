@@ -165,14 +165,14 @@ end
 begin "具体转换实现（使用AST）"
     
     "XML字符串⇒表达式⇒词项"
-    function data2term(::Type{XMLParser}, ::Type{T}, xml::String)::T where {T <: Term}
+    function data2narsese(::Type{XMLParser}, ::Type{T}, xml::String)::T where {T <: Term}
         document::XML.Node = XML.parse(xml, XML.Node) # 使用parse(字符串, Node)实现「字符串→Node」
         @assert document[1].nodetype == XML.Element "文档字符串的首个子节点$(document[1])不是元素！"
         return _preparse_xml(T, document[1]) # 「文档节点」一般只有一个元素
     end
     
     "词项⇒表达式⇒XML字符串"
-    function term2data(::Type{XMLParser}, t::Term)::String
+    function narsese2data(::Type{XMLParser}, t::Term)::String
         node::XML.Node = _preprocess_xml(t)
         @assert node.nodetype == XML.Element "转换成的子节点$(document[1])不是元素！"
         return XML.write(node) # 使用write实现「Node→字符串」

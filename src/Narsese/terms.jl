@@ -103,7 +103,12 @@
     - 有`[(a...)...] == [1,2,3,4,5]`
 =#
 
-# 导出
+# 导入 #
+
+# 时态 【20230804 14:20:50】因为「时序蕴含/等价」的存在，需要引入「时间参数」（参考自OpenNARS）
+include("sentence/tense.jl")
+
+# 导出 #
 
 export AbstractVariableType, VariableTypeIndependent, VariableTypeDependent, VariableTypeQuery
 export AbstractStatementType, StatementTypeInheriance, StatementTypeSimilarity, StatementTypeImplication, StatementTypeEquivalance
@@ -115,7 +120,7 @@ export AbstractTerm, AbstractAtom, AbstractCompound, AbstractStatement
 export AbstractTermSet, AbstractStatementSet
 
 export Word, Variable, Operator, TermSet, TermLogicalSet, TermImage, TermProduct
-export Statement, AbstractStatementLogicalSet, StatementLogicalSet, StatementTemporalSet
+export Statement, StatementTemporal, AbstractStatementLogicalSet, StatementLogicalSet, StatementTemporalSet
 
 
 
@@ -131,8 +136,8 @@ abstract type VariableTypeQuery <: AbstractVariableType end # 查询变量 ? 疑
 abstract type AbstractStatementType end
 abstract type StatementTypeInheriance <: AbstractStatementType end # NAL-1
 abstract type StatementTypeSimilarity <: AbstractStatementType end # NAL-2
-abstract type StatementTypeImplication <: AbstractStatementType end # NAL-5
-abstract type StatementTypeEquivalance <: AbstractStatementType end # NAL-5
+abstract type StatementTypeImplication{T <: Tense} <: AbstractStatementType end # NAL-5|NAL-7
+abstract type StatementTypeEquivalance{T <: Tense} <: AbstractStatementType end # NAL-5|NAL-7
 
 "集合论/一阶逻辑操作：与或非" # 原创
 abstract type AbstractLogicOperation end
@@ -224,7 +229,7 @@ begin "单体词项"
     """
     # 此处「&」「|」是对应的「外延交&」「外延并|」
     struct TermLogicalSet{EIType <: AbstractEI, LogicOperation <: AbstractLogicOperation} <: AbstractTermSet
-        terms::Union{Vector{<:AbstractTerm}, Set{<:AbstractTerm}}
+        terms::Union{Vector{AbstractTerm}, Set{AbstractTerm}}
 
         "(无序)交集 Intersection{外延/内涵} ∩& ∩|"
         function TermLogicalSet{EIType, And}(terms::Vararg{AbstractTerm}) where EIType # 此EIType构造时还会被检查类型
@@ -284,17 +289,30 @@ begin "单体词项"
             - 其可以包含任意词项，而不会被限制到某个具体类型中
             - 例如：只用`Tuple{Integer}`而不用`Tuple{Int}`
         """
-        function TermImage{EIType}(terms::Tuple{Vararg{AbstractTerm}}, relation_index::Integer) where {EIType}
+        function TermImage{EIType}(terms::Tuple{Vararg{AbstractTerm}}, relation_index::Unsigned) where {EIType}
             # 检查
             relation_index == 0 || @assert relation_index ≤ length(terms) + 1 "索引`$relation_index`越界！"
             # 构造
-            new{EIType}(terms, unsigned(relation_index))
+            new{EIType}(terms, relation_index)
         end
     end
 
-    "多参数构造(倒过来，占位符位置放在最前面)"
+    "类型适配：对有符号整数的映射"
+    function TermImage{EIType}(terms::Tuple{Vararg{AbstractTerm}}, relation_index::Integer) where {EIType}
+        TermImage{EIType}(terms, unsigned(relation_index))
+    end
+
+    "转换兼容支持：多参数构造(倒过来，占位符位置放在最前面)"
     function TermImage{EIType}(relation_index::Integer, terms::Vararg{AbstractTerm}) where EIType
         TermImage{EIType}(terms, relation_index |> unsigned)
+    end
+
+    "转换兼容支持：多参数构造(兼容「词项序列」，以Nothing替代词项)"
+    function TermImage{EIType}(uni_terms::Vararg{Union{AbstractTerm, Nothing}}) where EIType
+        TermImage{EIType}(
+            filter(term -> !isnothing(term), uni_terms), # 过滤出所有非空词项
+            findfirst(isnothing, uni_terms) |> unsigned, # 使用「匹配函数」找到首个「占位符」位置
+        )
     end
 
 end
@@ -304,13 +322,15 @@ begin "陈述词项"
     """
     [NAL=1|NAL-5]陈述Statement{继承/相似/蕴含/等价} --> <-> ==> <=>
     - 现只支持「二元」陈述，只表达两个词项之间的关系
+    - ❎【20230804 14:17:30】现增加「时序」参数，以便在词项层面解析「时序关系」
+    - 【20230804 14:44:13】现把「时序系词」作为「主系词」（参考自OpenNARS）
     """
     struct Statement{Type <: AbstractStatementType} <: AbstractStatement
         ϕ1::AbstractTerm # subject 主词
         ϕ2::AbstractTerm # predicate 谓词
     end
     "Pair→陈述"
-    Statement(p::Base.Pair) = Statement(p.first, p.second)
+    Statement{T}(p::Base.Pair) where {T} = Statement{T}(p.first, p.second)
     "陈述→Pair"
     Base.Pair(s::Statement) = (s.ϕ1 => s.ϕ2)
 
