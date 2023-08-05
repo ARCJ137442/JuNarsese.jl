@@ -5,26 +5,6 @@ using JuNarsese
 
 using Test
 
-# 测试语句
-f_s = s -> StringParser_ascii[s]
-test_set = f_s.([
-    "<A-->B>. :|: %1.00;0.90% "
-    "<SELF {-] good>. :|: "
-    "<(*, A, B, C, D) --> R>. "
-])
-tss = f_s.(f_s.(test_set))
-@info "sentences: " tss
-# # TODO: 1语句相等方法 2其它解析器的语句转换支持
-# for (t1, t2) in zip(tss, test_set)
-#     if t1 ≠ t2
-#         # dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))
-#         @info t1==t2 t1 t2
-#     end
-#     @assert t1 == t2 "Not eq!\n$t1\n$t2"
-# end
-# @show test_set
-
-
 # 快捷构造 #
 
 # 原子词项
@@ -71,26 +51,39 @@ s8 = *(
 ) → (s6 ⇒ s7)
 @show s8
 
-"测试集"
+# 测试语句
+f_s = s -> StringParser_ascii[s]
+test_set = f_s.([
+    "<A-->B>. :|: %1.00;0.90% "
+    "<SELF {-] good>! :|: "
+    "<<(*, A, B) --> (*, C, D)> ==> (&&, <A --> C>, <B --> D>)>@ %1.00;0.90%"
+    "<(*, A, B, C, D) --> R>? "
+])
+tss = f_s.(f_s.(test_set))
+@info "sentences: " tss
+# ASTParser.(ASTParser.(ASTParser.(test_set, Sentence), Sentence), Sentence)
+XMLParser.(XMLParser.(XMLParser.(test_set, Sentence), Sentence), Sentence)
+@info "sentences@AST: " ASTParser.(ASTParser.(ASTParser.(test_set, Sentence), Sentence), Sentence)
+@info "sentences@XML: " XMLParser.(XMLParser.(XMLParser.(test_set, Sentence), Sentence), Sentence)
+@info "sentences@JSON: " JSONParser{Dict}.(JSONParser{Dict}.(JSONParser{Dict}.(test_set, Sentence), Sentence), Sentence)
+# # TODO: 1语句相等方法
+# for (t1, t2) in zip(tss, test_set)
+#     if t1 ≠ t2
+#         # dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))
+#         @info t1==t2 t1 t2
+#     end
+#     @assert t1 == t2 "Not eq!\n$t1\n$t2"
+# end
+# @show test_set
+
+"标准测试集"
 test_set = [w, i, d, q, o, s1, s2, s3, s4, s5, s6, s7, s8]
 # test_set = [s7]
-# 测试@字符串
-tss = StringParser_ascii.(StringParser_ascii.(test_set))
-@show tss
-for (t1, t2) in zip(tss, test_set)
-    if t1 ≠ t2
-        dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))
-        @info t1==t2 t1 t2
-    end
-    @assert t1 == t2 "Not eq!\n$t1\n$t2"
-end
 
 @testset "Conversion" begin
 
     @testset "StringParser" begin
         # 原子词项
-    
-        @show "$w, $d, $o"
     
         @test "$w" == "词项"
         @test "$i" == "\$独立变量"
@@ -102,15 +95,37 @@ end
         @test /(A, B, ⋄, C) |> StringParser_ascii == "(/, A, B, _, C)"
         @test \(A, w, ⋄, q) |> StringParser_ascii == "(\\, A, 词项, _, ?查询变量)"
         @test \(/(A, B, ⋄, C), w, ⋄, q) |> StringParser_ascii == "(\\, (/, A, B, _, C), 词项, _, ?查询变量)"
+        
+        # 测试@字符串
+        tss = StringParser_ascii.(StringParser_ascii.(test_set))
+        @show tss
+        for (t1, t2) in zip(tss, test_set)
+            if t1 ≠ t2
+                dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))
+                @info t1==t2 t1 t2
+            end
+            @assert t1 == t2 "Not eq!\n$t1\n$t2"
+        end
+        
+        # 测试@LaTeX
+        tss = StringParser_LaTeX.(StringParser_LaTeX.(test_set))
+        @show tss
+        for (t1, t2) in zip(tss, test_set)
+            if t1 ≠ t2
+                dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))
+                @info t1==t2 t1 t2
+            end
+            @assert t1 == t2 "Not eq!\n$t1\n$t2"
+        end
 
         # 测试集试运行
         # @show StringParser_ascii.(test_set)
-        # StringParser_latex.(test_set) .|> println
+        # StringParser_LaTeX.(test_set) .|> println
 
         # 测试集
 
         @test test_set .|> StringParser_ascii .|> StringParser_ascii == test_set
-        @test test_set .|> StringParser_latex .|> StringParser_latex == test_set
+        @test test_set .|> StringParser_LaTeX .|> StringParser_LaTeX == test_set
 
         # 陈述 #
     

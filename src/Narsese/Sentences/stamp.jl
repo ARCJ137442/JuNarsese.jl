@@ -83,9 +83,11 @@ struct StampBasic{tense <: AbstractTense} <: AbstractStamp{tense}
     """
     基础构造方法
     - 默认值: 三个时间全部取零
+    - ⚠为了对接「表达式协议」，需要暴露其中的全部信息
+        - 参见：Conversion/core/ast.jl
     """
     function StampBasic{T}(
-        evidential_base::Vector{TIME_TYPE} = TIME_TYPE[],
+        evidential_base::Vector = TIME_TYPE[], # 【20230805 23:52:28】限制类型太严格，会导致用Vector{Any}承装的TIME_TYPEs报错
         creation_time::TIME_TYPE = 0,
         put_in_time::TIME_TYPE = 0,
         occurrence_time::TIME_TYPE = 0,

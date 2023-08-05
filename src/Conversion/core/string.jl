@@ -10,7 +10,7 @@
         >  syntax: Global method definition around [...] needs to be placed at the top level, or use "eval".
 =#
 
-export StringParser_ascii, StringParser_latex
+export StringParser_ascii, StringParser_LaTeX
 
 """
 定义「字符串转换器」
@@ -18,7 +18,7 @@ export StringParser_ascii, StringParser_latex
     - 可复用的常量参数
 - 提供字符串处理方法
 - 可以通过其中存储的常量，特化出不同的转换器
-    - 此用法将在latex.jl中使用，以便重用代码
+    - 此用法将在LaTeX.jl中使用，以便重用代码
 """
 struct StringParser <: AbstractParser
 
@@ -56,7 +56,7 @@ struct StringParser <: AbstractParser
     词项集合类型 => 符号
     用于`(符号, 内部词项...)`
 
-    - 暂时不写「并」：在「代码表示」（乃至Latex原文）中都没有对应的符号
+    - 暂时不写「并」：在「代码表示」（乃至LaTeX原文）中都没有对应的符号
     """
     compound_symbols::Dict
     "（自动生成）符号 => 词项集合类型"
@@ -239,10 +239,10 @@ StringParser_ascii::StringParser = StringParser(
 )
 
 """
-（Latex扩展）实例化，并作为一个「转换器」导出
+（LaTeX扩展）实例化，并作为一个「转换器」导出
 - 来源：文档 `NARS ASCII Input.pdf`
 """
-StringParser_latex::StringParser = StringParser(
+StringParser_LaTeX::StringParser = StringParser(
     Dict( # 原子前缀
         Word     => "", # 置空
         IVar     => "\$",
@@ -251,7 +251,7 @@ StringParser_latex::StringParser = StringParser(
         Operator => "\\Uparrow", # 操作
     ),
     "\\diamond", "\\diamond",
-    " ", " ", # 【20230803 14:14:50】Latex格式中没有逗号，使用\u202f的空格「 」以分割
+    " ", " ", # 【20230803 14:14:50】LaTeX格式中没有逗号，使用\u202f的空格「 」以分割
     Dict( # 集合括弧
         ExtSet    => ("{", "}"), # 外延集
         IntSet    => ("[", "]"), # 内涵集

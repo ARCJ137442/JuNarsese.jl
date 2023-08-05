@@ -1,34 +1,3 @@
-#= 提供基本的词项定义
-
-架构总览
-- 词项（抽象）
-    - 原子（抽象）
-        - 词语
-        - 变量{类型}
-        - 操作符
-    - 复合（抽象）
-        - 词项集（抽象）
-            - 词项集
-            - 词项逻辑集{逻辑操作}
-            - 像
-            - 乘积
-        - 陈述（抽象）
-            - 陈述{类型}
-            - 陈述集（抽象）
-                - 陈述逻辑集{逻辑操作}（抽象）
-                    - 陈述逻辑集{逻辑操作}
-                    - 陈述时序集{时序关系}
-
-具体在Narsese的文本表示，参见string.jl
-
-参考：
-- OpenJunars 词项层级结构
-
-情况：
-- 📌现在不使用「deepcopy」对词项进行深拷贝：将「拷贝与否」交给调用者
-- 【20230803 11:31:40】暂不将整个文件拆分为「Narsese1-8」的形式，而是以[NAL-X]的格式标注其来源
-=#
-
 #= 📝NAL: 关于「为何没有『外延并/内涵并』的问题」：
 
     - 核心：**外延交=内涵并，外延并=内涵交**
@@ -103,10 +72,43 @@
     - 有`[(a...)...] == [1,2,3,4,5]`
 =#
 
-# 导入 #
+"""
+提供基本的词项定义
+
+架构总览
+- 词项（抽象）
+    - 原子（抽象）
+        - 词语
+        - 变量{类型}
+        - 操作符
+    - 复合（抽象）
+        - 词项集（抽象）
+            - 词项集
+            - 词项逻辑集{逻辑操作}
+            - 像
+            - 乘积
+        - 陈述（抽象）
+            - 陈述{类型}
+            - 陈述集（抽象）
+                - 陈述逻辑集{逻辑操作}（抽象）
+                    - 陈述逻辑集{逻辑操作}
+                    - 陈述时序集{时序关系}
+
+具体在Narsese的文本表示，参见string.jl
+
+参考：
+- OpenJunars 词项层级结构
+
+情况：
+- 📌现在不使用「deepcopy」对词项进行深拷贝：将「拷贝与否」交给调用者
+- 【20230803 11:31:40】暂不将整个文件拆分为「Narsese1-8」的形式，而是以[NAL-X]的格式标注其来源
+"""
+module Terms
+
+# 导入:前置 #
 
 # 时态 【20230804 14:20:50】因为「时序蕴含/等价」的存在，需要引入「时间参数」（参考自OpenNARS）
-include("sentence/tense.jl")
+include("Terms/tense.jl")
 
 # 导出 #
 
@@ -126,31 +128,31 @@ export Statement, StatementTemporal, AbstractStatementLogicalSet, StatementLogic
 
 # 作为「类型标记」的类型参数 #
 
-"变量类型" # 【20230724 11:38:25】💭不知道OpenJunars中为何要让「AbstractVariableType」继承AbstractTerm
-abstract type AbstractVariableType end # NAL-6
-abstract type VariableTypeIndependent <: AbstractVariableType end # 独立变量 & 对于
-abstract type VariableTypeDependent <: AbstractVariableType end # 非独变量 # 存在
-abstract type VariableTypeQuery <: AbstractVariableType end # 查询变量 ? 疑问
-
-"陈述类型：继承&相似、蕴含&等价"
+"[NAL-1|NAL-2|NAL-5]陈述类型：继承&相似、蕴含&等价"
 abstract type AbstractStatementType end
 abstract type StatementTypeInheriance <: AbstractStatementType end # NAL-1
 abstract type StatementTypeSimilarity <: AbstractStatementType end # NAL-2
 abstract type StatementTypeImplication{T <: Tense} <: AbstractStatementType end # NAL-5|NAL-7
 abstract type StatementTypeEquivalance{T <: Tense} <: AbstractStatementType end # NAL-5|NAL-7
 
-"集合论/一阶逻辑操作：与或非" # 原创
+"[NAL-2]区分「外延」与「内涵」"
+abstract type AbstractEI end # NAL-2
+abstract type Extension <: AbstractEI end
+abstract type Intension <: AbstractEI end
+
+"[NAL-3|NAL-5]集合论/一阶逻辑操作：与或非" # 原创
 abstract type AbstractLogicOperation end
 abstract type And <: AbstractLogicOperation end # 词项→交，陈述→与
 abstract type Or <: AbstractLogicOperation end # 词项→并，陈述→或
 abstract type Not <: AbstractLogicOperation end # 词项→非，陈述→非
 
-"区分「外延」与「内涵」"
-abstract type AbstractEI end # NAL-2
-abstract type Extension <: AbstractEI end
-abstract type Intension <: AbstractEI end
+"[NAL-6]变量类型" # 【20230724 11:38:25】💭不知道OpenJunars中为何要让「AbstractVariableType」继承AbstractTerm
+abstract type AbstractVariableType end # NAL-6
+abstract type VariableTypeIndependent <: AbstractVariableType end # 独立变量 & 对于
+abstract type VariableTypeDependent <: AbstractVariableType end # 非独变量 # 存在
+abstract type VariableTypeQuery <: AbstractVariableType end # 查询变量 ? 疑问
 
-"区分「序列」与「平行」"
+"[NAL-7]时序合取：区分「序列」与「平行」"
 abstract type AbstractTemporalRelation end
 abstract type Sequential <: AbstractTemporalRelation end
 abstract type Parallel <: AbstractTemporalRelation end
@@ -390,11 +392,15 @@ begin "陈述词项"
 
 end
 
+# 引入:后置 #
+
 # 别名
-include("terms/aliases.jl")
+include("Terms/aliases.jl")
 
 # 方法
-include("terms/methods.jl")
+include("Terms/methods.jl")
 
 # 快捷构造方式
-include("terms/constructor_shortcuts.jl")
+include("Terms/constructor_shortcuts.jl")
+
+end # module

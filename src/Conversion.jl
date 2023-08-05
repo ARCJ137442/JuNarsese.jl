@@ -11,18 +11,26 @@ Conversion
 """
 module Conversion
 
+# 前置导入 #
+
+import ..Narsese
+
+using ..Narsese
+
 # 各个模块 #
 
 # 模板
 include("Conversion/template.jl")
 
-# Julia内置格式
-include("Conversion/internal/string_shortcut.jl")
-include("Conversion/internal/ast.jl")
-include("Conversion/internal/string.jl")
-include("Conversion/internal/serialization.jl")
+# 核心
+include("Conversion/core/string.jl")
+include("Conversion/core/ast.jl")
 
-# 外部文件格式
+# 附加
+include("Conversion/extra/string_shortcut.jl") # 使用eval的字符串
+include("Conversion/extra/serialization.jl") # 序列化支持
+
+# 外部文件格式 # TODO: 整体完成后分离独立成包，以便让整体支持轻量化
 include("Conversion/extra/json.jl")
 include("Conversion/extra/xml.jl")
 

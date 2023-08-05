@@ -6,7 +6,7 @@ export ShortcutParser
 """
 abstract type ShortcutParser <: AbstractParser end
 
-"短别名"
+"类型の短别名"
 TSCParser = Type{ShortcutParser}
 
 "以代码表示的字符串"

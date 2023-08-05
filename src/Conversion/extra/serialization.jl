@@ -11,7 +11,7 @@ const S11nParser = SerializationParser
 
 const Bytes8::DataType = Vector{UInt8}
 
-"短别名"
+"类型の短别名"
 SParser = Type{S11nParser}
 
 "字节流对象：Vector{UInt8}"

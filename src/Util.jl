@@ -4,7 +4,7 @@
 module Util
 
 export @reverse_dict_content, @redirect_SRS, @exceptedError
-export match_first
+export match_first, allproperties, allproperties_generator
 
 # "可变长参数的自动转换支持" # 用于terms.jl的构造方法 ！添加报错：Unreachable reached at 000002d1cdac1f57
 # Base.convert(::Type{Vector{T}}, args::Tuple) where T = args |> collect |> Vector{T}
@@ -62,5 +62,33 @@ function match_first(
     index = findfirst(criterion, collection)
     return !isnothing(index) ? collection[index] : default_value
 end
+
+"""
+获取对象的所有属性，并返回包含其所有属性的元组
+- 对结构对象struct，属性的出现顺序由其定义顺序决定
+
+原理：
+- 使用`propertynames`遍历对象所有属性名
+- 使用`isdefined`判断对象属性是否定义
+- 使用`getproperty`获取对象属性
+"""
+allproperties(object::Any) = Tuple(
+    allproperties_generator(object)
+)
+
+"""
+获取对象的所有属性，并返回包含其所有属性的生成器
+- 对结构对象struct，属性的出现顺序由其定义顺序决定
+
+原理：
+- 使用`propertynames`遍历对象所有属性名
+- 使用`isdefined`判断对象属性是否定义
+- 使用`getproperty`获取对象属性
+"""
+allproperties_generator(object::Any) = (
+    getproperty(object, name)
+    for name::Symbol in propertynames(object)
+    if isdefined(object, name)
+)
 
 end

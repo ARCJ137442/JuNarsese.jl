@@ -24,6 +24,16 @@ export narsese2data, data2narsese # 泛型构造方法
 abstract type AbstractParser end
 
 """
+声明默认的「目标类型」
+- 词项
+- 语句
+"""
+const DEFAULT_PARSE_TARGETS = Union{
+    AbstractTerm,
+    AbstractSentence,
+}
+
+"""
 （默认）返回其对应「词项↔数据」中「数据」的类型
 """ # 📌【20230727 15:59:03】只写在一行会报错「UndefVarError: `T` not defined」
 function Base.eltype(::Type{T})::DataType where {T <: AbstractParser}
@@ -41,26 +51,26 @@ function narsese2data end
 function data2narsese end
 
 """
-直接调用(类型)：根据参数类型自动转换（词项）
+直接调用(解析器作为类型)：根据参数类型自动转换（词项）
 - 用处：便于简化成「一元函数」以便使用管道运算符
 - 自动转换逻辑：
     - 数据→词项
     - 词项→数据
 - 参数 target：词项/数据
 """
-function (parserType::Type{TParser})(
+function (parser::Type{TParser})(
     target, # 目标对象（可能是「数据」也可能是「词项」）
-    TermType::Type{TType} = Term, # 只有「数据→词项」时使用（默认为「Term」即「解析成任意词项」）
-) where {TParser <: AbstractParser, TType <: Term}
-    if target isa eltype(parserType)
-        return data2narsese(parserType, TermType, target)
+    TargetType::Type{T} = Term, # 只有「数据→词项」时使用（默认为「Term」即「解析成任意词项」）
+) where {TParser <: AbstractParser, T <: DEFAULT_PARSE_TARGETS}
+    if target isa eltype(parser)
+        return data2narsese(parser, TargetType, target)
     else
-        return narsese2data(parserType, target)
+        return narsese2data(parser, target)::eltype(parser)
     end
 end
 
 """
-直接调用(实例)：根据参数类型自动转换（词项）
+直接调用(解析器作为实例)：根据参数类型自动转换（词项）
 - 用处：便于简化成「一元函数」以便使用管道运算符
 - 自动转换逻辑：
     - 数据→词项
@@ -69,12 +79,12 @@ end
 """
 function (parser::AbstractParser)(
     target, # 目标对象（可能是「数据」也可能是「词项」）
-    TermType::Type{TType} = Term, # 只有「数据→词项」时使用（默认为「Term」即「解析成任意词项」）
-    ) where {TType <: Term}
+    TargetType::Type{T} = Term, # 只有「数据→词项」时使用（默认为「Term」即「解析成任意词项」）
+    ) where {T <: DEFAULT_PARSE_TARGETS}
     if target isa eltype(parser)
-        return data2narsese(parser, TermType, target)
+        return data2narsese(parser, TargetType, target)
     else
-        return narsese2data(parser, target)
+        return narsese2data(parser, target)::eltype(parser)
     end
 end
 

@@ -26,7 +26,7 @@ include("Util.jl")
 include("Narsese.jl")
 @reexport using .Narsese
 
-include("Conversion.jl") # TODO: 有待分离独立成包
+include("Conversion.jl")
 @reexport using .Conversion
 
 
@@ -44,9 +44,9 @@ function __init__() # 【20230717 22:23:10】💭很仿Python
     # 打印信息（附带颜色）【20230714 22:25:42】现使用`printstyled`而非ANSI控制字符
     printstyled(
         "$name v$version\n", # 例：「JuNEI v0.2.0」
-        bold=true,
-        color=:light_green
+        bold = true,
+        color = :light_green
     )
 end
 
-end # module JuNarsese
+end # module

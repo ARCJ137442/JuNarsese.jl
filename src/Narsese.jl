@@ -5,7 +5,14 @@ Narsese
 """
 module Narsese
 
-include("Narsese/terms.jl")
-include("Narsese/sentence.jl")
+# 导入&导出
+
+using Reexport
+
+include("Narsese/Terms.jl")
+@reexport using .Terms
+
+include("Narsese/Sentences.jl")
+@reexport using .Sentences
 
 end
