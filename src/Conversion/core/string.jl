@@ -10,7 +10,7 @@
         >  syntax: Global method definition around [...] needs to be placed at the top level, or use "eval".
 =#
 
-export StringParser_ascii, StringParser_LaTeX
+export StringParser_ascii, StringParser_latex
 
 """
 定义「字符串转换器」
@@ -242,7 +242,7 @@ StringParser_ascii::StringParser = StringParser(
 （LaTeX扩展）实例化，并作为一个「转换器」导出
 - 来源：文档 `NARS ASCII Input.pdf`
 """
-StringParser_LaTeX::StringParser = StringParser(
+StringParser_latex::StringParser = StringParser(
     Dict( # 原子前缀
         Word     => "", # 置空
         IVar     => "\$",
@@ -329,7 +329,7 @@ Base.parse(::Type{T}, s::String) where T <: Term = data2narsese(StringParser_asc
 
 # 【特殊链接】语句(时间戳/真值)↔字符串 #
 @redirect_SRS s::ASentence narsese2data(StringParser_ascii, s)
-@redirect_SRS s::Stamp narsese2data(StringParser_ascii, s)
+# @redirect_SRS s::Stamp narsese2data(StringParser_ascii, s) # 把时间戳当做「默认对象」
 @redirect_SRS t::Truth narsese2data(StringParser_ascii, t)
 
 
@@ -397,10 +397,13 @@ begin "陈述形式"
     end
 
     """
-    格式化真值: f, c
+    格式化真值: 左 + f + 分隔符 + c + 右
     """
-    function form_truth(f::Real, c::Real)
-        "%$f; $c%"
+    function form_truth(
+        left::String, right::String, separator::String,
+        f::Real, c::Real
+        )
+        "$left$f$separator$c$right"
     end
 
     """
@@ -858,7 +861,10 @@ end
 begin "语句相关"
 
     "真值→字符串"
-    narsese2data(parser::StringParser, t::Truth) = form_truth(t.f, t.c)
+    narsese2data(parser::StringParser, t::Truth) = form_truth(
+        parser.truth_brackets..., parser.truth_separator,
+        t.f, t.c
+    )
 
     "标点→字符串"
     function narsese2data(parser::StringParser, ::Type{P}) where {P <: Punctuation}
@@ -979,20 +985,20 @@ begin "语句相关"
         default_punctuation::Type = Judgement
         )
         # 预处理覆盖局部变量
-        s = parser.preprocess(s)
+        str::String = parser.preprocess(s)
         # 从尾部到头部，逐一解析「真值→时态→标点→词项」
-        index::Integer = lastindex(s)
+        index::Integer = lastindex(str)
 
-        truth::Truth, index = _match_truth(parser, s, F, C; default_truth)
-        s = s[begin:index] # 反复剪裁
+        truth::Truth, index = _match_truth(parser, str, F, C; default_truth)
+        str = str[begin:index] # 反复剪裁
 
-        tense::Type, index = _match_tense(parser, s)
-        s = s[begin:index] # 反复剪裁
+        tense::Type, index = _match_tense(parser, str)
+        str = str[begin:index] # 反复剪裁
 
-        punctuation::Type, index = _match_punctuation(parser, s, default_punctuation)
-        s = s[begin:index] # 反复剪裁
+        punctuation::Type, index = _match_punctuation(parser, str, default_punctuation)
+        str = str[begin:index] # 反复剪裁
 
-        term::Term = data2narsese(parser, Term, s) # 剩下就是词项
+        term::Term = data2narsese(parser, Term, str) # 剩下就是词项
         # 构造
         return Sentence{punctuation}(term, truth, tense)
     end
@@ -1075,7 +1081,7 @@ begin "语句相关"
         return (
             data2narsese(parser, Tense, tense_string, Eternal),
             prevind( # 跳转到「字符串末尾-时态字符串长度」的地方
-                s, length(s),
+                s, lastindex(s), # 【20230806 23:05:48】不能用length：实际长度≠第一个索引
                 length(tense_string)
             )
         )
@@ -1105,7 +1111,7 @@ begin "语句相关"
         return (
             data2narsese(parser, Punctuation, punctuation_string, default_punctuation),
             prevind( # 跳转到「字符串末尾-标点字符串长度」的地方
-                s, length(s),
+                s, lastindex(s), # 【20230806 23:05:48】不能用length：实际长度≠第一个索引
                 length(punctuation_string)
             )
         )

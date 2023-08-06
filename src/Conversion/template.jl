@@ -24,11 +24,24 @@ export narsese2data, data2narsese # 泛型构造方法
 abstract type AbstractParser end
 
 """
+类の别名：控制在调用时解析器可能出现的对象类型
+- 作为实例：直接属于`AbstractParser`类
+- 作为类型：直接属于`Type{<:AbstractParser}`类
+
+【20230806 21:49:42】已知问题：作为函数调用的「类型参数」签名时报错：
+`LoadError: Method dispatch is unimplemented currently for this method signature`
+"""
+const TAbstractParser::Type = Union{
+    AbstractParser,
+    Type{<:AbstractParser},
+}
+
+"""
 声明默认的「目标类型」
 - 词项
 - 语句
 """
-const DEFAULT_PARSE_TARGETS = Union{
+const DEFAULT_PARSE_TARGETS::Type = Union{
     AbstractTerm,
     AbstractSentence,
 }
@@ -65,7 +78,7 @@ function (parser::Type{TParser})(
     if target isa eltype(parser)
         return data2narsese(parser, TargetType, target)
     else
-        return narsese2data(parser, target)::eltype(parser)
+        return narsese2data(parser, target)#::eltype(parser) # 莫乱用断言
     end
 end
 

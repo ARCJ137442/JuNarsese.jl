@@ -131,7 +131,6 @@ begin "复合词项"
     ↔(t1::Term, t2::Term) = Similarity(t1, t2)
     ⇒(t1::Term, t2::Term) = Implication(t1, t2)
     ⇔(t1::Term, t2::Term) = Equivalance(t1, t2)
-    # TODO 链式方法
 
     """
     陈述逻辑「非」

@@ -1,300 +1,463 @@
+#= 📝Julia: 不存在一个万用的「任意对象⇒Expr」的函数
+
+    <!--反例：构造使用@expr宏，尝试把其中的量转化为AST-->
+    代码：
+        ```julia
+        macro expr(ex)
+            :($(Expr(:quote, ex)))
+        end
+        ```
+    期望：
+        1. (@expr [1,2,3])::Expr == :([1,2,3])
+        2. (@expr (1,2,3))::Expr == :((1,2,3))
+        3. s = [1,2,3]; (@expr s)::Expr == :([1,2,3])
+                     || (@expr $s)::Expr == :([1,2,3])
+    实际：
+        1.✅
+        2.✅
+        3. (@expr s) == :s（不能替换为指定元素）
+         | TypeError: in typeassert, expected Expr, got a value of type Vector{Int64}
+    结论：
+        Expr总是需要针对特定对象转换
+=#
+# 导出 #
+
 export ASTParser
 
 """
-提供抽象语法树(AST)处理方法
-- 一个Expr对应一个词项
+提供基于抽象语法树(AST)的处理方法
+- 一个Expr对应一个词项/语句
+- 核心原理：化繁为简
+    - 把复杂类型（结构）化作简单类型（原生）
+- 📄解析后Expr内只有：
+    - 原生类型（下文有提及）
+        - Symbol(仅用作头、类名)
+            - 保留特征头@保留类型
+            - 类名@结构类型|头@保留类型（充当Expr的头）
+        - String
+        - Number
+    - 其它Expr
+
+打包/解析时的三大类：
+- 结构类型⇒Expr(:类名, 构造函数の参数...)：
+    - ⚠默认值：打包时遇到「自定义类型」，则会作为「结构类型」打包
+    - 处理方法：被解析为「类名(构造函数の参数...)」
+    - 例：
+        - 目标类型：最终提供打包/解析服务的类型
+            - 词项 [各自的打包方法]
+            - 语句 [各自的打包方法]
+        - 其它以构造函数形式打包的类型(用各自的打包方法实现)
+            - 字典 :Dict Expr(:Pair, 键值对...)...
+            - 集合 :Set Expr(保留特征头, :vect, 集合元素...)...
+- 原生类型⇒自身：
+    - 处理方法：打包/解析时不经过额外处理
+        - 识别@打包：分派「被打包对象」的类型（::原生类型）
+        - 识别@解析：分派「被解析对象」的类型（<:原生类型）
+    - 例：
+        - String 字符串
+        - Number 数值
+- 保留类型⇒Expr(保留特征头, :表达式头, 表达式参数...)：
+    - 概念「保留特征头::Symbol」：用于标记「Expr是否转义了保留类型」
+        - Expr(表达式头, 表达式参数...) ==(转义)=> Expr(保留特征头, 表达式头, 表达式参数...)
+    - 处理方法：去头得到「原表达式」，递归解析完args后直接eval
+    - 例：
+        - 数组 :vect
+        - 元组 :tuple
+
+打包/解析的核心逻辑：
+0. 封装性：`data2narsese`/`narsese2data`只暴露关于「目标类型」的打包/解析功能
+    - 在`data2narsese`/`narsese2data`中调用「内部解析函数」
+    - ⚠除非是其它类型解析器与之对接，否则不应调用`data2narsese`/`narsese2data`
+1. 解析的逻辑尽可能简单：
+    - 参数集：解析器，被解析表达式，eval函数，递归回调函数
+        - 解析器：用于实现「基于解析器的语法多态」
+        - eval函数：指定表达式寻址时的上下文
+            - 协议：`(::Expr) -> (::Any)`
+            - 默认值：`JuNarsese.Narsese.eval`
+                - 用于识别各类Narsese类型
+        - 递归回调函数：控制「递归解析」的逻辑
+            - 协议：`递归回调(递归回调解析器, 被解析表达式)`
+                - 对需要「递归回调函数」作第四参数的函数：采用「默认值」重载
+            - 默认值：解析函数自身
+            - 控制の例：
+                - `pack_identity(_, 对象, _)`：返回对象自身（只解析一层）
+                - 解析函数自身：递归解析成Expr
+                - 外部解析函数：预先解析成外部格式，可能再交给「外部解析函数」处理
+        - 递归回调解析器：用于「递归回调函数」中出现的解析器
+            - 默认值：解析器自身
+            - 避免回调后「鸠占鹊巢」的情况发生（回调后解析器不再是原来的解析器）
+            - 避免额外构造「回调函数」的开销
+    - 逻辑@结构类型：`expr.head` ≠ 保留特征头
+        1. 头 ⇒ 类型（构造函数表达式）
+            - 📌在Julia中，类型⇔构造函数函数名
+            - 在「eval函数」中解析
+                - `头::String` |> Meta.parse |> eval_function
+        3. 预解析参数：调用「递归回调函数」解析`expr.args`
+            - 解析结果作为构造函数的参数
+        4. 调用构造函数：`构造函数(参数...)`
+    - 逻辑@原生类型：直接返回自身
+    - 逻辑@保留类型：`expr.head` == 保留特征头
+        1. 去头，还原为Expr
+            1. expr.args[1] ⇒ 原Expr头
+            2. expr.args[2:end] ⇒ 原Expr参数
+        2. 预解析参数：调用「递归回调函数」解析「原Expr参数」
+            - 避免`eval`无法解析`Expr(:类名, Vararg{Expr}...)`
+        3. 一次性eval（此时args都已为Julia对象）
+            - `表达式` |> eval_function
+2. 复杂度体现在打包上：
+    1. 参数集：解析器，被打包对象，递归回调函数
+        - 解析器：用于实现「基于解析器的语法多态」
+        - 被打包对象：最终被打包成Expr
+        - 递归回调函数：控制「递归打包」的逻辑
+            - 协议：`递归回调(递归回调解析器, 被打包对象)`
+                - 对需要「递归回调函数」作第三参数的函数：采用「默认值」重载
+            - 默认值：打包函数自身
+            - 控制の例：
+                - `pack_identity(_, 对象, _)`：返回对象自身（只打包一层）
+                - 打包函数自身：递归打包成Expr
+                - 外部打包函数：预先打包成外部格式，可能再交给「外部打包函数」处理
+        - 递归回调解析器：用于「递归回调函数」中出现的解析器
+            - 默认值：解析器自身
+            - 避免回调后「鸠占鹊巢」的情况发生（回调后解析器不再是原来的解析器）
+            - 避免额外构造「回调函数」的开销
+    2. 原理：
+        - 需要「特殊优化」的对象：特别生成Expr，仅在可能需要「递归解析」时调用「递归回调函数」
+            - 例：
+                - 陈述@结构类型 => Expr(:类型, 递归回调(解析器, ϕ1), 递归回调(解析器, ϕ2))
+                - 数字 => Expr(:类型, 值)（视作「结构类型」）
+                - 其它原生类型 => pack_identity(_, 对象, _)
+                - 保留类型 => Expr(保留特征头, [自定义内容])
+                    - `[1,2,3]` => Expr(保留特征头, :vect, 1, 2, 3)
+                    - `(1,2,3)` => Expr(保留特征头, :tuple, 1, 2, 3)
+                    - 上两者都依托于「保留类型打包接口」pack_preserved(递归回调函数, 头, 参数...)
+                        - 功能：表达式转义
+                            - `Expr(表达式头, 表达式参数...)` => Expr(保留特征头, 表达式头, 表达式参数...)
+                        - 例：`[元素...]` => `Expr(:vect, 递归回调(解析器, *每个元素*)...)`
+                                            => `Expr(保留特征头, *其后同上*...)`
+                        - 至于为何不「保留类型⇒打包接口」，见笔记「不存在一个万用的「任意对象⇒Expr」的函数」
+        - 默认情况：遍历所有properties，视为「结构类型」返回
+            - 例：
+                - 时间戳
+                - 语句
+                - 自定义类型`struct s;a;b;c end`
+                    - `s(1,2,3)` => Expr(:s, 1, 2, 3)
+                    - `s(属性集...)` => Expr(:s, 递归回调(解析器, *每个属性*)...)
+
+打包の例：
+- "<A --> B>" ==(目标)=> `Expr(:Inheriance, Expr(:Word, "A"), Expr(:Word, "B"))`
+- "1=>2"      ==(结构)=> `Expr(:Pair, 1, 2)`
+- `1.0`       ==(原生)=> `1.0`
+- `[1,2,3]`   ==(保留)=> `Expr(:__PRESERVED__, :vect, 1, 2, 3)`
 """
 abstract type ASTParser <: AbstractParser end
 
 "类型の短别名"
-TAParser = Type{ASTParser}
+const TAParser::Type = Type{<:ASTParser}
 
 "Julia的Expr对象"
 Base.eltype(::TAParser) = Expr
 
 """
-声明「保留类型」
+声明「原生类型」
 - 解析器直接返回自身
 """
-const AST_PRESERVED_TYPES = Union{
+const AST_NATIVE_TYPES::Type = Union{
+    Symbol, # 用作头、类名
     Real, # 实数：s针对真值Truth
     String # 字符串
 }
 
 """
-声明「目标类型」
+声明「保留类型」
+- 以转义形式打包/解析
+"""
+const AST_PRESERVED_TYPES::Type = Union{
+    Vector,
+    Tuple
+}
+
+"""
+声明「结构类型」
 - 能被解析器支持解析
 """
-const AST_PARSE_TARGETS = DEFAULT_PARSE_TARGETS
+const AST_PARSE_TARGETS::Type = DEFAULT_PARSE_TARGETS
 
 """
-声明「非保留非目标类型」的特征符号头
-- ⚠限制条件：Narsese包中不能有任何类名与之重合
-
-例：
-- `[1,2,3]` => `Expr(:__PRESERVED__, :vect, 1, 2, 3)`（非保留非『解析目标』类型）
-- `1.0` => `1.0`（保留类型）
-- "<A --> B>" => `Expr(:Inheriance, Expr(:Word, A), Expr(:Word, B))`（目标类型）
+声明用于「保留类型识别」的「保留特征头」
+- ⚠限制条件：解析上下文中不能有任何类名与之重合
+- 【20230806 14:34:22】现在采用「特殊符号」机制，确保不会有函数名/类名与之重名
 """
-AST_ESCAPE_HEAD::Symbol = :__PRESERVED__
+const AST_PRESERVED_HEAD::Symbol = Symbol(":preserved:")
 
 # 【特殊链接】词项↔字符串 #
 
-"表达式→词项"
-narsese2data(parser, t::AST_PARSE_TARGETS)::Expr = narsese2data(ASTParser, t)
+"重载Expr的构造方法"
+Base.Expr(target::AST_PARSE_TARGETS)::Expr = narsese2data(ASTParser, target)
 
 "构造方法支持"
-(::Type{T})(e::Expr) where {T <: AST_PARSE_TARGETS} = data2narsese(ASTParser, Term, e)
+(::Type{T})(expr::Base.Expr) where {T <: AST_PARSE_TARGETS} = data2narsese(ASTParser, Term, expr)
 
 
 # 正式开始 #
 
-begin "元解析方法"
+begin "解析の逻辑"
 
-    """
-    词项类型→Expr头（符号）
-    """
-    function form_type_symbol(type::DataType)::Symbol
-        type |> string |> Symbol
-    end
+    "恒等函数"
+    ast_parse_identity(
+        ::TAParser, 
+        v::Any,
+        ::Function = Narsese.eval,
+        ::Function = ast_parse,
+    )::Any = v
+    
+    "解析@原生类型：即为恒等函数"
+    ast_parse(
+        parser::TAParser, 
+        v::AST_NATIVE_TYPES,
+        eval_function::Function = Narsese.eval,
+        recurse_callback::Function = ast_parse,
+        recurse_parser::TAbstractParser = parser,
+    )::AST_NATIVE_TYPES = ast_parse_identity(
+        recurse_parser, 
+        v, 
+        eval_function, 
+        recurse_callback,
+        )
     
     """
-    Expr头→词项类型
-    - 【20230805 23:48:56】现在使用`Meta.parse`先把字符串的类型转换为Julia代码
-        - 因：Julia不能直接eval带参数类型的Symbol
-        - 错の例：`UndefVarError: `Narsese.Sentence{Narsese.PunctuationJudgement}` not defined`
+    解析@结构类型/保留类型
+    - 结构类型：(构造函数名::Symbol, 构造函数参数集...)
+    - 保留类型类型：(保留特征头, 表达式头::Symbol, 表达式参数集...)
     """
-    parse_type(name::Symbol)::Type = parse_type(string(name))
-    
-    """
-    Expr头→词项类型（字符串版本）
-    - 先`parse`再`eval`
-    """
-    parse_type(name::String)::Type = Narsese.eval(Meta.parse(name))
-    
-    """
-    Expr→一般对象
-    - 类名→类→构造方法
-    - 构造方法(参数...)
-        - 协议：构造方法必须要有「构造方法(参数...)」的方法
-        - 或：构造出来的表达式，需要与构造方法一致
-    
-    原理：使用递归「从上往下构造」
-    """
-    function parse_ast_basical(ex::Expr)::Any
-        # 特殊表达式头
-        ex.head == AST_ESCAPE_HEAD ?
-            # 「特殊表达式头」⇒解析成Julia的默认表达式
-            Expr( # 去头，用参数
-                ex.args[1], # 第一个是类型
-                parse_ast_basical(ex.args[2:end])... # 其它作参数
-            ) |> Narsese.eval :
-            # 否则解析成`类型(参数集...)`
-            parse_type(ex.head)( # 将头解析成对象类型
-                parse_ast_basical(ex.args)...
+    function ast_parse(
+        parser::TAParser, 
+        expr::Expr,
+        eval_function = Narsese.eval,
+        recurse_callback::Function = ast_parse,
+        recurse_parser::TAbstractParser = parser,
+        )::Any
+        # 保留类型:识别保留特征头
+        if expr.head == AST_PRESERVED_HEAD
+            reduced_head::Symbol = expr.args[1]
+            reduced_args::Vector = [
+                # 这里把第四个参数留作默认值
+                recurse_callback(recurse_parser, arg, eval_function)
+                for arg in expr.args[2:end]
+            ]
+            reduced::Expr = Expr(
+                reduced_head,
+                reduced_args,
             )
-    end
-    
-    """
-    复用代码：返回一个「解析一系列参数」的生成器
-    """
-    function parse_ast_basical(args::Union{Vector, Tuple, Base.Generator})::Base.Generator
-        return ( # 构造生成器
-            v isa Expr ?
-                parse_ast_basical(v) :  # [递归]一个Expr对应一个对象
-                v # 否则不作处理：返回其本身
-            for v in args # 遍历预处理表达式
-        )
-    end
-    """
-    对象→Expr
-    「类名-参数」格式：(:类名, 参数...)
-    - 字符串形式
-    - 嵌套形式
-    - 混合形式(Image中要使用「占位符位置」)
-        - 💭日后若Image中使用「占位符左边之词项」与「占位符右边之词项」记录，此处似乎会有歧义
-    """
-    function form_ast_basical(type::DataType, args::Vararg)::Expr
-        Expr(
-            form_type_symbol(type), # 类型
-            args... # 其它符号
-        )
-    end
-
-    """
-    单对象形式，避免二次遍历
-    - 对一切结构都适合的通用形式
-    - 仅支持单层遍历
-    """
-    function form_ast_basical(object::Any)::Expr
-        Expr(
-            form_type_symbol(typeof(object)), # 类名
-            allproperties_generator(object)... # 所有属性
-        )
-    end
-    
-end
-
-# 具体解析功能
-
-"""
-总「解析」方法：直接调用parse_basical
-- 适用：任意词项/语句
-"""
-function data2narsese(
-    parser::TAParser, ::Type{T}, 
-    ex::Expr
-    )::T where {T <: AST_PARSE_TARGETS}
-    return parse_ast_basical(ex)
-end
-
-begin "对非「目标类型」的打包方法："
-    
-    """
-    对象→表达式@保留类型
-    - 打包方法：直接返回具体值，不作打包处理
-    - 不一定保留到对象的类型，需要提前指定
-    """
-    function narsese2data(
-        ::TAParser, object::T
-        )::T where {T <: AST_PRESERVED_TYPES}
-        return object
-    end
-
-    "辅助函数：递归打包の生成器"
-    _ast_pack_args(parser, v)::Base.Generator = (
-        narsese2data(parser, arg) # 递归打包
-        for arg in v # 遍历
-    )
-    
-    """
-    对象→表达式@向量
-    - 使用特殊的「表达式形式」`:vect`
-    - 打包方法：返回`Expr(:vect, :对象类型, 递归解析后的所有属性...)`
-    """
-    narsese2data(parser::TAParser, v::Vector)::Expr = Expr(
-        AST_ESCAPE_HEAD,
-        :vect,
-        _ast_pack_args(parser, v)...
-    )
-    
-    """
-    对象→表达式@元组
-    - 使用特殊的「表达式形式」`:tuple`
-    - 打包方法：返回`Expr(:tuple, :对象类型, 递归解析后的所有属性...)`
-    """
-    narsese2data(parser::TAParser, v::Tuple)::Expr = Expr(
-        AST_ESCAPE_HEAD,
-        :tuple,
-        _ast_pack_args(parser, v)...
-    )
-
-    """
-    数据→对象@默认
-    - 打包方法：返回`(:对象类型, 递归解析后的所有属性...)`
-    - 包括的对象：
-        - Pair
-        - 字典（依赖Pair）
-    """
-    function narsese2data(
-        parser::TAParser, object::T
-        )::T where {T <: Any}
-        return form_ast_basical(
-            typeof(object),
-            ( # 遍历所有属性
-                narsese2data(parser, property)
-                for property in allproperties_generator(object)
+            return reduced |> eval_function
+        else # 结构类型
+            # 📌实际上只要可以call的都算「构造器」
+            constructor::Union{Type, Function} = eval_function(
+                string(expr.head) |> Meta.parse
+                # 📌可能会存在「泛型类符号」如`Symbol("Tuple{Int}")`导致无法直接eval
             )
-        )
+            args = [
+                # 这里把第四个参数留作默认值
+                recurse_callback(recurse_parser, arg, eval_function)
+                for arg in expr.args
+            ]
+            return constructor(
+                args...
+            )
+        end
     end
 
 end
 
-begin "词项の解析"
+begin "打包の逻辑"
 
-    """
-    原子词项的打包方法：(:类名, "名称")
-    """
-    narsese2data(::TAParser, a::Atom)::Expr = form_ast_basical(
-        typeof(a),
-        a.name
+    "格式化：结构类型"
+    ast_form_struct(type::Type, args...)::Expr = Expr(
+        Symbol(type), args...
     )
 
+    # "格式化：原生类型" # 直接用恒等函数，无需再嵌套了
+    # ast_form_native(obj::AST_NATIVE_TYPES)::AST_NATIVE_TYPES = obj
+
+    "格式化：保留类型"
+    ast_form_preserved(head::Symbol, args...)::Expr = Expr(
+        AST_PRESERVED_HEAD, # 增加特征头
+        head,
+        args...
+    )
+
+    "恒等函数"
+    ast_pack_identity(
+        parser::TAParser, 
+        v::Any,
+        ::Function = ast_parse,
+        ::TAbstractParser = parser,
+    )::Any = v
+    
     """
-    陈述的打包方法
+    打包@原生类型：即为恒等函数
+    - 数值除外
     """
-    narsese2data(parser::TAParser, s::Statement) = form_ast_basical(
-        typeof(s),
-        narsese2data(parser, s.ϕ1),
-        narsese2data(parser, s.ϕ2),
+    ast_pack(
+        parser::TAParser, 
+        v::AST_NATIVE_TYPES,
+        recurse_callback::Function = ast_parse,
+        recurse_parser::TAbstractParser = parser,
+        )::AST_NATIVE_TYPES = ast_pack_identity(
+        parser, 
+        v, 
+        recurse_callback,
+        recurse_parser,
     )
     
     """
-    词项集的打包方法：(:类名, 各内容)
-    - 适用范围：所有集合类的词项（Image会被特别重载）
+    打包@数值：作为「结构类型」打包
+    - 🎯保留精度，解决不同精度的转换问题
+        - 例：`i::Int8=127` => `Expr(:Int8, 127)` => `Int8(127)`
     """
-    narsese2data(parser::TAParser, ts::TermSetLike)::Expr = form_ast_basical(
-        typeof(ts),
-        narsese2data.(parser, ts.terms)... # 无论有序还是无序
+    ast_pack(
+        ::TAParser, 
+        n::Number,
+        recurse_callback::Function = ast_pack,
+        recurse_parser::TAbstractParser = parser,
+        )::Expr = ast_form_struct(
+        typeof(n), # 类型
+        n, # 数值
     )
 
     """
-    特殊重载：像
-    - 内容
-    - 占位符索引
+    打包@默认情况
+    - 作为「结构类型」
+    - 遍历所有属性作为「构造函数参数」
     """
-    narsese2data(parser::TAParser, i::TermImage)::Expr = form_ast_basical(
-        typeof(i),
-        i.relation_index, # 占位符索引(直接存储整数)
-        narsese2data.(parser, i.terms)... # 广播所有内容
-    )
-
-end
-
-begin "语句の解析"
-
-    """
-    真值的打包方法(:类名, f, c)
-    
-    协议@真值：
-    - 属性「f」
-    - 属性「c」
-    """
-    narsese2data(parser::TAParser, t::Truth)::Expr = form_ast_basical(
-        typeof(t), # 这里包含了f、c的精度信息, 如「Truth64」
-        narsese2data(parser, t.f),
-        narsese2data(parser, t.c),
-    )
-
-    """
-    时间戳的打包方法(:类名, 属性...)
-    
-    协议@时间戳：
-    - 时态：默认包含在类名中，如`StampBasic{Eternal}`
-    - 其它属性：统一使用`propertynames`访问
-        - 确保构造函数可以控制其所有属性
-    """
-    narsese2data(parser::TAParser, s::Stamp)::Expr = form_ast_basical(
-        typeof(s), # 这里包含了时间戳的时态信息，如「StampBasic{Eternal}」
-        (
-            narsese2data(parser, property)
-            for property in allproperties_generator(s) # 使用生成器避免二次遍历
+    ast_pack(
+        parser::TAParser, 
+        target::Any, 
+        recurse_callback::Function = ast_pack,
+        recurse_parser::TAbstractParser = parser
+        )::Expr = ast_form_struct(
+        typeof(target), # 类型
+        ( # 遍历所有属性，递归打包
+            recurse_callback(recurse_parser, arg) # 第三参数留作默认
+            for arg in allproperties_generator(target)
         )...
     )
+
+    begin "特殊打包法@词项"
     
-    """
-    抽象语句的打包方法(:类名, 词项, 真值, 时间戳)
+        """
+        原子词项：(:类名, :名称)
+        """
+        ast_pack(
+            ::TAParser, 
+            a::Atom, 
+            ::Function = ast_pack
+            )::Expr = ast_form_struct(
+            typeof(a),
+            a.name # ::Symbol
+        )
     
-    协议@语句：
-    - 属性「term」：词项
-    - 属性「truth」：真值
-    - 属性「stamp」：时间戳
-    """
-    narsese2data(parser::TAParser, s::AbstractSentence)::Expr = form_ast_basical(
-        typeof(s),
-        narsese2data(parser, s.term),
-        narsese2data(parser, s.truth),
-        narsese2data(parser, s.stamp),
+        """
+        陈述的打包方法
+        """
+        ast_pack(
+            parser::TAParser, 
+            s::Statement, 
+            recurse_callback::Function = ast_pack,
+        recurse_parser::TAbstractParser = parser,
+            )::Expr = ast_form_struct(
+            typeof(s),
+            recurse_callback(recurse_parser, s.ϕ1),
+            recurse_callback(recurse_parser, s.ϕ2),
+        )
+        
+        """
+        词项集的打包方法：(:类名, 各内容)
+        - 适用范围：所有集合类的词项（Image会被特别重载）
+        """
+        ast_pack(
+            parser::TAParser, 
+            ts::TermSetLike, 
+            recurse_callback::Function = ast_pack,
+            recurse_parser::TAbstractParser = parser
+            )::Expr = ast_form_struct(
+            typeof(ts),
+            (
+                recurse_callback(recurse_parser, term)
+                for term in ts.terms
+            )... # 无论有序还是无序
+        )
+    
+        """
+        特殊重载：像
+        - 内容
+        - 占位符索引
+        """
+        ast_pack(
+            parser::TAParser, 
+            i::TermImage, 
+            recurse_callback::Function = ast_pack,
+        recurse_parser::TAbstractParser = parser
+            )::Expr = ast_form_struct(
+            typeof(i),
+            i.relation_index, # 占位符索引(直接存储整数)
+            (
+                recurse_callback(recurse_parser, term)
+                for term in i.terms
+            )...
+        )
+    
+    end
+    
+    begin "语句の打包" # 【20230806 14:57:27】此处实际上使用默认的打包方法就足够了
+    
+        """
+        真值的打包方法(:类名, f, c)
+        
+        协议@真值：
+        - 属性「f」
+        - 属性「c」
+        """
+        # ast_pack(
+        #     parser::TAParser, 
+        #     t::Truth, 
+        #     recurse_callback::Function = ast_pack,
+        # recurse_parser::TAbstractParser = parser
+        #     )::Expr = ast_form_struct(
+        #     typeof(t),
+        #     recurse_callback(recurse_parser, t.f),
+        #     recurse_callback(recurse_parser, t.c),
+        # )
+
+        """
+        时间戳&语句：皆采用默认方法(Any)
+        """
+        # 此处无需再适配
+    
+    end
+    
+end
+
+begin "解析器入口"
+    
+    "打包：表达式→目标对象"
+    narsese2data(parser, target::AST_PARSE_TARGETS)::Expr = ast_pack(
+        ASTParser, target,
+        ast_pack # 自递归
     )
+
+    """
+    总「解析」方法：直接调用parse_basical
+    - 封装性：只能调用它解析Narsese词项/语句
+    """
+    function data2narsese(
+        parser::TAParser, ::Type{T}, 
+        ex::Expr
+        )::T where {T <: AST_PARSE_TARGETS}
+        return ast_parse(
+            parser, ex,
+            Narsese.eval, # 使用Narsese模块作解析の上下文
+            ast_parse # 自递归
+        )
+    end
 
 end

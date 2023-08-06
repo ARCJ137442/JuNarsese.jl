@@ -103,3 +103,13 @@ end
 
 "类型参数の默认值：无时态⇒「永恒」时态"
 StampBasic(args...) = StampBasic{Eternal}(args...)
+
+"""
+判等の法：相等@各个属性
+"""
+Base.:(==)(s1::StampBasic, s2::StampBasic)::Bool = (
+    s1.evidential_base  == s2.evidential_base &&
+    s1.creation_time    == s2.creation_time &&
+    s1.put_in_time      == s2.put_in_time &&
+    s1.occurrence_time  == s2.occurrence_time
+)

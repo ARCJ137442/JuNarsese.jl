@@ -403,4 +403,7 @@ include("Terms/methods.jl")
 # 快捷构造方式
 include("Terms/constructor_shortcuts.jl")
 
+# 副系词
+include("Sentences/secondary_copulas.jl")
+
 end # module

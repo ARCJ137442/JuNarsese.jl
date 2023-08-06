@@ -51,34 +51,73 @@ s8 = *(
 ) → (s6 ⇒ s7)
 @show s8
 
+terms = [w, i, d, q, o, s1, s2, s3, s4, s5, s6, s7, s8]
+@info "terms: " terms
+
 # 测试语句
 f_s = s -> StringParser_ascii[s]
-test_set = f_s.([
+sentences = f_s.([
     "<A-->B>. :|: %1.00;0.90% "
     "<SELF {-] good>! :|: "
     "<<(*, A, B) --> (*, C, D)> ==> (&&, <A --> C>, <B --> D>)>@ %1.00;0.90%"
     "<(*, A, B, C, D) --> R>? "
 ])
-tss = f_s.(f_s.(test_set))
-@info "sentences: " tss
-# ASTParser.(ASTParser.(ASTParser.(test_set, Sentence), Sentence), Sentence)
-XMLParser.(XMLParser.(XMLParser.(test_set, Sentence), Sentence), Sentence)
-@info "sentences@AST: " ASTParser.(ASTParser.(ASTParser.(test_set, Sentence), Sentence), Sentence)
-@info "sentences@XML: " XMLParser.(XMLParser.(XMLParser.(test_set, Sentence), Sentence), Sentence)
-@info "sentences@JSON: " JSONParser{Dict}.(JSONParser{Dict}.(JSONParser{Dict}.(test_set, Sentence), Sentence), Sentence)
-# # TODO: 1语句相等方法
-# for (t1, t2) in zip(tss, test_set)
+@info "sentences: " sentences
+# ASTParser.(ASTParser.(ASTParser.(sentences, Sentence), Sentence), Sentence)
+# XMLParser_optimized.(XMLParser_optimized.(XMLParser_optimized.(sentences, Sentence), Sentence), Sentence)
+# @info "sentences@AST: " ASTParser.(ASTParser.(ASTParser.(sentences, Sentence), Sentence), Sentence)
+# @info "sentences@XML: " XMLParser.(XMLParser.(XMLParser.(sentences, Sentence), Sentence), Sentence)
+# @info "sentences@JSON: " JSONParser{Dict}.(JSONParser{Dict}.(JSONParser{Dict}.(sentences, Sentence), Sentence), Sentence)
+# for (t1, t2) in zip(tss, sentences)
 #     if t1 ≠ t2
 #         # dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))
 #         @info t1==t2 t1 t2
 #     end
 #     @assert t1 == t2 "Not eq!\n$t1\n$t2"
 # end
-# @show test_set
+# @show sentences
 
-"标准测试集"
-test_set = [w, i, d, q, o, s1, s2, s3, s4, s5, s6, s7, s8]
-# test_set = [s7]
+"标准测试集 = 词项 + 语句"
+test_set = (;terms, sentences) # 具名元组
+# test_set = (;terms=[s7], sentences=[])
+
+# 通用测试の宏
+macro equal_test(
+    parser::Union{Symbol,Expr}, 
+    test_set::Union{Symbol,Expr},
+    )
+    # quote里的`($parser)`已经自动把内部对象eval了
+    quote
+        # 词项 #
+        # 二次转换
+        local converted_terms = ($parser).(($test_set).terms)
+        @info "converted_terms@$($parser):" converted_terms
+        local reconverted_terms = ($parser).(converted_terms)
+        @info "reconverted_terms@$($parser):" reconverted_terms
+        # 比对相等
+        for (t1, t2) in zip(reconverted_terms, ($test_set).terms)
+            if t1 ≠ t2
+                dump.(($parser).([t1, t2]); maxdepth=typemax(Int))
+                @error "Not eq!" t1 t2
+            end
+            @test t1 == t2 # 📌【20230806 15:24:11】此处引入额外参数会报错……引用上下文复杂
+        end
+        # 语句 #
+        # 二次转换
+        local converted_sentences = ($parser).(($test_set).sentences, ASentence)
+        @info "converted_sentences@$($parser):" converted_sentences
+        local reconverted_sentences = ($parser).(converted_sentences, ASentence)
+        @info "converted_sentences@$($parser):" reconverted_sentences
+        # 比对相等
+        for (t1, t2) in zip(reconverted_sentences, ($test_set).sentences)
+            if t1 ≠ t2
+                dump.(($parser).([t1, t2]); maxdepth=typemax(Int))
+                @error "Not eq!" t1 t2
+            end
+            @test t1 == t2 # 📌【20230806 15:24:11】此处引入额外参数会报错……引用上下文复杂
+        end
+    end |> esc # 在调用的上下文中解析
+end
 
 @testset "Conversion" begin
 
@@ -97,35 +136,15 @@ test_set = [w, i, d, q, o, s1, s2, s3, s4, s5, s6, s7, s8]
         @test \(/(A, B, ⋄, C), w, ⋄, q) |> StringParser_ascii == "(\\, (/, A, B, _, C), 词项, _, ?查询变量)"
         
         # 测试@字符串
-        tss = StringParser_ascii.(StringParser_ascii.(test_set))
-        @show tss
-        for (t1, t2) in zip(tss, test_set)
-            if t1 ≠ t2
-                dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))
-                @info t1==t2 t1 t2
-            end
-            @assert t1 == t2 "Not eq!\n$t1\n$t2"
-        end
+        @equal_test StringParser_ascii test_set
         
         # 测试@LaTeX
-        tss = StringParser_LaTeX.(StringParser_LaTeX.(test_set))
-        @show tss
-        for (t1, t2) in zip(tss, test_set)
-            if t1 ≠ t2
-                dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))
-                @info t1==t2 t1 t2
-            end
-            @assert t1 == t2 "Not eq!\n$t1\n$t2"
-        end
-
-        # 测试集试运行
-        # @show StringParser_ascii.(test_set)
-        # StringParser_LaTeX.(test_set) .|> println
+        @equal_test StringParser_latex test_set
 
         # 测试集
 
-        @test test_set .|> StringParser_ascii .|> StringParser_ascii == test_set
-        @test test_set .|> StringParser_LaTeX .|> StringParser_LaTeX == test_set
+        @test test_set.terms .|> StringParser_ascii .|> StringParser_ascii == test_set.terms
+        @test test_set.terms .|> StringParser_latex .|> StringParser_latex == test_set.terms
 
         # 陈述 #
     
@@ -145,40 +164,44 @@ test_set = [w, i, d, q, o, s1, s2, s3, s4, s5, s6, s7, s8]
     
     end
 
-    @testset "ShortcutParser" begin
-        @test string(s3) == "<(*, ?A, \$B) --> ^C>"
-        @test s3 == (( w"A"q * w"B"i ) → w"C"o)
-    end
+    # @testset "ShortcutParser" begin # 这玩意儿只有解析器没有打包器
+    #     @test s3 == (( w"A"q * w"B"i ) → w"C"o)
+    # end
 
     @testset "ASTParser" begin
-        s = ASTParser.(test_set)
-        s .|> dump
-        @show ASTParser.(s)
-        @test ASTParser.(s) == test_set
+        # s = ASTParser.(test_set.terms)
+        # s .|> dump
+        # @show ASTParser.(s)
+        # @test ASTParser.(s) == test_set.terms
+        @equal_test ASTParser test_set
     end
 
     @testset "S11nParser" begin
-        s = S11nParser.(test_set)
-        str = s .|> copy .|> String # 不知为何，转换多次字符串就空了
-        @show join(str, "\n\n")
-        # @test str .|> !isempty |> all # 所有转换过来都非空
-        # 📌【20230730 11:52:26】避免「EOFError: read end of file」：使用数据前先copy
-        @test S11nParser.(s .|> copy) == test_set # 确保无损转换
+        # s = S11nParser.(test_set.terms)
+        # str = s .|> copy .|> String # 不知为何，转换多次字符串就空了
+        # @show join(str, "\n\n")
+        # # @test str .|> !isempty |> all # 所有转换过来都非空
+        # # 📌【20230730 11:52:26】避免「EOFError: read end of file」：使用数据前先copy
+        # @test S11nParser.(s .|> copy) == test_set.terms # 确保无损转换
+        @equal_test S11nParser test_set
     end
 
     @testset "JSONParser" begin
-        s = JSONParser{Dict}.(test_set)
-        s .|> println
-        @test JSONParser{Dict}.(s) == test_set # 确保无损转换
+        @equal_test JSONParser{Dict} test_set
+        @equal_test JSONParser{Vector} test_set
+        # s = JSONParser{Dict}.(test_set.terms)
+        # s .|> println
+        # @test JSONParser{Dict}.(s) == test_set.terms # 确保无损转换
         
-        s = JSONParser{Vector}.(test_set)
-        s .|> println
-        @test JSONParser{Vector}.(s) == test_set # 确保无损转换
+        # s = JSONParser{Vector}.(test_set.terms)
+        # s .|> println
+        # @test JSONParser{Vector}.(s) == test_set.terms # 确保无损转换
     end
 
     @testset "XMLParser" begin
-        s = XMLParser.(test_set)
-        s .|> println
-        @test XMLParser.(s) == test_set # 确保无损转换
+        @equal_test XMLParser test_set
+        # s = XMLParser.(test_set.terms)
+        # s .|> println
+        # @test XMLParser.(s) == test_set.terms # 确保无损转换
     end
 end

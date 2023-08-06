@@ -100,14 +100,14 @@ end
 begin "具体转换实现（使用AST）"
     
     "JSON字符串⇒表达式⇒词项"
-    function data2narsese(::Type{JSONParser{V}}, ::Type{T}, json::String)::T where {T <: Term, V}
+    function data2narsese(::Type{JSONParser{V}}, ::Type{T}, json::String)::T where {T <: Conversion.DEFAULT_PARSE_TARGETS, V}
         obj = JSON.parse(json)
         expr::Expr = _preparse(V, obj)
         return data2narsese(ASTParser, T, expr)
     end
     
     "词项⇒表达式⇒JSON字符串"
-    function narsese2data(::Type{JSONParser{V}}, t::Term)::String where V
+    function narsese2data(::Type{JSONParser{V}}, t::Conversion.DEFAULT_PARSE_TARGETS)::String where V
         expr::Expr = narsese2data(ASTParser, t)
         obj = _preprocess(V, expr)
         return JSON.json(obj)

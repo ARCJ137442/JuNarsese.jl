@@ -58,3 +58,11 @@ const Truth32::DataType = Truth{Float32, Float32}
 const Truth64::DataType = Truth{Float64, Float64}
 
 const TruthBig::DataType = Truth{BigFloat, BigFloat} # 大浮点
+
+"""
+判等の法：相等@f,c
+"""
+Base.:(==)(t1::Truth, t2::Truth)::Bool = (
+    t1.f == t2.f &&
+    t1.c == t2.c
+)
