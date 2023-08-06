@@ -253,10 +253,10 @@ StringParser_latex::StringParser = StringParser(
     "\\diamond", "\\diamond",
     " ", " ", # 【20230803 14:14:50】LaTeX格式中没有逗号，使用\u202f的空格「 」以分割
     Dict( # 集合括弧
-        ExtSet    => ("{", "}"), # 外延集
-        IntSet    => ("[", "]"), # 内涵集
-        Statement => ("<", ">"), # 陈述
-        Compound  => ("(", ")"), # 复合词项
+        ExtSet    => ("\\left\\{", "\\right\\}"), # 外延集
+        IntSet    => ("\\left[", "\\right]"), # 内涵集
+        Statement => ("\\left<", "\\right>"), # 陈述
+        Compound  => ("\\left(", "\\right)"), # 复合词项
     ),
     Dict( # 集合操作
         ExtIntersection => "\\cap",
@@ -304,7 +304,7 @@ StringParser_latex::StringParser = StringParser(
         Judgement => ".",
         Question  => "?",
         Goal      => "!",
-        Query     => "\\questiondown",
+        Query     => "¿", # 【20230806 23:46:18】倒问号没有对应的LaTeX。。。
     ),
     # 真值: 括号&分隔符
     ("\\langle", "\\rangle"),
@@ -441,13 +441,14 @@ begin "陈述形式"
                 (prefix::AbstractString, suffix::AbstractString) # 对其中元组进行解构
             ) in type_brackets
             if startswith(s, prefix) && endswith(s, suffix) # 前后缀都符合(兼容「任意长度词缀」)
-                return type, prefix, suffix, s[
+                stripped::String = s[
                     nextind(
-                        s, begin, length(prefix)
+                        s, firstindex(s), length(prefix)
                     ):prevind(
-                        s, end, length(suffix)
+                        s, lastindex(s), length(suffix)
                     )
-                ] # 避免如"<词项-->^操作>"中「多字节Unicode字符无效索引」的问题
+                ]
+                return type, prefix, suffix, stripped # 避免如"<词项-->^操作>"中「多字节Unicode字符无效索引」的问题
             end
         end
         # 找不到：返回nothing，并返回字串本身(未切割)
@@ -541,9 +542,6 @@ begin "复合词项↔字符串"
     从一个「同级分隔符」（的下一个位置）到另一个「同级分隔符」（的位置）
     - 忽略其间的所有系词：避免「子词项の系词中有括弧」的干扰
     - 返回：下一个「同级分隔符」的位置（同级分隔符的起始点）
-
-    前提假定：
-    - 开括弧、闭括弧**长度均为1**
     """
     function _next_main_separator_ignore_copulas(
         parser::StringParser, 
@@ -808,8 +806,8 @@ begin "复合词项↔字符串"
                 end
             end
             # 没匹配到系词：识别括弧→变更层级
-            if     !isempty(match_opener(parser, s[i:i]))  level += 1     # 截取の字串∈开括弧→增加层级
-            elseif !isempty(match_closure(parser, s[i:i])) level -= 1 end # 截取の字串∈闭括弧→降低层级
+            if     !isempty(match_opener(parser, s[i:end]))  level += 1     # 截取の字串∈开括弧→增加层级
+            elseif !isempty(match_closure(parser, s[i:end])) level -= 1 end # 截取の字串∈闭括弧→降低层级
             # 索引自增
             i = nextind(s, i) # 📌避免多字节Unicode字符识别无效
         end

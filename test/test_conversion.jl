@@ -91,9 +91,9 @@ macro equal_test(
         # 词项 #
         # 二次转换
         local converted_terms = ($parser).(($test_set).terms)
-        @info "converted_terms@$($parser):" converted_terms
+        @info "converted_terms@$($parser):" join(converted_terms, "\n")
         local reconverted_terms = ($parser).(converted_terms)
-        @info "reconverted_terms@$($parser):" reconverted_terms
+        @info "reconverted_terms@$($parser):" join(reconverted_terms, "\n")
         # 比对相等
         for (t1, t2) in zip(reconverted_terms, ($test_set).terms)
             if t1 ≠ t2
@@ -105,9 +105,9 @@ macro equal_test(
         # 语句 #
         # 二次转换
         local converted_sentences = ($parser).(($test_set).sentences, ASentence)
-        @info "converted_sentences@$($parser):" converted_sentences
+        @info "converted_sentences@$($parser):" join(converted_sentences, "\n")
         local reconverted_sentences = ($parser).(converted_sentences, ASentence)
-        @info "converted_sentences@$($parser):" reconverted_sentences
+        @info "converted_sentences@$($parser):" join(reconverted_sentences, "\n")
         # 比对相等
         for (t1, t2) in zip(reconverted_sentences, ($test_set).sentences)
             if t1 ≠ t2
