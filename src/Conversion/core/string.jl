@@ -11,6 +11,7 @@
 =#
 
 export StringParser_ascii, StringParser_latex
+export @narsese_str
 
 """
 定义「字符串转换器」
@@ -327,20 +328,42 @@ parse_target_types(::StringParser) = STRING_PARSE_TARGETS
 "数据类型：普通字符串"
 Base.eltype(::StringParser)::Type = String
 
-## 已在template.jl导入
-# using ..Util
-# using ..Narsese
+begin "【特殊链接】词项/语句↔字符串"
+    
+    "词项集↔字符串（ASCII）"
+    Base.parse(::Type{T}, s::String) where T <: Term = data2narsese(StringParser_ascii, T, s)
 
-# 【特殊链接】词项↔字符串 #
-Base.parse(::Type{T}, s::String) where T <: Term = data2narsese(StringParser_ascii, T, s)
+    @redirect_SRS t::Term narsese2data(StringParser_ascii, t) # 若想一直用narsese2data，则其也需要注明类型变成narsese2data(String, t)
 
-@redirect_SRS t::Term narsese2data(StringParser_ascii, t) # 若想一直用narsese2data，则其也需要注明类型变成narsese2data(String, t)
+    # 【特殊链接】语句(时间戳/真值)↔字符串 #
+    @redirect_SRS s::ASentence narsese2data(StringParser_ascii, s)
+    # @redirect_SRS s::Stamp narsese2data(StringParser_ascii, s) # 把时间戳当做「默认对象」
+    @redirect_SRS t::Truth narsese2data(StringParser_ascii, t)
 
-# 【特殊链接】语句(时间戳/真值)↔字符串 #
-@redirect_SRS s::ASentence narsese2data(StringParser_ascii, s)
-# @redirect_SRS s::Stamp narsese2data(StringParser_ascii, s) # 把时间戳当做「默认对象」
-@redirect_SRS t::Truth narsese2data(StringParser_ascii, t)
+    raw"""
+    快捷构造宏
+    - 自带`@raw`效果
+    - 词项语句均可
+    - 支持Latex互转：使用尾缀`latex`
 
+    例：
+    ```
+    julia> narsese"<A --> B>."
+    <A --> B>. %1.0;0.5%
+
+    julia> narsese"\left<A \rightarrow B\right>. \langle1.0,0.5\rangle"latex
+    <A --> B>. %1.0;0.5%
+    """
+    macro narsese_str(s::String, flag::String="")
+        # LaTeX也支持
+        if flag == "latex"
+            return :(StringParser_latex($s)) |> esc
+        end
+        # 默认ASCII
+        return :(StringParser_ascii($s)) |> esc
+    end
+
+end
 
 "构造方法支持"
 (::Type{Narsese.Term})(s::String) = data2narsese(StringParser_ascii, Term, s)

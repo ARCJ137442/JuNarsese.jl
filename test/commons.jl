@@ -33,19 +33,19 @@ if !isdefined(Main, :Test)
     # 时序合取
     @show s6 = ∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)
     # 副系词|时序蕴含/等价
-    s7 = ParConjunction(StringParser_ascii.([
-        "<A {-- B>"
-        "<A --] B>"
-        "<A {-] B>"
+    s7 = ParConjunction([
+        narsese"<A {-- B>"
+        narsese"<A --] B>"
+        narsese"<A {-] B>"
         
-        raw"<A =/> B>"
-        raw"<A =|> B>"
-        raw"<A =\> B>"
+        narsese"<A =/> B>"
+        narsese"<A =|> B>"
+        narsese"<A =\> B>"
         
-        raw"<A </> B>"
-        raw"<A <|> B>"
-        raw"<A <\> B>"
-    ])...)
+        narsese"<A </> B>"
+        narsese"<A <|> B>"
+        narsese"<A <\> B>"
+    ]...)
     @show s7
     # 极端嵌套情况
     s8 = *(
@@ -63,14 +63,14 @@ if !isdefined(Main, :Test)
     terms = [w, i, d, q, o, s1, s2, s3, s4, s5, s6, s7, s8]
     @info "terms: " terms
 
-    # 测试语句 【20230808 11:06:37】暂无「快捷构造方式」
-    f_s = s -> StringParser_ascii(s)
-    sentences = f_s.([
-        "<A-->B>. :|: %1.00;0.90% "
-        "<SELF {-] good>! :|: "
-        "<<(*, A, B) --> (*, C, D)> ==> (&&, <A --> C>, <B --> D>)>@ %1.00;0.90%"
-        "<(*, A, B, C, D) --> R>? "
-    ])
+    # 构建
+    sentences = [
+        narsese"<A-->B>. :|: %1.00;0.90% "
+        narsese"<SELF {-] good>! :|: "
+        narsese"<<(*, A, B) --> (*, C, D)> ==> (&&, <A --> C>, <B --> D>)>@ %1.00;0.90%"
+        narsese"<(*, A, B, C, D) --> R>? "
+        Sentence{Judgement}(s8)
+    ]
     @info "sentences: " sentences
     # ASTParser.(ASTParser.(ASTParser.(sentences, Sentence), Sentence), Sentence)
     # XMLParser_optimized.(XMLParser_optimized.(XMLParser_optimized.(sentences, Sentence), Sentence), Sentence)
