@@ -152,7 +152,7 @@ export ASTParser
 abstract type ASTParser <: AbstractParser end
 
 "类型の短别名"
-const TAParser::Type = Type{<:ASTParser}
+const TASTParser::Type = Type{<:ASTParser}
 
 """
 声明「原生类型」
@@ -187,10 +187,10 @@ const AST_PARSE_TARGETS::Type = DEFAULT_PARSE_TARGETS
 const AST_PRESERVED_HEAD::Symbol = Symbol(":preserved:")
 
 "目标类型：词项/语句"
-parse_target_types(::TAParser) = STRING_PARSE_TARGETS
+parse_target_types(::TASTParser) = STRING_PARSE_TARGETS
 
 "数据类型：Julia的Expr对象"
-Base.eltype(::TAParser)::Type = Expr
+Base.eltype(::TASTParser)::Type = Expr
 
 # 【特殊链接】词项↔字符串 #
 
@@ -207,7 +207,7 @@ begin "解析の逻辑"
 
     "恒等函数"
     ast_parse_identity(
-        ::TAParser, 
+        ::TASTParser, 
         v::Any,
         ::Function = Narsese.eval,
         ::Function = ast_parse,
@@ -215,7 +215,7 @@ begin "解析の逻辑"
     
     "解析@原生类型：即为恒等函数"
     ast_parse(
-        parser::TAParser, 
+        parser::TASTParser, 
         v::AST_NATIVE_TYPES,
         eval_function::Function = Narsese.eval,
         recurse_callback::Function = ast_parse,
@@ -233,7 +233,7 @@ begin "解析の逻辑"
     - 保留类型类型：(保留特征头, 表达式头::Symbol, 表达式参数集...)
     """
     function ast_parse(
-        parser::TAParser, 
+        parser::TASTParser, 
         expr::Expr,
         eval_function = Narsese.eval,
         recurse_callback::Function = ast_parse,
@@ -290,7 +290,7 @@ begin "打包の逻辑"
 
     "恒等函数"
     ast_pack_identity(
-        parser::TAParser, 
+        parser::TASTParser, 
         v::Any,
         ::Function = ast_parse,
         ::TAbstractParser = parser,
@@ -301,7 +301,7 @@ begin "打包の逻辑"
     - 数值除外
     """
     ast_pack(
-        parser::TAParser, 
+        parser::TASTParser, 
         v::AST_NATIVE_TYPES,
         recurse_callback::Function = ast_parse,
         recurse_parser::TAbstractParser = parser,
@@ -318,7 +318,7 @@ begin "打包の逻辑"
         - 例：`i::Int8=127` => `Expr(:Int8, 127)` => `Int8(127)`
     """
     ast_pack(
-        ::TAParser, 
+        ::TASTParser, 
         n::Number,
         recurse_callback::Function = ast_pack,
         recurse_parser::TAbstractParser = parser,
@@ -333,7 +333,7 @@ begin "打包の逻辑"
     - 遍历所有属性作为「构造函数参数」
     """
     ast_pack(
-        parser::TAParser, 
+        parser::TASTParser, 
         target::Any, 
         recurse_callback::Function = ast_pack,
         recurse_parser::TAbstractParser = parser
@@ -351,7 +351,7 @@ begin "打包の逻辑"
         原子词项：(:类名, :名称)
         """
         ast_pack(
-            ::TAParser, 
+            ::TASTParser, 
             a::Atom, 
             ::Function = ast_pack
             )::Expr = ast_form_struct(
@@ -363,7 +363,7 @@ begin "打包の逻辑"
         陈述的打包方法
         """
         ast_pack(
-            parser::TAParser, 
+            parser::TASTParser, 
             s::Statement, 
             recurse_callback::Function = ast_pack,
         recurse_parser::TAbstractParser = parser,
@@ -378,7 +378,7 @@ begin "打包の逻辑"
         - 适用范围：所有集合类的词项（Image会被特别重载）
         """
         ast_pack(
-            parser::TAParser, 
+            parser::TASTParser, 
             ts::TermSetLike, 
             recurse_callback::Function = ast_pack,
             recurse_parser::TAbstractParser = parser
@@ -396,7 +396,7 @@ begin "打包の逻辑"
         - 占位符索引
         """
         ast_pack(
-            parser::TAParser, 
+            parser::TASTParser, 
             i::TermImage, 
             recurse_callback::Function = ast_pack,
         recurse_parser::TAbstractParser = parser
@@ -421,7 +421,7 @@ begin "打包の逻辑"
         - 属性「c」
         """
         # ast_pack(
-        #     parser::TAParser, 
+        #     parser::TASTParser, 
         #     t::Truth, 
         #     recurse_callback::Function = ast_pack,
         # recurse_parser::TAbstractParser = parser
@@ -443,7 +443,7 @@ end
 begin "解析器入口"
     
     "打包：表达式→目标对象"
-    narsese2data(parser, target::AST_PARSE_TARGETS)::Expr = ast_pack(
+    narsese2data(parser::TASTParser, target::AST_PARSE_TARGETS)::Expr = ast_pack(
         ASTParser, target,
         ast_pack # 自递归
     )
@@ -453,7 +453,7 @@ begin "解析器入口"
     - 封装性：只能调用它解析Narsese词项/语句
     """
     function data2narsese(
-        parser::TAParser, ::Type, # 【20230808 10:33:39】因「兼容模式」不限制此处Type 
+        parser::TASTParser, ::Type, # 【20230808 10:33:39】因「兼容模式」不限制此处Type 
         ex::Expr
         )::AST_PARSE_TARGETS
         return ast_parse(

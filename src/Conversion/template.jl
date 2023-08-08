@@ -8,6 +8,8 @@ import ..Narsese
 using ..Narsese
 
 # 导出
+export AbstractParser # API对接
+export DEFAULT_PARSE_TARGETS, TYPE_TERMS, TYPE_SENTENCES # API对接
 export narsese2data, data2narsese # 数据互转
 export parse_target_types, TYPE_TERMS, TYPE_SENTENCES
 
