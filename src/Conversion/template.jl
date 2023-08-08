@@ -130,7 +130,7 @@ parse_type(type_name::Symbol, eval_function::Function)::Type = eval_function(
 【20230808 17:26:50】Julia的`string``Symbol`返回的是完整类名，而nameof不保留别名&泛型，故自行构造字典
 """
 pack_type_string(type::Type)::String = (
-    type in Narsese.TYPE_NAMES ? 
+    type in Narsese.TYPE_VALUES ? 
     Narsese.TYPE_NAME_DICT[type][2] : 
     string(type)
 )
@@ -145,7 +145,7 @@ pack_type_string(type::Any)::String = pack_type_string(typeof(type))
 【20230808 17:26:50】Julia的`string``Symbol`返回的是完整类名，而nameof不保留别名&泛型，故自行构造字典
 """
 pack_type_symbol(type::Type)::Symbol = (
-    type in Narsese.TYPE_NAMES ? 
+    type in Narsese.TYPE_VALUES ? 
     Narsese.TYPE_NAME_DICT[type][1] : 
     Symbol(type)
 )
