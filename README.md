@@ -8,12 +8,15 @@ Narsese(纳思语，NARS的知识表示语言)的Julia实现
 
 JuNarsese计划包含：
 
-- Narsese的数据结构
-  - 存储格式：AST(抽象语法树)
-- 上述数据结构与以下常用结构的相互转化
-  - 字符串
-  - JSON
-  - XML
+- Narsese: Narsese的数据结构
+  - 词项(NAL-1 ~ NAL-8)
+- Conversion: 用于数据结构间的转换
+  - 提供解析器API
+    - 抽象解析器类型
+    - 「基于类型的解析器」与「基于对象的解析器」
+  - 实现上述数据结构与以下常用结构的相互转化
+    - 字符串
+    - AST(抽象语法树)
 
 ## 作者注
 
@@ -21,4 +24,5 @@ JuNarsese计划包含：
 
 ## 参考
 
-[OpenJunars](https://github.com/AIxer/OpenJunars): 数据结构参考借鉴
+- [OpenJunars](https://github.com/AIxer/OpenJunars)
+- [OpenNARS](https://github.com/opennars/opennars)
