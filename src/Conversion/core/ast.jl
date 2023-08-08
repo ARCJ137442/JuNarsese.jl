@@ -135,6 +135,13 @@ export ASTParser
                         - 例：`[元素...]` => `Expr(:vect, 递归回调(解析器, *每个元素*)...)`
                                             => `Expr(保留特征头, *其后同上*...)`
                         - 至于为何不「保留类型⇒打包接口」，见笔记「不存在一个万用的「任意对象⇒Expr」的函数」
+            - ⚠注意：对任何装载到Expr内的对象，即便是AST转换器的「原生类型」，也需要调用「递归回调函数」！！
+                - 避免：依赖AST的解析器「在『调用AST递归回调解析』后，没有对args中所有元素应用到回调」的问题
+                - 例@XML：
+                    - 调用一次AST解析后，返回`Expr(:ExtImage, 0x0000000000000004, Vararg{XML.Node})`
+                    - 但这里的`0x0000000000000004`并非都是数据类型「XML.Node」
+                        - 预期：`Expr(:ExtImage, Vararg{XML.Node})`
+                    - 报错「Cannot `convert` an object of type UInt64 to an object of type XML.Node」
         - 默认情况：遍历所有properties，视为「结构类型」返回
             - 例：
                 - 时间戳
@@ -288,7 +295,7 @@ begin "打包の逻辑"
         args...
     )
 
-    "恒等函数"
+    "恒等函数：不调用回调直接返回（相当于一个「满足协议」的identity）"
     ast_pack_identity(
         parser::TASTParser, 
         v::Any,
@@ -297,19 +304,18 @@ begin "打包の逻辑"
     )::Any = v
     
     """
-    打包@原生类型：即为恒等函数
+    打包@原生类型：默认恒等函数
+    - 📌递归回调函数默认为「恒等打包函数」，避免「无限回调」
     - 数值除外
     """
     ast_pack(
         parser::TASTParser, 
         v::AST_NATIVE_TYPES,
-        recurse_callback::Function = ast_parse,
+        recurse_callback::Function = ast_pack_identity, # 避免「无限回调」问题（因此）
         recurse_parser::TAbstractParser = parser,
-        )::AST_NATIVE_TYPES = ast_pack_identity(
-        parser, 
+        )::AST_NATIVE_TYPES = recurse_callback(
+        recurse_parser, 
         v, 
-        recurse_callback,
-        recurse_parser,
     )
     
     """
@@ -318,13 +324,13 @@ begin "打包の逻辑"
         - 例：`i::Int8=127` => `Expr(:Int8, 127)` => `Int8(127)`
     """
     ast_pack(
-        ::TASTParser, 
+        parser::TASTParser, 
         n::Number,
         recurse_callback::Function = ast_pack,
         recurse_parser::TAbstractParser = parser,
         )::Expr = ast_form_struct(
         typeof(n), # 类型
-        n, # 数值
+        recurse_callback(recurse_parser, n), # 数值
     )
 
     """
@@ -351,12 +357,13 @@ begin "打包の逻辑"
         原子词项：(:类名, :名称)
         """
         ast_pack(
-            ::TASTParser, 
+            parser::TASTParser, 
             a::Atom, 
-            ::Function = ast_pack
+            recurse_callback::Function = ast_pack,
+            recurse_parser::TAbstractParser = parser,
             )::Expr = ast_form_struct(
             typeof(a),
-            a.name # ::Symbol
+            recurse_callback(recurse_parser, a.name), # ::Symbol
         )
     
         """
@@ -366,7 +373,7 @@ begin "打包の逻辑"
             parser::TASTParser, 
             s::Statement, 
             recurse_callback::Function = ast_pack,
-        recurse_parser::TAbstractParser = parser,
+            recurse_parser::TAbstractParser = parser,
             )::Expr = ast_form_struct(
             typeof(s),
             recurse_callback(recurse_parser, s.ϕ1),
@@ -399,10 +406,10 @@ begin "打包の逻辑"
             parser::TASTParser, 
             i::TermImage, 
             recurse_callback::Function = ast_pack,
-        recurse_parser::TAbstractParser = parser
+            recurse_parser::TAbstractParser = parser
             )::Expr = ast_form_struct(
             typeof(i),
-            i.relation_index, # 占位符索引(直接存储整数)
+            recurse_callback(recurse_parser, i.relation_index), # 占位符索引(仅回调！)
             (
                 recurse_callback(recurse_parser, term)
                 for term in i.terms
