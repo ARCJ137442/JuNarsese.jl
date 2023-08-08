@@ -122,7 +122,7 @@ export AbstractTerm, AbstractAtom, AbstractCompound, AbstractStatement
 export AbstractTermSet, AbstractStatementSet
 
 export Word, Variable, Operator, TermSet, TermLogicalSet, TermImage, TermProduct
-export Statement, StatementTemporal, AbstractStatementLogicalSet, StatementLogicalSet, StatementTemporalSet
+export Statement, AbstractStatementLogicalSet, StatementLogicalSet, StatementTemporalSet
 
 
 

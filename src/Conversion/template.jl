@@ -1,6 +1,13 @@
 #=
 存放通用编程接口
 =#
+#= 📝Julia: 获取类名的`string``Symbol`与`nameof`三者的区别
+    `string`、`Symbol`：都能获取类型的名称，但会返回类型的完整（相对）路径
+        - 例如：在被外部库调用时，`Term`变成了`JuNarsese.Narsese.Term`（字符串/Symbol）
+    `nameof`：只获取类型的名称，但会被忽略掉「别名」与「参数类型」
+        - 在明确类型所属模块（解析の上下文）时，表示形式相对简洁
+        - 例如：不论被什么库调用，`Sentence{Judgement}`都只会是`:SentenceBasic`
+=#
 
 # 依赖：Narsese（数据结构）
 using ..Util # 默认启用
@@ -120,8 +127,13 @@ parse_type(type_name::Symbol, eval_function::Function)::Type = eval_function(
 - 类名→同名字符串
 
 【20230808 13:31:11】暂为API提供用
+【20230808 17:26:50】Julia的`string``Symbol`返回的是完整类名，而nameof不保留别名&泛型，故自行构造字典
 """
-pack_type_string(type::Type)::String = string(type)
+pack_type_string(type::Type)::String = (
+    type in Narsese.TYPE_NAMES ? 
+    Narsese.TYPE_NAME_DICT[type][2] : 
+    string(type)
+)
 "自动typeof"
 pack_type_string(type::Any)::String = pack_type_string(typeof(type))
 
@@ -130,8 +142,13 @@ pack_type_string(type::Any)::String = pack_type_string(typeof(type))
 - 相当于Symbol(pack_type_string(type))
 
 【20230808 13:31:11】暂为API提供用
+【20230808 17:26:50】Julia的`string``Symbol`返回的是完整类名，而nameof不保留别名&泛型，故自行构造字典
 """
-pack_type_symbol(type::Type)::Symbol = Symbol(type)
+pack_type_symbol(type::Type)::Symbol = (
+    type in Narsese.TYPE_NAMES ? 
+    Narsese.TYPE_NAME_DICT[type][1] : 
+    Symbol(type)
+)
 "自动typeof"
 pack_type_symbol(type::Any)::String = pack_type_symbol(typeof(type))
 
