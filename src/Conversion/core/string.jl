@@ -165,7 +165,7 @@ end
 （默认）实例化，并作为一个「转换器」导出
 - 来源：文档 `NARS ASCII Input.pdf`
 """
-StringParser_ascii::StringParser = StringParser(
+const StringParser_ascii::StringParser = StringParser(
     Dict( # 原子前缀
         Word     => "", # 置空
         IVar     => "\$",
@@ -242,7 +242,7 @@ StringParser_ascii::StringParser = StringParser(
 （LaTeX扩展）实例化，并作为一个「转换器」导出
 - 来源：文档 `NARS ASCII Input.pdf`
 """
-StringParser_latex::StringParser = StringParser(
+const StringParser_latex::StringParser = StringParser(
     Dict( # 原子前缀
         Word     => "", # 置空
         IVar     => "\$",
@@ -315,8 +315,17 @@ StringParser_latex::StringParser = StringParser(
 
 
 
-"普通字符串"
-Base.eltype(::StringParser) = String
+"""
+定义「字符串转换」的「目标类型」
+- String↔词项/语句
+"""
+const STRING_PARSE_TARGETS::Type = DEFAULT_PARSE_TARGETS
+
+"目标类型：词项/语句"
+parse_target_types(::StringParser) = STRING_PARSE_TARGETS
+
+"数据类型：普通字符串"
+Base.eltype(::StringParser)::Type = String
 
 ## 已在template.jl导入
 # using ..Util
@@ -471,7 +480,7 @@ end
     - `[A,B]`/`{A,B}`: 词项集
     - `?A`: 原子词项
 """
-function data2narsese(parser::StringParser, ::Type{Term}, s::String)
+function data2narsese(parser::StringParser, ::TYPE_TERMS, s::String)
     # 预处理覆盖局部变量
     s::String = parser.preprocess(s)
 
@@ -898,8 +907,8 @@ begin "语句相关"
     function data2narsese(
         parser::StringParser, ::Type{Punctuation}, 
         s::String,
-        default = Judgement,
-        )
+        default::Type = Judgement, # 📌【20230808 9:46:21】此处不能用Type{P}限制，会导致类型变量连锁，类型转换失败
+        )::Type{ <: Union{Punctuation, Nothing}}
         get(parser.punctuation2type, s, default)
     end
 
@@ -965,6 +974,9 @@ begin "语句相关"
 
     """
     总解析方法 : 词项+标点+时态+真值
+    - 【20230808 9:34:22】兼容模式：词项语句均可
+        - 在「目标类型」中统一使用Any以避免「各自目标类型不同」的歧义
+        - 「真值」「时态」「标点」俱无⇒转换为词项
 
     默认真值 default_truth
     - 核心功能：在没有真值时，自动创建真值
@@ -976,16 +988,17 @@ begin "语句相关"
     - （预处理去空格后）`<A-->B>.:|:%1.00;0.90%`
     """
     function data2narsese(
-        parser::StringParser, ::Type{Sentence},
+        parser::StringParser, 
+        ::Type{Any}, # 兼容模式
         s::String,
         F::Type=Float16, C::Type=Float16;
         default_truth::Truth = Truth16(1.0, 0.5), # 动态创建
-        default_punctuation::Type = Judgement
-        )
+        default_punctuation::Type = Judgement # 默认类型
+        )::STRING_PARSE_TARGETS
         # 预处理覆盖局部变量
         str::String = parser.preprocess(s)
         # 从尾部到头部，逐一解析「真值→时态→标点→词项」
-        index::Integer = lastindex(str)
+        index_start::Integer = lastindex(str)
 
         truth::Truth, index = _match_truth(parser, str, F, C; default_truth)
         str = str[begin:index] # 反复剪裁
@@ -997,17 +1010,31 @@ begin "语句相关"
         str = str[begin:index] # 反复剪裁
 
         term::Term = data2narsese(parser, Term, str) # 剩下就是词项
+
+        # 「真值」「时态」「标点」俱无⇒转换为词项
+        index == index_start && return term
+
         # 构造
         return Sentence{punctuation}(term, truth, tense)
     end
 
     """
-    重定向默认值处理: AbstractSentence => Sentence
+    兼容化后的「语句转换方法」：兼容+类型断言
     """
     function data2narsese(
-        parser::StringParser, ::Type{AbstractSentence},
-        args...; kwargs...)
-        data2narsese(parser, Sentence, args...; kwargs...)
+        parser::StringParser, ::TYPE_SENTENCES,
+        s::String,
+        F::Type=Float16, C::Type=Float16;
+        default_truth::Truth = Truth16(1.0, 0.5), # 动态创建
+        default_punctuation::Type = Nothing # 默认类型
+        )::AbstractSentence # 使用类型断言限制
+        data2narsese(
+            parser, Any, # Any对接兼容模式
+            s, 
+            F, C; 
+            default_truth, 
+            default_punctuation,
+        )
     end
 
     """

@@ -154,9 +154,6 @@ abstract type ASTParser <: AbstractParser end
 "类型の短别名"
 const TAParser::Type = Type{<:ASTParser}
 
-"Julia的Expr对象"
-Base.eltype(::TAParser) = Expr
-
 """
 声明「原生类型」
 - 解析器直接返回自身
@@ -177,7 +174,7 @@ const AST_PRESERVED_TYPES::Type = Union{
 }
 
 """
-声明「结构类型」
+声明「目标类型」
 - 能被解析器支持解析
 """
 const AST_PARSE_TARGETS::Type = DEFAULT_PARSE_TARGETS
@@ -188,6 +185,12 @@ const AST_PARSE_TARGETS::Type = DEFAULT_PARSE_TARGETS
 - 【20230806 14:34:22】现在采用「特殊符号」机制，确保不会有函数名/类名与之重名
 """
 const AST_PRESERVED_HEAD::Symbol = Symbol(":preserved:")
+
+"目标类型：词项/语句"
+parse_target_types(::TAParser) = STRING_PARSE_TARGETS
+
+"数据类型：Julia的Expr对象"
+Base.eltype(::TAParser)::Type = Expr
 
 # 【特殊链接】词项↔字符串 #
 
@@ -450,9 +453,9 @@ begin "解析器入口"
     - 封装性：只能调用它解析Narsese词项/语句
     """
     function data2narsese(
-        parser::TAParser, ::Type{T}, 
+        parser::TAParser, ::Type, # 【20230808 10:33:39】因「兼容模式」不限制此处Type 
         ex::Expr
-        )::T where {T <: AST_PARSE_TARGETS}
+        )::AST_PARSE_TARGETS
         return ast_parse(
             parser, ex,
             Narsese.eval, # 使用Narsese模块作解析の上下文

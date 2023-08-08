@@ -1,19 +1,9 @@
-push!(LOAD_PATH, "../src") # 用于直接打开（..上一级目录）
-push!(LOAD_PATH, "src") # 用于VSCode调试（项目根目录起）
-
-using JuNarsese
-
-using Test
+include("commons.jl") # 已在此中导入JuNarsese、Test
 
 A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
 @assert (∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D))) == (∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)))
 
 @testset "Narsese" begin
-
-    # 快捷构造 #
-
-    w,i,d,q,o = w"词项", w"独立变量"i, w"非独变量"d, w"查询变量"q, w"操作"o
-    A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
 
     # 原子词项
 

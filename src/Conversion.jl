@@ -29,9 +29,4 @@ include("Conversion/core/ast.jl")
 # 附加
 include("Conversion/extra/string_shortcut.jl") # 使用eval的字符串
 
-# 外部文件格式 # TODO: 整体完成后分离独立成包，以便让整体支持轻量化
-include("Conversion/extra/serialization.jl") # 序列化支持
-include("Conversion/extra/json.jl")
-include("Conversion/extra/xml.jl")
-
 end
