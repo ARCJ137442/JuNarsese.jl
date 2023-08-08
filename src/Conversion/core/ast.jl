@@ -91,7 +91,7 @@ export ASTParser
         1. 头 ⇒ 类型（构造函数表达式）
             - 📌在Julia中，类型⇔构造函数函数名
             - 在「eval函数」中解析
-                - `头::String` |> Meta.parse |> eval_function
+                - `头::String` |> parse_type
         3. 预解析参数：调用「递归回调函数」解析`expr.args`
             - 解析结果作为构造函数的参数
         4. 调用构造函数：`构造函数(参数...)`
@@ -254,9 +254,9 @@ begin "解析の逻辑"
             return reduced |> eval_function
         else # 结构类型
             # 📌实际上只要可以call的都算「构造器」
-            constructor::Union{Type, Function} = eval_function(
-                string(expr.head) |> Meta.parse
-                # 📌可能会存在「泛型类符号」如`Symbol("Tuple{Int}")`导致无法直接eval
+            constructor::Union{Type, Function} = parse_type(
+                expr.head,
+                eval_function
             )
             args = [
                 # 这里把第四个参数留作默认值
@@ -275,7 +275,7 @@ begin "打包の逻辑"
 
     "格式化：结构类型"
     ast_form_struct(type::Type, args...)::Expr = Expr(
-        Symbol(type), args...
+        pack_type_symbol(type), args...
     )
 
     # "格式化：原生类型" # 直接用恒等函数，无需再嵌套了

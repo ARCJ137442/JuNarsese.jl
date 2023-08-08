@@ -9,9 +9,10 @@ using ..Narsese
 
 # 导出
 export AbstractParser # API对接
+export narsese2data, data2narsese # 主函数：数据互转
 export DEFAULT_PARSE_TARGETS, TYPE_TERMS, TYPE_SENTENCES # API对接
-export narsese2data, data2narsese # 数据互转
-export parse_target_types, TYPE_TERMS, TYPE_SENTENCES
+export parse_target_types # API对接
+export parse_type, pack_type_string, pack_type_symbol # API对接
 
 """
 陈述转换器的抽象类型模板
@@ -87,6 +88,53 @@ function narsese2data end
 数据→纳思语 声明
 """
 function data2narsese end
+
+"""
+通用类名解析函数
+- 字符串→类名
+
+参数集
+- type_name: 类の名
+- eval_function: 用于执行eval的函数
+    - 方便指定解析的上下文
+    - 例：`Narsese.eval`用于解析词项/语句类型
+"""
+parse_type(type_name::String, eval_function::Function)::Type = eval_function(
+    Meta.parse(type_name)
+)
+
+"""
+适用于符号的解析函数
+- 支持解析「泛型类符号」
+    - 如`Symbol("Tuple{Int}")`
+    - 直接eval不能解析此类Symbol
+"""
+parse_type(type_name::Symbol, eval_function::Function)::Type = eval_function(
+    Meta.parse(
+        string(type_name)
+    )
+)
+
+"""
+通用类名封装函数
+- 类名→同名字符串
+
+【20230808 13:31:11】暂为API提供用
+"""
+pack_type_string(type::Type)::String = string(type)
+"自动typeof"
+pack_type_string(type::Any)::String = pack_type_string(typeof(type))
+
+"""
+通用类名封装函数@符号
+- 相当于Symbol(pack_type_string(type))
+
+【20230808 13:31:11】暂为API提供用
+"""
+pack_type_symbol(type::Type)::Symbol = Symbol(type)
+"自动typeof"
+pack_type_symbol(type::Any)::String = pack_type_symbol(typeof(type))
+
 
 """
 直接调用(解析器作为类型)：根据参数类型自动转换（目标）
