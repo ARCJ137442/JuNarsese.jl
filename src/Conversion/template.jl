@@ -128,14 +128,9 @@ parse_type(type_name::Symbol, eval_function::Function)::Type = eval_function(
 
 【20230808 13:31:11】暂为API提供用
 【20230808 17:26:50】Julia的`string``Symbol`返回的是完整类名，而nameof不保留别名&泛型，故自行构造字典
+【20230810 0:57:19】现在使用正则替换掉类名的「模块路径前缀」，并提升到Util库中
 """
-pack_type_string(type::Type)::String = (
-    type in Narsese.TYPE_VALUES ? 
-    Narsese.TYPE_NAME_DICT[type][2] : 
-    string(type)
-)
-"自动typeof"
-pack_type_string(type::Any)::String = pack_type_string(typeof(type))
+pack_type_string(T::Any)::String = get_pure_type_name(T)
 
 """
 通用类名封装函数@符号
@@ -143,14 +138,9 @@ pack_type_string(type::Any)::String = pack_type_string(typeof(type))
 
 【20230808 13:31:11】暂为API提供用
 【20230808 17:26:50】Julia的`string``Symbol`返回的是完整类名，而nameof不保留别名&泛型，故自行构造字典
+【20230810 0:58:06】现在直接重定向至String，以复用String的方法
 """
-pack_type_symbol(type::Type)::Symbol = (
-    type in Narsese.TYPE_VALUES ? 
-    Narsese.TYPE_NAME_DICT[type][1] : 
-    Symbol(type)
-)
-"自动typeof"
-pack_type_symbol(type::Any)::String = pack_type_symbol(typeof(type))
+pack_type_symbol(T::Any)::Symbol = get_pure_type_symbol(T)
 
 
 """

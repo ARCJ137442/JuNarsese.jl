@@ -5,6 +5,7 @@ module Util
 
 export @reverse_dict_content, @redirect_SRS, @exceptedError
 export match_first, allproperties, allproperties_generator
+export get_pure_type_name, get_pure_type_symbol
 export SYMBOL_NULL
 
 # "可变长参数的自动转换支持" # 用于terms.jl的构造方法 ！添加报错：Unreachable reached at 000002d1cdac1f57
@@ -109,5 +110,33 @@ Base.empty(::Union{T, Type{T}}) where {T <: Symbol} =
 
 "空符号"
 SYMBOL_NULL::Symbol = empty(Symbol)
+
+"""
+删除「父模块路径」的正则替换对
+"""
+PURE_TYPE_NAME_REGEX::Pair{Regex, String} = r"([^.{}, ]+\.)+" => ""
+
+"""
+获取「纯粹的类名」
+- 不随「模块是否被外部导入」而改变
+
+例：
+- `JuNarsese.Narsese.StampBasic{JuNarsese.Narsese.TensePresent}`将永远被解析成`StampBasic{TensePresent}`
+
+⚠注意：此方法也不会被「类别名」影响，例如Vector就是返回Array
+"""
+get_pure_type_name(T::Type)::String = replace(
+    string(T), 
+    PURE_TYPE_NAME_REGEX
+)
+"重定向：自动typeof"
+get_pure_type_name(T::Any)::String = get_pure_type_name(typeof(T))
+
+"""
+获取「纯粹的类名」（Symbol版）
+"""
+get_pure_type_symbol(T::Any)::Symbol = Symbol(
+    get_pure_type_name(T)
+)
 
 end

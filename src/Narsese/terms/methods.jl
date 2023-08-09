@@ -67,7 +67,7 @@ begin "判断相等"
     "兜底判等逻辑"
     Base.isequal(t1::Term, t2::Term) = (
         typeof(t1) == typeof(t2) && ( # 同类型
-            getproperty(t1, propertyname) == getproperty(t2, propertyname) # 所有属性相等
+            isequal(getproperty(t1, propertyname), getproperty(t2, propertyname)) # 所有属性相等
             for propertyname in t1 |> propertynames # 使用t1的，在同类型的前提下
         ) |> all
     )
@@ -86,7 +86,7 @@ begin "判断相等"
     - 词项逻辑集
     - 乘积
     """
-    function Base.isequal(t1::TermSet, t2::TermSet)::Bool
+    function Base.isequal(t1::AbstractTermSet, t2::AbstractTermSet)::Bool
         # @show typeof(t1) typeof(t2)
         # @show (t1.terms .== t2.terms)
         typeof(t1) == typeof(t2) && # 类型相等
