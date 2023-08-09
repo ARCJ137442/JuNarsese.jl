@@ -49,8 +49,8 @@ const StringParser_ascii::StringParser = StringParser{String}(
         InstanceProperty   => "{-]",
         # 副系词: 时序蕴含
         STImplicationPast    => raw"=\>",
-        STImplicationPresent => raw"=/>",
-        STImplicationFuture  => raw"=|>",
+        STImplicationPresent => raw"=|>",
+        STImplicationFuture  => raw"=/>",
         # 副系词: 时序等价
         STEquivalancePast    => raw"<\>",
         STEquivalancePresent => raw"<|>",
