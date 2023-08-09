@@ -15,7 +15,7 @@ import ..Narsese
 using ..Narsese
 
 # 导出
-export AbstractParser # API对接
+export AbstractParser, TAbstractParser # API对接
 export narsese2data, data2narsese # 主函数：数据互转
 export DEFAULT_PARSE_TARGETS, TYPE_TERMS, TYPE_SENTENCES # API对接
 export parse_target_types # API对接
@@ -198,3 +198,45 @@ end
 - 参考：broadcast.jl/713
 """
 Base.broadcastable(parser::TAbstractParser) = Ref(parser)
+
+
+raw"""
+快捷构造宏
+- 📌自带`@raw`效果
+- 词项语句均可
+- 默认使用ASCII方法
+- 支持Latex互转：使用尾缀`latex`
+
+例：
+```
+julia> narsese"<A --> B>."
+<A --> B>. %1.0;0.5%
+
+julia> narsese"\left<A \rightarrow B\right>. \langle1.0,0.5\rangle"latex
+<A --> B>. %1.0;0.5%
+
+julia> narsese"「A是B」。"han
+<A --> B>. %1.0;0.5%
+"""
+macro narsese_str(s::String, flag::String="ascii")
+
+    # 符号拼接⇒变量名⇒解析器
+    parser_symbol::Symbol = Symbol(:StringParser_, flag)
+    # 变量名⇒解析器
+    parser::TAbstractParser = Conversion.get_parser_from_flag(
+        Val(Symbol(flag)) # 直接采用Val(Symbol)做分派（String不行）
+    )
+    
+    # 解析器（解析对象）
+    return :(($parser)($s)) |> esc
+end
+
+"""
+声明：从字符串宏的「尾缀」中获得解析器
+- 协议：`get_parser_from_flag(flag::Val)::TAbstractParser`
+- 因为使用`Val{::Symbol}`（实例即Val(::Symbol)），故可以使用多分派特性「动态增加方法」
+    - 而无需改变宏の代码
+    - 但宏因此需要在对应的「解析器获取方法」声明后才能正常使用
+- 默认⇒报错
+"""
+get_parser_from_flag(::Val)::TAbstractParser = error("未定义的解析器符号！")

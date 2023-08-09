@@ -23,6 +23,9 @@ module Sentences
 
 using ..Terms # 使用「词项」作前置
 
+# 📌子模块导入父模块变量：需要多个「.」溯源到父路径！
+import ...JuNarsese.DEFAULT_FLOAT_PRECISION as DEFAULT_FLOAT_PRECISION
+
 # 真值
 include("Sentences/truth.jl")
 

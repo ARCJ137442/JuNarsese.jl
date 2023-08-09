@@ -10,8 +10,14 @@
         >  syntax: Global method definition around [...] needs to be placed at the top level, or use "eval".
 =#
 
-export StringParser_ascii, StringParser_latex
+export StringParser_ascii, StringParser_latex, StringParser_han
 export @narsese_str
+
+const CONTENT::Type = Union{
+    AbstractString,
+    AbstractChar,
+    Regex
+}
 
 """
 定义「字符串转换器」
@@ -21,37 +27,47 @@ export @narsese_str
 - 可以通过其中存储的常量，特化出不同的转换器
     - 此用法将在LaTeX.jl中使用，以便重用代码
 """
-struct StringParser <: AbstractParser
+struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
 
-    "原子到字符串的字典"
-    atom_prefixes::Dict
+    "原子到文本的字典"
+    atom_prefixes::Dict{Type, Content}
     "反转的字典"
-    prefixes2atom::Dict
+    prefixes2atom::Dict{Content, Type}
 
     "显示「像占位符」的符号"
-    placeholder_t2d::String
+    placeholder_t2d::Content
     "识别「像占位符」的符号"
-    placeholder_d2t::String
+    placeholder_d2t::Content
+
+    "用于「文本→词项」的逗号（识别用）"
+    comma_d2t::Content
+    """
+    （自动生成）用于「词项→文本」的逗号（显示用）
+    - 由「识别用符号」与「空白符」拼接而成
+    """
+    comma_t2d::Content
 
     """
-    用于「词项→字符串」的逗号（显示用）
+    空白符
+    - 为了更加可自定义化，一般仅在「打包成字串」时使用
+    - 用于
+        - 词项-系词 分隔
+        - 逗号尾缀
     """
-    comma_t2d::String
-    "（自动生成）用于「字符串→词项」的逗号（识别用）"
-    comma_d2t::String
+    space::Content
 
     """
     词项类型 => (前缀, 后缀)
     - 用于词项集/复合词项/陈述的转换
         - `前缀 * 内容 * 后缀`
     """
-    compound_brackets::Dict
-    "（自动生成）前缀 => 词项集类型"
-    brackets_compound::Dict
+    compound_brackets::Dict{Type, Tuple{Content, Content}}
+    "（自动生成）前后缀 => 词项集类型"
+    brackets_compound::Dict{Tuple{Content, Content}, Type}
     "（自动生成）前缀集"
-    bracket_openers::Vector{String}
+    bracket_openers::Vector{Content}
     "（自动生成）后缀集"
-    bracket_clusures::Vector{String}
+    bracket_clusures::Vector{Content}
 
     """
     词项集合类型 => 符号
@@ -59,63 +75,64 @@ struct StringParser <: AbstractParser
 
     - 暂时不写「并」：在「代码表示」（乃至LaTeX原文）中都没有对应的符号
     """
-    compound_symbols::Dict
+    compound_symbols::Dict{Type, Content}
     "（自动生成）符号 => 词项集合类型"
-    symbols_compound::Dict
+    symbols_compound::Dict{Content, Type}
 
     """
-    陈述类型 => 系词(字符串)
+    陈述类型 => 系词(文本)
     """
-    copula_dict::Dict
+    copula_dict::Dict{Type, Content}
     "（自动生成）所有系词"
-    copulas::Vector{String}
-    "（自动生成）判断字符串是否前缀有系词"
+    copulas::Vector{Content}
+    "（自动生成）判断文本是否前缀有系词"
     startswith_copula::Function
 
     """
-    时态 => 时态表示（字符串）
+    时态 => 时态表示（文本）
     """
-    tense_dict::Dict
+    tense_dict::Dict{Type, Content}
     "（自动生成）反向字典"
-    tense2type::Dict
+    tense2type::Dict{Content, Type}
     "（自动生成）所有时态"
-    tenses::Vector{String}
+    tenses::Vector{Content}
 
     """
-    标点 => 标点表示（字符串）
+    标点 => 标点表示（文本）
     """
-    punctuation_dict::Dict
+    punctuation_dict::Dict{Type, Content}
     "（自动生成）反向字典"
-    punctuation2type::Dict
+    punctuation2type::Dict{Content, Type}
     "（自动生成）所有标点"
-    punctuations::Vector{String}
+    punctuations::Vector{Content}
 
     """
     真值の括弧
     """
-    truth_brackets::Tuple{String, String}
+    truth_brackets::Tuple{Content, Content}
     "真值の分隔符"
-    truth_separator::String
+    truth_separator::Content
 
     """
-    预处理函数::Function `(::String) -> String`
+    预处理函数::Function `(::Content) -> Content`
     """
     preprocess::Function
 
     "内部构造方法"
-    function StringParser(
+    function StringParser{Content}(
         atom_prefixes::Dict,
-        placeholder_t2d::String, placeholder_d2t::String,
-        comma_t2d::String, comma_d2t::String, 
+        placeholder_t2d::Content, placeholder_d2t::Content,
+        comma_d2t::Content, 
+        space::Content,
         compound_brackets::Dict,
         compound_symbols::Dict,
         copula_dict::Dict,
         tense_dict::Dict,
         punctuation_dict::Dict,
-        truth_brackets::Tuple{String, String},
-        truth_separator::String,
+        truth_brackets::Tuple{Content, Content},
+        truth_separator::Content,
         preprocess::Function,
-        )
+        ) where {Content <: CONTENT}
         copulas = values(copula_dict) |> collect # 📌不能放在new内，不然会被识别为关键字参数
         new(
             atom_prefixes,
@@ -123,7 +140,9 @@ struct StringParser <: AbstractParser
                 @reverse_dict_content atom_prefixes
             ),
             placeholder_t2d, placeholder_d2t,
-            comma_t2d, comma_d2t,
+            comma_d2t, 
+            comma_d2t * space, # 自动拼接空格
+            space, 
             compound_brackets,
             Dict( # 自动反转字典: (左括弧, 右括弧) => 类型
                 @reverse_dict_content compound_brackets
@@ -142,7 +161,7 @@ struct StringParser <: AbstractParser
                 for copula in copulas
                     startswith(s, copula) && return copula
                 end
-                return "" # 默认返回空字符（类型稳定）
+                return empty(Content) # 【20230809 10:55:18】默认返回空文本（详见Util.jl扩展的方法）
             end,
             tense_dict,
             Dict( # 自动反转字典: 标点 => 类型
@@ -162,159 +181,11 @@ struct StringParser <: AbstractParser
 
 end
 
-"""
-（默认）实例化，并作为一个「转换器」导出
-- 来源：文档 `NARS ASCII Input.pdf`
-"""
-const StringParser_ascii::StringParser = StringParser(
-    Dict( # 原子前缀
-        Word     => "", # 置空
-        IVar     => "\$",
-        DVar     => "#",
-        QVar     => "?",
-        Operator => "^", # 操作
-    ),
-    "_", "_",
-    ", ", ",",
-    Dict( # 集合括弧
-        ExtSet    => ("{", "}"), # 外延集
-        IntSet    => ("[", "]"), # 内涵集
-        Statement => ("<", ">"), # 陈述
-        Compound  => ("(", ")"), # 复合词项
-    ),
-    Dict( # 集合操作
-        ExtIntersection => "&",
-        IntIntersection => "|",
-        ExtDifference   => "-",
-        IntDifference   => "~",
-        # 像
-        ExtImage => "/",
-        IntImage => "\\",
-        # 乘积
-        TermProduct => "*",
-        # 陈述逻辑集
-        Conjunction => "&&",
-        Disjunction => "||",
-        Negation    => "--",
-        # 陈述时序集
-        ParConjunction  => "&|",
-        SeqConjunction  => "&/",
-    ),
-    Dict( # 系词
-        STInheriance       => "-->",
-        STSimilarity       => "<->",
-        STImplication      => "==>",
-        STEquivalance      => "<=>",
-        # 副系词: 实例&属性
-        Instance           => "{--",
-        Property           => "--]",
-        InstanceProperty   => "{-]",
-        # 副系词: 时序蕴含
-        STImplicationPast    => raw"=\>",
-        STImplicationPresent => raw"=/>",
-        STImplicationFuture  => raw"=|>",
-        # 副系词: 时序等价
-        STEquivalancePast    => raw"<\>",
-        STEquivalancePresent => raw"<|>",
-        STEquivalanceFuture  => raw"</>",
-    ),
-    Dict( # 时态
-        Eternal    => "",
-        Past       => ":\\:",
-        Present    => ":|:",
-        Future     => ":/:",
-        # Sequential => "&/", # 这两个只是因为与之相关，所以才放这里
-        # Parallel   => "&|",
-    ),
-    Dict( # 标点
-        Judgement => ".",
-        Question  => "?",
-        Goal      => "!",
-        Query     => "@",
-    ),
-    # 真值: 括号&分隔符
-    ("%", "%"),
-    ";",
-    # 预处理：去空格
-    (s::String) -> replace(s, " " => "")
-)
+"外部构造方法：无参数类型⇒字符串参数"
+StringParser(args::Vararg) = StringParser{String}(args...)
 
-"""
-（LaTeX扩展）实例化，并作为一个「转换器」导出
-- 来源：文档 `NARS ASCII Input.pdf`
-"""
-const StringParser_latex::StringParser = StringParser(
-    Dict( # 原子前缀
-        Word     => "", # 置空
-        IVar     => "\$",
-        DVar     => "\\#",
-        QVar     => "?",
-        Operator => "\\Uparrow", # 操作
-    ),
-    "\\diamond", "\\diamond",
-    " ", " ", # 【20230803 14:14:50】LaTeX格式中没有逗号，使用\u202f的空格「 」以分割
-    Dict( # 集合括弧
-        ExtSet    => ("\\left\\{", "\\right\\}"), # 外延集
-        IntSet    => ("\\left[", "\\right]"), # 内涵集
-        Statement => ("\\left<", "\\right>"), # 陈述
-        Compound  => ("\\left(", "\\right)"), # 复合词项
-    ),
-    Dict( # 集合操作
-        ExtIntersection => "\\cap",
-        IntIntersection => "\\cup",
-        ExtDifference   => "\\minus",
-        IntDifference   => "\\sim",
-        # 像
-        ExtImage        => "/",
-        IntImage        => "\\",
-        # 乘积
-        TermProduct     => "\\times",
-        # 陈述逻辑集
-        Conjunction     => "\\wedge",
-        Disjunction     => "\\vee",
-        Negation        => "\\neg",
-        # 陈述时序集
-        ParConjunction  => ";",
-        SeqConjunction  => ",",
-    ),
-    Dict( # 系词
-        STInheriance       => "\\rightarrow",
-        STSimilarity       => "\\leftrightarrow",
-        STImplication      => "\\Rightarrow",
-        STEquivalance      => "\\LeftRightArrow",
-        # 副系词: 实例&属性
-        Instance           => raw"\circ\!\!\!\rightarrow",
-        Property           => raw"\rightarrow\!\!\!\circ",
-        InstanceProperty   => raw"\circ\!\!\!\rightarrow\!\!\!\circ",
-        # 副系词: 时序蕴含
-        STImplicationPast    => raw"\\!\!\!\!\Rightarrow",
-        STImplicationPresent => raw"|\!\!\!\!\Rightarrow",
-        STImplicationFuture  => raw"/\!\!\!\!\Rightarrow",
-        # 副系词: 时序等价
-        STEquivalancePast    => raw"\\!\!\!\!\Leftrightarrow",
-        STEquivalancePresent => raw"|\!\!\!\!\Leftrightarrow",
-        STEquivalanceFuture  => raw"/\!\!\!\!\Leftrightarrow",
-    ),
-    Dict( # 时态
-        Eternal      => "",
-        Past         => raw"\\!\!\!\!\Rightarrow",
-        Present      => raw"|\!\!\!\!\Rightarrow",
-        Future       => raw"/\!\!\!\!\Rightarrow",
-    ),
-    Dict( # 标点
-        Judgement => ".",
-        Question  => "?",
-        Goal      => "!",
-        Query     => "¿", # 【20230806 23:46:18】倒问号没有对应的LaTeX。。。
-    ),
-    # 真值: 括号&分隔符
-    ("\\langle", "\\rangle"),
-    ",",
-    # 预处理：去空格
-    (s::String) -> replace(s, " " => "")
-)
-
-
+# 在外部文件中存储具体实现
+include("string/definitions.jl")
 
 """
 定义「字符串转换」的「目标类型」
@@ -340,33 +211,10 @@ begin "【特殊链接】词项/语句↔字符串"
     # @redirect_SRS s::Stamp narsese2data(StringParser_ascii, s) # 把时间戳当做「默认对象」
     @redirect_SRS t::Truth narsese2data(StringParser_ascii, t)
 
-    raw"""
-    快捷构造宏
-    - 自带`@raw`效果
-    - 词项语句均可
-    - 支持Latex互转：使用尾缀`latex`
-
-    例：
-    ```
-    julia> narsese"<A --> B>."
-    <A --> B>. %1.0;0.5%
-
-    julia> narsese"\left<A \rightarrow B\right>. \langle1.0,0.5\rangle"latex
-    <A --> B>. %1.0;0.5%
-    """
-    macro narsese_str(s::String, flag::String="")
-        # LaTeX也支持
-        if flag == "latex"
-            return :(StringParser_latex($s)) |> esc
-        end
-        # 默认ASCII
-        return :(StringParser_ascii($s)) |> esc
-    end
+    "构造方法支持"
+    (::Type{T})(s::String) where {T <: STRING_PARSE_TARGETS} = data2narsese(StringParser_ascii, Term, s)
 
 end
-
-"构造方法支持"
-(::Type{Narsese.Term})(s::String) = data2narsese(StringParser_ascii, Term, s)
 
 # 正式开始 #
 
@@ -376,7 +224,7 @@ begin "陈述形式"
     原子词项：前缀+内容
     例子："^操作"
     """
-    function form_atom(prefix::String, content::String)::String
+    function form_atom(prefix::CONTENT, content::CONTENT)::CONTENT
         prefix * content # 自动拼接
     end
 
@@ -385,36 +233,42 @@ begin "陈述形式"
     例子："<A ==> B>
     """
     function form_statement(
-        prefix::String, suffix::String, # 前后缀
-        first::String, copula::String, last::String # 词项+系词+词项
-        )::String
-        "$prefix$first $copula $last$suffix"
+        prefix::CONTENT, suffix::CONTENT, # 前后缀
+        first::CONTENT, copula::CONTENT, last::CONTENT, # 词项+系词+词项
+        space::CONTENT
+        )::CONTENT
+        "$prefix$first$space$copula$space$last$suffix"
     end
     
     """
     词项集(无「操作符」，仅以括号相区分)：前缀+插入分隔符的内容+后缀
     例子："[A, B, C]"
+    - ⚠注意：Julia类型的「不变性」注定「带类参数组」参数约束麻烦
     """
-    function form_term_set(prefix::String, suffix::String, contents::Vector{String}, separator::String)::String
+    function form_term_set(prefix::CONTENT, suffix::CONTENT, contents::Vector, separator::String)::CONTENT
         prefix * join(contents, separator) * suffix # 字符也能拼接
     end
 
     """
-    有操作集：前缀+符号+插入分隔符的内容)
+    有操作集：前缀+符号+插入分隔符&空格的内容
     例子："(/, A, B, _, C)"
     """
     function form_operated_set(
-        prefix::String, suffix::String, # 前后缀
-        symbol::String, contents::Vector{String}, # 符号+内容
-        separator::String
-        )::String
-        "$prefix$symbol$separator$(join(contents, separator))$suffix"
+        prefix::CONTENT, suffix::CONTENT, # 前后缀
+        symbol::CONTENT, contents::Vector, # 符号+内容
+        separator::CONTENT,
+        # 此处无需额外空格参数：已包含于separator中
+        )::CONTENT
+        "$prefix$symbol$separator" * join(contents, separator) * suffix
     end
 
     "_autoIgnoreEmpty: 字串为空⇒不变，字串非空⇒加前导分隔符"
-    function _aie(s::String, sept::String=" ")
-        isempty(s) ? s : sept * s
-    end
+    _aie(s::CONTENT, sept::CONTENT=" ") = (
+        isempty(s) ? 
+            s : 
+            sept * s
+    )
+    
 
     raw"""
     语句：词项+标点+时态+真值
@@ -422,20 +276,22 @@ begin "陈述形式"
         - 本为："$(term_str)$punctuation $tense $truth"
     """
     function form_sentence(
-        term_str::String, punctuation::String, 
-        tense::String, truth::String
-        )::String
-        "$(term_str)$punctuation" * "$(_aie(tense))$(_aie(truth))"
+        term_str::CONTENT, punctuation::CONTENT, 
+        tense::CONTENT, truth::CONTENT,
+        space::CONTENT,
+        )::CONTENT
+        "$(term_str)$punctuation" * "$(_aie(tense, space))$(_aie(truth, space))"
     end
 
     """
     格式化真值: 左 + f + 分隔符 + c + 右
     """
     function form_truth(
-        left::String, right::String, separator::String,
+        left::CONTENT, right::CONTENT, separator::CONTENT,
         f::Real, c::Real
         )
-        "$left$f$separator$c$right"
+        left * "$f$separator$c" * right
+        
     end
 
     """
@@ -771,6 +627,7 @@ begin "复合词项↔字符串"
             narsese2data(parser, s.ϕ1), 
             parser.copula_dict[Type], 
             narsese2data(parser, s.ϕ2),
+            parser.space,
         )
     end
 
@@ -879,7 +736,7 @@ begin "复合词项↔字符串"
     narsese2data(parser::StringParser, t::TermImage) = form_operated_set(
         parser.compound_brackets[Compound]...,
         parser.compound_symbols[typeof(t)],
-        insert!( # 使用「插入元素」的处理办法
+        insert!( # 使用「插入元素」的处理办法，因为数组是新建的
             [narsese2data(parser, term) for term in t.terms], # 自动转换字符串
             t.relation_index, parser.placeholder_t2d # 在对应索引处插入元素，并返回
         ),
@@ -915,7 +772,8 @@ begin "语句相关"
             narsese2data(parser, s.term),
             narsese2data(parser, punctuation),
             narsese2data(parser, Base.get(s, Tense)),
-            narsese2data(parser, s.truth)
+            narsese2data(parser, s.truth),
+            parser.space
         )
     end
 
@@ -956,7 +814,7 @@ begin "语句相关"
     - 默认有前后缀（未剥皮）：自动剥皮
 
     例：
-    - `%1.00;0.90%` => `1.00;0.90` => Truth16(1.0, 0.9)
+    - `%1.00;0.90%` => `1.00;0.90` => Truth64(1.0, 0.9)
     """
     function data2narsese(
         parser::StringParser, ::Type{Truth{F, C}}, s::String,
@@ -987,12 +845,12 @@ begin "语句相关"
         ) where {V}
         data2narsese(parser, Truth{V, V}, args...)
     end
-    "最默认的情况：Truth16"
+    "最默认的情况：配置指定的精度（默认64）"
     function data2narsese(
         parser::StringParser, ::Type{Truth},
         args...
         )
-        data2narsese(parser, Truth16, args...)
+        data2narsese(parser, Truth{DEFAULT_FLOAT_PRECISION}, args...)
     end
 
     """
@@ -1014,8 +872,8 @@ begin "语句相关"
         parser::StringParser, 
         ::Type{Any}, # 兼容模式
         s::String,
-        F::Type=Float16, C::Type=Float16;
-        default_truth::Truth = Truth16(1.0, 0.5), # 动态创建
+        F::Type=DEFAULT_FLOAT_PRECISION, C::Type=DEFAULT_FLOAT_PRECISION;
+        default_truth::Truth = Truth{DEFAULT_FLOAT_PRECISION}(1.0, 0.5), # 动态创建
         default_punctuation::Type = Judgement # 默认类型
         )::STRING_PARSE_TARGETS
         # 预处理覆盖局部变量
@@ -1047,8 +905,8 @@ begin "语句相关"
     function data2narsese(
         parser::StringParser, ::TYPE_SENTENCES,
         s::String,
-        F::Type=Float16, C::Type=Float16;
-        default_truth::Truth = Truth16(1.0, 0.5), # 动态创建
+        F::Type=DEFAULT_FLOAT_PRECISION, C::Type=DEFAULT_FLOAT_PRECISION;
+        default_truth::Truth = Truth{DEFAULT_FLOAT_PRECISION}(1.0, 0.5), # 动态创建
         default_punctuation::Type = Nothing # 默认类型
         )::AbstractSentence # 使用类型断言限制
         data2narsese(

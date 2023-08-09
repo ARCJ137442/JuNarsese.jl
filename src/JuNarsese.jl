@@ -6,6 +6,8 @@ JuNarsese 入口模块
 模块层级总览
 - JuNarsese
     - Narsese
+        - Terms
+        - Sentences
     - Conversion
 
 规范：
@@ -17,6 +19,11 @@ JuNarsese 入口模块
 module JuNarsese
 
 using Reexport
+
+# 配置类参数
+
+DEFAULT_FLOAT_PRECISION::Type{<:AbstractFloat} = Float64
+export DEFAULT_FLOAT_PRECISION
 
 # 导入各个文件 #
 

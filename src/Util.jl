@@ -5,6 +5,7 @@ module Util
 
 export @reverse_dict_content, @redirect_SRS, @exceptedError
 export match_first, allproperties, allproperties_generator
+export SYMBOL_NULL
 
 # "可变长参数的自动转换支持" # 用于terms.jl的构造方法 ！添加报错：Unreachable reached at 000002d1cdac1f57
 # Base.convert(::Type{Vector{T}}, args::Tuple) where T = args |> collect |> Vector{T}
@@ -90,5 +91,23 @@ allproperties_generator(object::Any) = (
     for name::Symbol in propertynames(object)
     if isdefined(object, name)
 )
+
+raw"""
+扩展字符串、字符、正则表达式、符号的empty方法
+- ⚠【20230809 10:44:39】注意：实际上Char无「空字符」一说，
+    - 为兼容起见，使用「\u200c」零宽无连接符作占位符
+- 返回空字串，「空字符」（\u200c）、「空正则」
+"""
+Base.empty(::Union{T, Type{T}}) where {T <: AbstractString} = 
+    ""
+Base.empty(::Union{T, Type{T}}) where {T <: AbstractChar} = 
+    '\u200c'
+Base.empty(::Union{T, Type{T}}) where {T <: Regex} = 
+    r""
+Base.empty(::Union{T, Type{T}}) where {T <: Symbol} = 
+    Symbol()
+
+"空符号"
+SYMBOL_NULL::Symbol = empty(Symbol)
 
 end

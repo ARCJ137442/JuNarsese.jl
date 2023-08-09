@@ -63,11 +63,9 @@ end
         
         # 测试@LaTeX
         @equal_test StringParser_latex test_set
-
-        # 测试集
-
-        @test test_set.terms .|> StringParser_ascii .|> StringParser_ascii == test_set.terms
-        @test test_set.terms .|> StringParser_latex .|> StringParser_latex == test_set.terms
+        
+        # 测试@漢
+        @equal_test StringParser_han test_set
 
         # 陈述 #
     

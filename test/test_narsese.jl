@@ -132,6 +132,8 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     )
     se2 = Sentence{Judgement}(s2)
     @show se se0 se2
+    
+    @test se0 == narsese"<{SELF} --> [good]>! :|: %1.0;0.9%"
 
     @test @JuNarsese.Util.exceptedError Sentence{Judgement}(
         s5,

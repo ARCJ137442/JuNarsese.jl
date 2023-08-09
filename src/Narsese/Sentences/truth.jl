@@ -60,9 +60,29 @@ const Truth64::DataType = Truth{Float64, Float64}
 const TruthBig::DataType = Truth{BigFloat, BigFloat} # 大浮点
 
 """
+类型脱敏判断数值相等
+- 用于应对「不同类型但值相同的Float『fallback到全等』导致不相等」
+    - 方法：类型不等⇒转换到「默认精度」进行比较
+        - 此举仍有可能不等。。。
+- fallback到「相等」
+"""
+number_value_eq(a::Number, b::Number) = (a == b)
+
+"同类直接比较"
+number_value_eq(a::F, b::F) where {F <: AbstractFloat} = (
+    a == b
+)
+
+"异类转换精度"
+number_value_eq(a::F1, b::F2) where {F1 <: AbstractFloat, F2 <: AbstractFloat} = (
+    DEFAULT_FLOAT_PRECISION(a) == DEFAULT_FLOAT_PRECISION(b)
+)
+
+"""
 判等の法：相等@f,c
+- 
 """
 Base.:(==)(t1::Truth, t2::Truth)::Bool = (
-    t1.f == t2.f &&
-    t1.c == t2.c
+    number_value_eq(t1.f, t2.f) &&
+    number_value_eq(t1.c, t2.c)
 )

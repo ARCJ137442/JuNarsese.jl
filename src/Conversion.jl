@@ -13,8 +13,9 @@ module Conversion
 
 # 前置导入 #
 
-import ..Narsese
+import ..JuNarsese: DEFAULT_FLOAT_PRECISION
 
+import ..Narsese
 using ..Narsese
 
 # 各个模块 #
