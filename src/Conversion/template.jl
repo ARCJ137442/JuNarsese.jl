@@ -20,6 +20,7 @@ export narsese2data, data2narsese # 主函数：数据互转
 export DEFAULT_PARSE_TARGETS, TYPE_TERMS, TYPE_SENTENCES # API对接
 export parse_target_types # API对接
 export parse_type, pack_type_string, pack_type_symbol # API对接
+export @narsese_str, @nse_str # 字符串宏(📌短缩写只要不盲目using就没有冲突问题)
 
 """
 陈述转换器的抽象类型模板
@@ -107,7 +108,7 @@ function data2narsese end
     - 例：`Narsese.eval`用于解析词项/语句类型
 """
 parse_type(type_name::String, eval_function::Function)::Type = eval_function(
-    Meta.parse(type_name)
+    Meta.parse(type_name) |> assert_type_expr # 【20230810 20:33:56】安全锁定
 )
 
 """
@@ -119,7 +120,7 @@ parse_type(type_name::String, eval_function::Function)::Type = eval_function(
 parse_type(type_name::Symbol, eval_function::Function)::Type = eval_function(
     Meta.parse(
         string(type_name)
-    )
+    ) |> assert_type_expr # 【20230810 20:33:56】安全锁定
 )
 
 """
@@ -220,6 +221,9 @@ macro narsese_str(s::String, flag::String="ascii")
     # 解析器（解析对象）
     return :(($parser)($s)) |> esc
 end
+
+# 通过Symbol设置别名 @nse_str
+Expr(:(=), Symbol("@nse_str"), Symbol("@narsese_str")) |> eval
 
 """
 声明：从字符串宏的「尾缀」中获得解析器

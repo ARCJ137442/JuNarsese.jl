@@ -70,13 +70,13 @@ end
         # 陈述 #
     
         # 陈述↔字符串
-        @show s0 = *(A,B,C) ⇔ w"op"o
+        @show s0 = *(A,B,C) ⇔ o"op"
         @test string(s0) == "<(*, A, B, C) <=> ^op>"
     
     end
 
     # @testset "ShortcutParser" begin # 这玩意儿只有解析器没有打包器
-    #     @test s3 == (( w"A"q * w"B"i ) → w"C"o)
+    #     @test s3 == (( q"A" * i"B" ) → o"C")
     # end
 
     @testset "ASTParser" begin

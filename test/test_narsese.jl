@@ -71,15 +71,15 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     ) == ((((A→B)⇒(B→C)) ∧ (A→B)) ⇒ (B→C)) # 无序性
 
     @show s2 = (
-        ((w"甲"i→w"人")⇒(w"甲"i→w"会死")) ∧
+        ((i"甲"→w"人")⇒(i"甲"→w"会死")) ∧
         (w"苏格拉底"→w"人")
     ) ⇒ (w"苏格拉底"→w"会死")
     @test s2 == Implication(
         Conjunction(
             Inheriance(w"苏格拉底", w"人"),
             Implication(
-                Inheriance(w"甲"i, w"人"),
-                Inheriance(w"甲"i, w"会死")
+                Inheriance(i"甲", w"人"),
+                Inheriance(i"甲", w"会死")
             )
         ),
         Inheriance(w"苏格拉底", w"会死")

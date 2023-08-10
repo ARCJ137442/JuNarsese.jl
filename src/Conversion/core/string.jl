@@ -11,7 +11,6 @@
 =#
 
 export StringParser_ascii, StringParser_latex, StringParser_han
-export @narsese_str
 
 const CONTENT::Type = Union{
     AbstractString,
@@ -28,6 +27,9 @@ const CONTENT::Type = Union{
     - 此用法将在LaTeX.jl中使用，以便重用代码
 """
 struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
+
+    "显示用名称"
+    name::String
 
     "原子到文本的字典"
     atom_prefixes::Dict{Type, Content}
@@ -67,7 +69,7 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
     "（自动生成）前缀集"
     bracket_openers::Vector{Content}
     "（自动生成）后缀集"
-    bracket_clusures::Vector{Content}
+    bracket_closures::Vector{Content}
 
     """
     词项集合类型 => 符号
@@ -120,6 +122,7 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
 
     "内部构造方法"
     function StringParser{Content}(
+        name::String,
         atom_prefixes::Dict,
         placeholder_t2d::Content, placeholder_d2t::Content,
         comma_d2t::Content, 
@@ -135,6 +138,7 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
         ) where {Content <: CONTENT}
         copulas = values(copula_dict) |> collect # 📌不能放在new内，不然会被识别为关键字参数
         new(
+            name,
             atom_prefixes,
             Dict( # 自动反转字典
                 @reverse_dict_content atom_prefixes
@@ -183,6 +187,9 @@ end
 
 "外部构造方法：无参数类型⇒字符串参数"
 StringParser(args::Vararg) = StringParser{String}(args...)
+
+# 重定向字符串方法
+@redirect_SRS parser::StringParser parser.name
 
 # 在外部文件中存储具体实现
 include("string/definitions.jl")
@@ -345,7 +352,7 @@ begin "陈述形式"
 
     "一系列判断「括弧开闭」的方法（默认都是「作为前缀识别」，以兼容「多字节字串」）"
     match_opener(parser::StringParser, s::AbstractString)::String  = match_first(str -> startswith(s, str), parser.bracket_openers, "")
-    match_closure(parser::StringParser, s::AbstractString)::String = match_first(str -> startswith(s, str), parser.bracket_clusures, "")
+    match_closure(parser::StringParser, s::AbstractString)::String = match_first(str -> startswith(s, str), parser.bracket_closures, "")
     match_opener(parser::StringParser, c::Char)::String  = match_opener(parser, string(c))
     match_closure(parser::StringParser, c::Char)::String = match_closure(parser, string(c))
 end

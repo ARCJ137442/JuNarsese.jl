@@ -2,7 +2,8 @@
 使用Unicode运算符/宏，辅助构建Narsese
 =#
 
-export @w_str
+# export @w_str # 无需导出了：避免可能的歧义
+export ⩀, ⊍
 export ⋄
 export →, ⇒, ↔, ⇔
 export ∧, ∨, ¬
@@ -10,28 +11,34 @@ export ⩚, ⩜
 
 begin "单体词项"
     
-    FLAG_TYPE_DICT::Dict{String, DataType} = Dict(
-        "i" => Variable{VTIndependent},
-        "d" => Variable{VTDependent},
-        "q" => Variable{VTQuery},
+    """
+    定义在「定义字符串宏」时用到的头
+
+    例："w" ==> `w_str` ==> `w"词语名"`
+    """
+    HEAD_TYPE_DICT::Dict{String, DataType} = Dict(
+        "w" => Word,
+        "i" => IVar,
+        "d" => DVar,
+        "q" => QVar,
         "o" => Operator,
     )
 
-    """
-    字符串宏，用于构建原子词项（词/变量）
-    - 📌Julia直接返回字面量，也是可以的
-    """
-    macro w_str(name::String)
-        return name |> Symbol |> Word
-    end
-
-    "可用后缀指定是否为变量(词语/变量/操作)"
-    macro w_str(name::String, flag::String)
-        if flag in keys(FLAG_TYPE_DICT)
-            return name |> Symbol |> FLAG_TYPE_DICT[flag]
-        else
-            return name |> Symbol |> Word
-        end
+    # 循环添加相应宏
+    for (head::String, type::Type) in HEAD_TYPE_DICT
+        macro_name::Symbol = Symbol(head, :_str)
+        quote
+            """
+            字符串宏，用于构建原子词项（词/变量）
+            - 📌Julia直接返回字面量，也是可以的
+            """
+            macro $macro_name(name::String)
+                return name |> Symbol |> $type
+            end
+            
+        end |> eval
+        # 导出各个宏
+        Expr(:export, Symbol("@", head, :_str)) |> eval
     end
 end
 
@@ -50,6 +57,20 @@ begin "复合词项"
     示例：|(A, B, C) -> [A, B, C]
     """
     Base.:(|)(terms::Vararg{Term}) = IntSet(terms...)
+
+    """
+    外延集：使用另一种兼容格式
+    
+    示例：⩀(A, B, C) -> {A, B, C}
+    """ # TODO: 修复「syntax: invalid syntax &(1, 2) around」
+    ⩀(terms::Vararg{Term}) = ExtSet(terms...)
+
+    """
+    内涵集：使用另一种兼容格式
+    
+    示例：⊍(A, B, C) -> [A, B, C]
+    """
+    ⊍(terms::Vararg{Term}) = IntSet(terms...)
 
     """
     外延交=内涵并
@@ -158,5 +179,6 @@ begin "复合词项"
     - LaTeX: `\\midbarwedge`
     """
     ⩜(terms::Vararg{Term}) = SeqConjunction(terms...)
+
 
 end

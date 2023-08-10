@@ -4,6 +4,7 @@
 - 另可参考：<https://github.com/opennars/opennars/wiki/Narsese-Grammar-(Input-Output-Format)>
 """
 const StringParser_ascii::StringParser = StringParser{String}(
+    "StringParser_ascii",
     Dict( # 原子前缀
         Word     => "", # 置空
         IVar     => "\$",
@@ -83,6 +84,7 @@ LaTeX扩展
 - 【20230809 10:22:34】注：暂未找到官方格式模板，此仅基于个人观察
 """
 const StringParser_latex::StringParser = StringParser{String}(
+    "StringParser_latex",
     Dict( # 原子前缀
         Word     => "", # 置空
         IVar     => "\$",
@@ -159,6 +161,7 @@ const StringParser_latex::StringParser = StringParser{String}(
 - 📌原创
 """
 const StringParser_han::StringParser = StringParser{String}(
+    "StringParser_han",
     Dict( # 原子前缀
         Word     => "", # 置空
         IVar     => "任一",

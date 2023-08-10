@@ -5,7 +5,7 @@ module Util
 
 export @reverse_dict_content, @redirect_SRS, @exceptedError
 export match_first, allproperties, allproperties_generator
-export get_pure_type_name, get_pure_type_symbol
+export get_pure_type_name, get_pure_type_symbol, verify_type_expr, assert_type_expr
 export SYMBOL_NULL
 
 # "可变长参数的自动转换支持" # 用于terms.jl的构造方法 ！添加报错：Unreachable reached at 000002d1cdac1f57
@@ -21,7 +21,7 @@ macro reverse_dict_content(name::Symbol)
     ) |> esc # 避免立即解析
 end
 
-"重定向从string到repr到show"
+"重定向显示方式：从string到repr到show"
 function redirect_SRS(para::Expr, code::Expr)
     quote
         Base.string($para)::String = $code
@@ -138,5 +138,26 @@ get_pure_type_name(T::Any)::String = get_pure_type_name(typeof(T))
 get_pure_type_symbol(T::Any)::Symbol = Symbol(
     get_pure_type_name(T)
 )
+
+"""
+验证表达式是否**只是**「类名符号」
+- 🎯确保`eval`只用于获取类名，从而保证代码运行的安全性
+"""
+verify_type_expr(expr::Expr)::Bool = (
+    expr.head == :curly # 参数类型「类型{参数}」的形式
+)
+"符号就直接通过"
+verify_type_expr(expr::Symbol)::Bool = true
+
+"""
+表达式断言：若「只是类名符号」返回本身，否则报错
+"""
+assert_type_expr(expr::Expr)::Expr = (
+    verify_type_expr(expr) ? 
+        expr : 
+        error("非法符号表达式「$expr」！")
+)
+"符号总是通过"
+assert_type_expr(symbol::Symbol)::Symbol = symbol
 
 end
