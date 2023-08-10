@@ -262,11 +262,11 @@ begin "陈述形式"
     """
     function form_operated_set(
         prefix::CONTENT, suffix::CONTENT, # 前后缀
-        symbol::CONTENT, contents::Vector, # 符号+内容
+        operator::CONTENT, contents::Vector, # 符号+内容
         separator::CONTENT,
         # 此处无需额外空格参数：已包含于separator中
         )::CONTENT
-        "$prefix$symbol$separator" * join(contents, separator) * suffix
+        "$prefix$operator$separator" * join(contents, separator) * suffix
     end
 
     "_autoIgnoreEmpty: 字串为空⇒不变，字串非空⇒加前导分隔符"

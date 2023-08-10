@@ -82,6 +82,7 @@ const StringParser_ascii::StringParser = StringParser{String}(
 LaTeX扩展
 - 来源：文档 `NARS ASCII Input.pdf`
 - 【20230809 10:22:34】注：暂未找到官方格式模板，此仅基于个人观察
+- 【20230811 0:26:55】不能很好地兼容「二元运算」表达（需要更专业者优化）
 """
 const StringParser_latex::StringParser = StringParser{String}(
     "StringParser_latex",
@@ -101,7 +102,7 @@ const StringParser_latex::StringParser = StringParser{String}(
         Statement => ("\\left<", "\\right>"), # 陈述
         Compound  => ("\\left(", "\\right)"), # 复合词项
     ),
-    Dict( # 集合操作
+    Dict( # 集合操作 【20230810 22:37:50】对中缀表达式支持不是很好
         ExtIntersection => "\\cap",
         IntIntersection => "\\cup",
         ExtDifference   => "\\minus",
