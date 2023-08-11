@@ -10,6 +10,7 @@ JuNarsese包含两个主要模块：
 
 - Narsese: Narsese的数据结构
   - 词项(NAL-1 ~ NAL-8)
+  - 语句(标点、真值、时间戳)
 - Conversion: 用于数据结构间的转换
   - 提供解析器API
     - 抽象解析器类型
