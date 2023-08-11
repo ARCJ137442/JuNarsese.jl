@@ -36,7 +36,7 @@ end
 # end
 
 # 判断相等 #
-begin "判断相等"
+begin "判断相等(Base.isequal)：基于值而非基于引用"
 
     "核心判等逻辑：使用多分派特性统一判断复合词项中的成分"
     _collection_equal(v1::Vector, v2::Vector)::Bool = (v1 .== v2) |> all
@@ -122,7 +122,7 @@ begin "判断相等"
 end
 
 # 收集(`Base.collect`): 收集其中包含的所有（原子）词项 #
-begin "收集其中包含的所有（原子）词项，并返回向量"
+begin "收集(Base.collect)其中包含的所有（原子）词项，并返回向量"
 
     "原子词项のcollect：只有它自己"
     Base.collect(aa::AbstractAtom) = Term[aa]
@@ -156,7 +156,7 @@ begin "收集其中包含的所有（原子）词项，并返回向量"
 end
 
 # 时态
-begin "时态：用于获取「时序蕴含/等价」中的「时态信息」"
+begin "时态：用于获取(Base.collect)「时序蕴含/等价」中的「时态信息」"
     
     """
     获取「时序蕴含/等价」陈述中的时态
@@ -170,4 +170,92 @@ begin "时态：用于获取「时序蕴含/等价」中的「时态信息」"
         end
         return Eternal
     end
+end
+
+# NAL信息支持
+begin "NAL信息支持"
+    
+    export get_syntactic_complexity, get_syntactic_simplicity
+
+    """
+    [NAL-3]获取词项的「语法复杂度」
+    - 用于获取词项在语法上的复杂程度
+        - 一般包含「所引用（实体原子）的多少」
+    
+    参考：《NAL》定义7.2
+    > Each term in NAL has a syntactic complexity. 
+    > The syntactic complexity of an atomic term (i.e., word) is 1. 
+    > The syntactic complexity of a compound term is 1 plus the sum of the syntactic complexity of its components.
+    
+    机翻：
+    > NAL中的每个词项都有一个语法复杂度。
+    > 原子词项(例如「词语」)的语法复杂度为1。
+    > 复合词项的句法复杂度等于1加上其组成部分的句法复杂度之和。
+
+    ↓默认：未定义→报错
+    - 等价于：虚方法/抽象方法
+    - 需要被子类实现
+    """
+    get_syntactic_complexity(::Term) = error("未定义的计算！")
+
+    """
+    （默认）原子の复杂度 = 1
+
+    参见 `get_syntactic_complexity(::Term)`的引用
+    > 原子词项(例如「词语」)的语法复杂度为1。
+
+    """
+    get_syntactic_complexity(::Atom) = 1
+    
+    """
+    变量の复杂度 = 0
+
+    来源：OpenNARS `Variable.java`
+    > The syntactic complexity of a variable is 0, because it does not refer to any concept.
+    
+    机翻：
+    > 变量的语法复杂度为0，因为它不引用任何概念。
+    """
+    get_syntactic_complexity(::Variable) = 0
+
+    """
+    复合词项の复杂度 = 1 + ∑组分の复杂度
+
+    参见 `get_syntactic_complexity(::Term)`的引用
+    > 复合词项的句法复杂度等于1加上其组成部分的句法复杂度之和。
+
+    协议：所有复合词项都支持`terms`属性
+    """
+    get_syntactic_complexity(c::Compound) = 1 + sum(
+        get_syntactic_complexity, # 每一个的复杂度
+        c.terms # 遍历每一个组分
+    )
+
+    """
+    陈述の复杂度 = 1 + 主词复杂度 + 谓词复杂度
+    - 特立于复合词项
+
+    因：陈述无`terms`属性，不满足复合词项的协议
+
+    协议：所有「陈述」都有`ϕ1`与`ϕ2`属性
+    """
+    get_syntactic_complexity(s::Statement) = 1 + get_syntactic_complexity(s.ϕ1) + get_syntactic_complexity(s.ϕ2)
+
+    """
+    [NAL-3]获取词项的「语法简易度」
+    
+    参考：《NAL》定义7.11
+    > If the syntactic complexity of a term is n, then its syntactic simplicity is s = 1/nʳ, where r > 0 is a system parameter.
+    > Since n ≥ 1, s is in (0, 1]. 
+    > Atomic terms have the highest simplicity, 1.0.
+    
+    机翻：
+    > 如果某一词项的语法复杂度为n，则其语法简易度为s = 1/nʳ，其中r > 0为系统参数。
+    > 由于n≥1，s在(0,1]中。【译者注：n ≥ 1 ⇒ 0 < s ≤ 1】
+    > 原子词项的简易度最高，为1.0。
+
+    【20230811 12:10:34】留存r以开放给后续调用
+    """
+    get_syntactic_simplicity(t::Term, r::Number) = 1 / get_syntactic_complexity(t)^r
+
 end

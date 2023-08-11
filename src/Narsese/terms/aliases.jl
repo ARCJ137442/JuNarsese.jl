@@ -144,3 +144,11 @@ const SeqConjunction = STSet{Sequential}
 const TermLogicalSetLike  = Union{TermLSet, StatementLSet{And}, StatementLSet{Or}, StatementTSet} # 「逻辑非」不含在内
 const TermOperatedSetLike = Union{TermLogicalSetLike, TermImage, TermProduct, StatementLSet{Not}}
 const TermSetLike         = Union{TermSet, TermOperatedSetLike} # 与OpenJunars不同的是，还包括「乘积」与「像」
+# const TermSetSymmetric    = Union{
+#        TermSet, 
+#        TermLSet{Extension, And}, TermLSet{Extension, Or}, TermLSet{Intension, And}, TermLSet{Intension, Or},
+#        StatementLSet{And}, StatementLSet{Or}, 
+#        StatementTemporalSet{Parallel}
+# } # 所有具有「对称性」的词项/陈述集合 【20230811 13:55:37】这个应该被更灵活地定义，以便后续扩展
+
+# const SymmetricStatementTypes = Union{STSimilarity, STEquivalance} # 同上，需要更好地扩展

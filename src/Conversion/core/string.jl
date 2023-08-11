@@ -259,14 +259,16 @@ begin "陈述形式"
     """
     有操作集：前缀+符号+插入分隔符&空格的内容
     例子："(/, A, B, _, C)"
+
+    【20230811 11:46:15】此中之「connector」名自《NAL》定义7.3
     """
-    function form_operated_set(
+    function form_compound_set(
         prefix::CONTENT, suffix::CONTENT, # 前后缀
-        operator::CONTENT, contents::Vector, # 符号+内容
+        connector::CONTENT, contents::Vector, # 符号+内容
         separator::CONTENT,
         # 此处无需额外空格参数：已包含于separator中
         )::CONTENT
-        "$prefix$operator$separator" * join(contents, separator) * suffix
+        "$prefix$connector$separator" * join(contents, separator) * suffix
     end
 
     "_autoIgnoreEmpty: 字串为空⇒不变，字串非空⇒加前导分隔符"
@@ -562,11 +564,11 @@ begin "复合词项↔字符串"
         # 解析出「词项序列字串」
         term_strings::Vector{String} = _parse_term_series(parser, s)
         # 解析词项类型: 使用第一项
-        operator_str::String = popfirst!(term_strings)
-        if operator_str in keys(parser.symbols_compound)
-            compound_type::Type = parser.symbols_compound[operator_str]
+        connector_str::String = popfirst!(term_strings)
+        if connector_str in keys(parser.symbols_compound)
+            compound_type::Type = parser.symbols_compound[connector_str]
         else
-            error("无效的复合词项符号「$operator_str")
+            error("无效的复合词项符号「$connector_str")
         end
         # 解析剩余词项
         components::Vector{Union{Term, Nothing}} = Union{Term, Nothing}[
@@ -724,7 +726,7 @@ begin "复合词项↔字符串"
     narsese2data(
         parser::StringParser, 
         t::TermOperatedSetLike
-    ) = form_operated_set(
+    ) = form_compound_set(
         parser.compound_brackets[Compound]...,
         parser.compound_symbols[typeof(t)],
         [
@@ -740,7 +742,7 @@ begin "复合词项↔字符串"
     外延/内涵 像
     - 特殊处理：位置占位符
     """
-    narsese2data(parser::StringParser, t::TermImage) = form_operated_set(
+    narsese2data(parser::StringParser, t::TermImage) = form_compound_set(
         parser.compound_brackets[Compound]...,
         parser.compound_symbols[typeof(t)],
         insert!( # 使用「插入元素」的处理办法，因为数组是新建的

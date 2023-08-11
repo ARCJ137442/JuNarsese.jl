@@ -13,11 +13,11 @@
     > the symmetry between extension and intense in NAL, here it is called “intensional intersection”, rather than “extensional union”, though the latter
     > is also correct, and sounds more natural to people familiar with set theory.
 
-    机翻：
+    中译：
 
     > 上述定义和定理证明了NAL中的外延与内涵的对偶性，对应于集合论中的交与并的对偶性——内涵交对应于外延并，而外延交对应于内涵并。
     > 因为集合论是纯外延的，所以'∪'只与并集有关。
-    > 为了强调NAL中扩展与强烈的对称性，这里称之为“内涵交”，而不是“外延并”，尽管后者也是正确的，对熟悉集合论的人来说听起来更自然。
+    > 为了强调NAL中外延与内涵的对称性，这里称之为“内涵交”，而不是“外延并”，尽管后者也是正确的，对熟悉集合论的人来说听起来更自然。
 
 =#
 
@@ -187,7 +187,23 @@ abstract type AbstractStatementLogicalSet{LogicOperation <: AbstractLogicOperati
 
 begin "单体词项"
 
-    "[NAL-1]最简单的「词语」词项"
+    """
+    [NAL-1]最简单的「词语」词项
+
+    参考：《NAL》定义2.1
+    > The basic form of a term is a word, that is, a string of characters from a finite alphabet.
+    > There is no additional requirement on the alphabet.
+    > In this document the alphabet includes English letters, digits 0 to 9, and a few special signs, such as hyphen (‘-’).
+    > In the examples in this book, we often use common English nouns for terms, such as bird and animal, just to make the examples easy to understand.
+    > There is no problem to do the same in a different natural language, such as Chinese.On the other hand, it is also fine to use terms that are meaningless to human beings, such as drib and aminal.
+    
+    中译：
+    > 一个词项的基本形式是一个「词语」，即来自有限字母表的一串字符。
+    > 除此之外对字母表没有要求。
+    > 本书中字母表包括英文字母、数字0 ~ 9和一些特殊符号，如“-”，并常用常见的英语名词来表示术语，例如bird和animal，只是为了使示例易于理解。
+    > 用一种不同的自然语言(如中文)做同样的事情是没有问题的。另一方面，也可以使用对人类没有意义的术语，如drib和aminal。
+    
+    """
     struct Word <: AbstractAtom
         name::Symbol # 为何不用String？见上文笔记
     end
@@ -197,21 +213,72 @@ begin "单体词项"
     """
     Word(name::String) = name |> Symbol |> Word
 
-    "[NAL-6]变量词项（用类型参数包括三种类型）"
+    """
+    [NAL-6]变量词项（用类型参数包括三种类型）
+
+    参考：《NAL》定义10.1~2
+    > A query variable is a variable term in a question that represents a constant term to be found to answer the question,
+    > and it is named by ‘?’,
+    > optionally followed by a word or a number.
+
+    > An independent variable represents any unspecified term under a given restriction,
+    > and it is named by a word (or a number) preceded by ‘#’.
+    > A dependent variable represents a certain unspecified term under a given restriction,
+    > and it is named as an independent variable with a dependency list consisting of independent variables it depends on,
+    > which can be empty.
+
+    中译：
+    > 查询变量是问题中的一个变量项，
+    > 它表示要找到的用于回答问题的常量项，
+    > 它被命名为'?'，
+    > 可选后跟一个单词或数字。
+
+    > 独立变量表示给定限制下的任何未指定项，
+    > 并以“#”前面的单词(或数字)命名。
+    > 非独变量表示给定限制下的某个未指定项，
+    > 它被命名为具有由它所依赖的独立变量组成的依赖列表的独立变量，
+    > 该列表可以为空。
+    """
     struct Variable{Type <: AbstractVariableType} <: AbstractAtom
         name::Symbol
     end
     "支持从String构造"
     Variable{T}(name::String) where {T<:AbstractVariableType} = name |> Symbol |> Variable{T}
 
-    "[NAL-8]操作词项(Action)"
+    """
+    [NAL-8]操作词项(Action)
+    
+    参考：《NAL》定义12.2
+
+    > An atomic operation is represented as an operator (a special term whose name starts with ‘⇑’) 
+    > followed by an argument list (a sequence of terms, though can be empty).
+    > Within the system, operation “(⇑op a₁ ··· aₙ)” is treated as statement “(× self a₁ ··· aₙ) → op”, 
+    > where op belongs to a special type of term that has a procedural interpretation, 
+    > and self is a special term referring to the system itself.
+
+    中译：
+    > 一个原子操作表示为一个操作符(一个特殊的词项，其名以“⇑”开头)跟一个参数列表(一个词项序列，但可为空)。
+    > 在系统内，操作“(⇑op a₁ ··· aₙ)”被视为语句“(× self a₁ ··· aₙ) → op”，
+    >   其中op属于具有程序解释的特殊类型词项，【译者注：此「程序解释的特殊类型」即此处定义的类】
+    >   而self是指系统本身的特殊词项。【译者注：此即NAL代码中经常出现的`{SELF}`】
+    """
     struct Operator <: AbstractAtom
         name::Symbol
     end
     "支持从String构造"
     Operator(name::String) = name |> Symbol |> Operator
 
-    "[NAL-2]复合集 {} []"
+    """
+    [NAL-2]词项集 {} []
+
+    参考：《NAL》定义6.3、6.5
+    > If T is a term, the extensional set with T as the only component, {T}, is defined by (∀x)((x → {T}) ⟺ (x ↔ {T})).
+    > If T is a term, the intensional set with T as the only component, [T], is defined by (∀x)(([T] → x) ⟺ ([T] ↔ x)).
+
+    中译：
+    > 如果T是一个词项，则以T为唯一组分的外延集 {T} 定义为 (∀x)((x → {T}) ⟺ (x ↔ {T}))。
+    > 如果T是一个词项，则以T为唯一组分的内涵集 [T] 定义为 (∀x)(([T] → x) ⟺ ([T] ↔ x))。
+    """
     struct TermSet{EIType <: AbstractEI} <: AbstractTermSet
         terms::Set{<:AbstractTerm}
     end
@@ -228,8 +295,24 @@ begin "单体词项"
         - 注意：此处不会使用，会自动转换（见📝「为何不使用外延/内涵 并？」）
     - Not: 差集 - ~
         - 有序(其余皆无序)
-    """
-    # 此处「&」「|」是对应的「外延交&」「外延并|」
+    
+    参考：《NAL》定义7.6~9
+    > Given terms T1 and T2, their extensional intersection (T1 ∩ T2)
+    >   is a compound term defined by (∀x)((x → (T1 ∩ T2)) ⟺ ((x → T1) ∧ (x → T2))).
+    > Given terms T1 and T2, their intensional intersection (T1∪T2) 
+    >   is a compound term defined by (∀x)(((T1 ∪ T2) → x) ⟺ ((T1 → x) ∧ (T2 → x))).
+    > If T1 and T2 are different terms, their extensional difference (T1 - T2)
+    >   is a compound term defined by (∀x)((x → (T1 - T2)) ⟺((x → T1) ∧ ¬(x → T2))).
+    > If T1 and T2 are different terms, their intensional difference (T1⊖T2)
+    >   is a compound term defined by (∀x)(((T1⊖T2) → x) ⟺ ((T1 → x) ∧ ¬(T2 → x))).
+    
+
+    中译：
+    > 给定词项T1与T2，它们的外延交(T1∩T2)是一个复合词项，定义为 (∀x)((x → (T1 ∩ T2)) ⟺ ((x → T1) ∧ (x → T2)))。
+    > 给定词项T1与T2，它们的内涵交(T1∪T2)是一个复合词项，定义为 (∀x)(((T1 ∪ T2) → x) ⟺ ((T1 → x) ∧ (T2 → x)))。
+    > 如果T1和T2是不同的词项，它们的外延差(T1-T2)是一个复合词项，定义为 (∀x)((x → (T1 - T2)) ⟺((x → T1) ∧ ¬(x → T2)))。
+    > 如果T1和T2是不同的词项，它们的内涵差(T1 * T2)是一个复合词项，定义为 (∀x)(((T1⊖T2) → x) ⟺ ((T1 → x) ∧ ¬(T2 → x)))。
+    """ # 此处「&」「|」是对应的「外延交&」「外延并|」
     struct TermLogicalSet{EIType <: AbstractEI, LogicOperation <: AbstractLogicOperation} <: AbstractTermSet
         terms::Union{Vector{AbstractTerm}, Set{AbstractTerm}}
 
@@ -258,6 +341,14 @@ begin "单体词项"
     - 有序
     - 无内涵外延之分
     - 用于关系词项「(*, 水, 盐) --> 前者可被后者溶解」
+
+    参考：《NAL》定义8.1
+    > The product connector ‘×’ takes two or more terms as components, 
+    >   and forms a compound term that satisfies ((× S₁ ··· Sₙ) → (× P₁ ··· Pₙ)) ⟺ ((S₁ → P₁) ∧ ··· ∧ (Sₙ → Pₙ)).
+
+    中译：
+    > 乘积连接符“×”采用两个或多个词项作为组分，形成一个复合词项，
+    >   满足 ((× S₁ ··· Sₙ) → (× P₁ ··· Pₙ)) ⟺ ((S₁ → P₁) ∧ ··· ∧ (Sₙ → Pₙ))。
     """
     struct TermProduct <: AbstractTermSet
         terms::Vector{<:AbstractTerm}
@@ -268,12 +359,25 @@ begin "单体词项"
         TermProduct(terms |> collect)
     end
 
-    """
-    [NAL-4]像{外延/内涵} (/, a, b, _, c) (\\\\, a, b, _, c)
+    raw"""
+    [NAL-4]像{外延/内涵} (/, a, b, _, c) (\, a, b, _, c)
     - 有序
     - 【20230724 22:06:36】注意：词项在terms中的索引，不代表其在实际情况下的索引
 
     例：`TermImage{Extension}([a,b,c], 3)` = (/, a, b, _, c)
+
+    参考：《NAL》定义8.4
+    > For a relation R and a product (× T1 T2), 
+    >   the extensional image connector, ‘/’, and intensional image connector, ‘\’, 
+    >   of the relation on the product are defined as the following, respectively:
+    >     ((× T1 T2) → R) ⟺ (T1 → (/ R ⋄ T2)) ⟺ (T2 → (/ R T1 ⋄))
+    >     (R → (× T1 T2)) ⟺ ((\ R ⋄ T2) → T1) ⟺ ((\ R T1 ⋄) → T2)
+
+    中译：
+    > 对于关系R和乘积(× T1 T2)，乘积上关系的外延像连接符“/”和内延像连接符“\”分别定义为：
+    >     ((× T1 T2) → R) ⟺ (T1 → (/ R ⋄ T2)) ⟺ (T2 → (/ R T1 ⋄))
+    >     (R → (× T1 T2)) ⟺ ((\ R ⋄ T2) → T1) ⟺ ((\ R T1 ⋄) → T2)
+    
     """
     struct TermImage{EIType <: AbstractEI} <: AbstractTermSet
         terms::Tuple{Vararg{AbstractTerm}}
@@ -326,6 +430,20 @@ begin "陈述词项"
     - 现只支持「二元」陈述，只表达两个词项之间的关系
     - ❎【20230804 14:17:30】现增加「时序」参数，以便在词项层面解析「时序关系」
     - 【20230804 14:44:13】现把「时序系词」作为「主系词」（参考自OpenNARS）
+
+    参考：《NAL》定义2.2、9.1
+    > The basic form of a statement is an inheritance statement,
+    >   “S → P”, where S is the subject term, P is the predicate term, and ‘→’ is the inheritance copula, 
+    >   defined as being a reflexive and transitive relation from one term to another term.
+    > If S1 and S2 are statements, “S1 ⇒ S2” is true if and only if in IL S2 can be derived from S1 in a finite number of inference steps. 
+    >   Here ‘⇒’ is the implication copula. Formally, it means (S1 ⇒ S2) ⟺ {S1} ⊢ S2.
+
+    中译：
+    > 语句的基本形式是继承语句“S→P”，
+    >   其中S为主词项，P为谓词项，“→”为继承系词，
+    >   定义为从一个词项到另一个词项的自反传递关系。
+    > 如果S1和S2是语句，“S1⇒S2”当且仅当在IL中S2可以在有限的推理步骤中由S1导出时为真。
+    > 这里的“⇒”是隐含的联结词。形式上，它表示 (S1 ⇒ S2) ⟺ {S1} ⊢ S2。【译者注 LaTeX代码：`⟺iff`,`⊢vdash`】
     """
     struct Statement{Type <: AbstractStatementType} <: AbstractStatement
         ϕ1::AbstractTerm # subject 主词
@@ -343,6 +461,21 @@ begin "陈述词项"
     - Not: 陈述非 ¬ --
 
     注意：都是「对称」的⇒集合(无序)
+
+    参考：《NAL》定义9.6
+    
+    > When S1 and S2 are different statements, 
+    >   their conjunction, (S1 ∧ S2), is a compound statement defined by
+    >     (∀x)((x ⇒ (S1 ∧ S2)) ⟺ ((x ⇒ S1) ∧ (x ⇒ S2))).
+    >   Their disjunction, (S1 ∨ S2), is a compound statement defined by
+    >     (∀x)(((S1 ∨ S2) ⇒ x) ⟺ ((S1 ⇒ x) ∧ (S2 ⇒ x))).
+
+    中译：
+    > 当S1和S2是不同的陈述时，
+    >   它们的合取(S1∧S2)是一个复合陈述，定义为
+    >     (∀x)((x ⇒ (S1 ∧ S2)) ⟺ ((x ⇒ S1) ∧ (x ⇒ S2))).
+    >   它们的析取(S1∨S2)是一个复合陈述，定义为
+    >     (∀x)(((S1 ∨ S2) ⇒ x) ⟺ ((S1 ⇒ x) ∧ (S2 ⇒ x))).
     """ # 与「TermSet」不同的是：只使用最多两个词项（陈述）
     struct StatementLogicalSet{LogicOperation <: AbstractLogicOperation} <: AbstractStatementLogicalSet{LogicOperation}
 
@@ -369,6 +502,14 @@ begin "陈述词项"
 
     📌技术点: 此中的数据`terms`为一个指向「向量/集合」的引用
     - 即便其类型确定，它仍然是一个「指针」，不会造成效率干扰
+
+    参考：《NAL》定义11.5
+    > The conjunction connector (‘∧’) has two temporal variants: “sequential conjunction” (‘,’) and “parallel conjunction” (‘;’).
+    > “(E1, E2)” corresponds to the compound event consisting of E1 followed by E2, and “(E1; E2)” corresponds to the compound event consisting of E1 accompanied by E2.
+
+    中译：
+    > 合取连接符 (‘∧’) 有两种时序变体变体:“序列合取” (‘,’) 和“平行合取” (‘;’)。
+    > “(E1, E2)” 对应由E1后接E2，“(E1; E2)” 对应由E1伴随E2组成的复合事件。
     """ # 与「TermSet」不同的是：只使用最多两个词项（陈述）
     struct StatementTemporalSet{TemporalRelation <: AbstractTemporalRelation} <: AbstractStatementLogicalSet{And}
 

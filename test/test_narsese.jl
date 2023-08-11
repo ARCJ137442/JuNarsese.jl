@@ -5,6 +5,9 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
 
 @testset "Narsese" begin
 
+    @info "各个词项的复杂度："
+    [println(get_syntactic_complexity(t), " of $t") for t in test_set.terms]
+
     # 原子词项
 
     @show w i d q o
@@ -69,6 +72,15 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
         ),
         Inheriance(B,C)
     ) == ((((A→B)⇒(B→C)) ∧ (A→B)) ⇒ (B→C)) # 无序性
+    @test get_syntactic_complexity(s1) == 1+(
+        1+(
+            1+(1+1) + 1+(
+                1+(1+1) + 1+(1+1)
+            )
+        ) + 1+(1+1)
+    ) # 复杂度
+    @test get_syntactic_simplicity(s1, 0.5) ≈ 1/sqrt(15) # 方根简单度
+    @test get_syntactic_simplicity(s1, 1) ≈ 1//15 # 方根简单度
 
     @show s2 = (
         ((i"甲"→w"人")⇒(i"甲"→w"会死")) ∧
@@ -84,11 +96,22 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
         ),
         Inheriance(w"苏格拉底", w"会死")
     )
+    @test get_syntactic_complexity(s2) == 1+(
+        1+(
+            1+(1+(0+1) + 1+(0+1)) + 1+(
+                1+1
+            )
+        ) + 1+(1+1)
+    ) # 复杂度
 
     # 陈述时序集
     @show s3 = ⩚(s1, s2) s4 = ⩜(s1, s2)
     @test s3 == ParConjunction(s1, s2) == ⩚(s2, s1) # 无序性
     @test s4 == SeqConjunction(s1, s2) ≠  ⩜(s2, s1) # 有序性
+    @test get_syntactic_complexity(s3) == 1 + (
+        get_syntactic_complexity(s1) + 
+        get_syntactic_complexity(s2)
+    ) == get_syntactic_complexity(s4) # 复杂度，只由组分决定
     @show s5 = ∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)
     @test s5 == (∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)) # 非唯一性
     @test s5 == Implication(
@@ -105,19 +128,6 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @test s5 == (∨(⩚(A→B, B→C, C→D), ⩜(A→B, B→C, C→D)) ⇒ (A→D))
     @test s5 == (∨(⩚(A→B, C→D, B→C), ⩜(A→B, B→C, C→D)) ⇒ (A→D))
     @test s5 ≠ (∨(⩚(A→B, B→C, C→D), ⩜(B→C, A→B, C→D)) ⇒ (A→D))
-
-    # 极端嵌套情况
-    s6 = *(
-        ⩚(
-            ⩜(A→B, B→C, C→D), 
-            ∨(ExtSet(A, B, C)→D, w→o), ⩚(A→B, B→C, C→D)
-        ), 
-        ∧(s1, s2), 
-        \(A, ⋄, s3, C) → s2,
-        /(s1, ⋄, B, s5) → s3,
-        ¬(Base.:(&)(w, i, d, q, o) → IntSet(A, ∩(A, B, C)))
-    ) → s5
-    @show s6
 
     # 语句
     se = Sentence{Question}(

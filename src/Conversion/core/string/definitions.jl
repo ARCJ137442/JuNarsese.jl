@@ -90,7 +90,7 @@ const StringParser_latex::StringParser = StringParser{String}(
         Word     => "", # 置空
         IVar     => "\$",
         DVar     => "\\#",
-        QVar     => "?",
+        QVar     => "?", # 【20230811 12:54:54】！自《NAL》定义10.2得知，非独变量的LaTeX包括后缀，后续兼容成问题
         Operator => "\\Uparrow", # 操作
     ),
     "\\diamond", "\\diamond",
