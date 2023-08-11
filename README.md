@@ -1,6 +1,6 @@
 # JuNarsese
 
-Narsese(纳思语，NARS的知识表示语言)的Julia实现
+Narsese(纳思语，NARS的知识表示语言)的[Julia](https://github.com/JuliaLang/julia)实现
 
 - 为其它使用Narsese的库提供数据结构表征、存取、互转支持
 
@@ -18,6 +18,16 @@ JuNarsese包含两个主要模块：
   - 实现上述数据结构与以下常用结构的相互转化
     - 字符串
     - AST(抽象语法树)
+
+## 安裝
+
+作为一个**Julia包**，您只需：
+1. 在安装`Pkg`包管理器的情况下，
+2. 在REPL(`julia.exe`)运行如下代码：
+```julia
+using Pkg
+Pkg.add(url="https://github.com/ARCJ137442/JuNarsese.jl")
+```
 
 ## 作者注
 
