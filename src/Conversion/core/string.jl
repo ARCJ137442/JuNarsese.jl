@@ -725,7 +725,7 @@ begin "复合词项↔字符串"
     """
     narsese2data(
         parser::StringParser, 
-        t::TermOperatedSetLike
+        t::TermCompoundSetLike
     ) = form_compound_set(
         parser.compound_brackets[Compound]...,
         parser.compound_symbols[typeof(t)],
