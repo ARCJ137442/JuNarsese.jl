@@ -58,6 +58,19 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
 
     # 陈述
 
+    # 基于陈述的陈述：不能用「非陈述词项」构造蕴含、等价
+    @test @expectedError Implication(Word(:a), Word(:b))
+    @test @expectedError Equivalence(i, d)
+    @test @expectedError Implication(q, o)
+    @test @expectedError Equivalence(eI, iI)
+    @test @expectedError Implication(p, A→B)
+    
+    # 陈述逻辑集、陈述时序集都不支持「非陈述词项」
+    @test @expectedError Conjunction(A→B, B→C, A↔D, C→D, D→o, p)
+    @test @expectedError Disjunction(A→B, C→D, D→o, B→C, A↔D, d)
+    @test @expectedError ParConjunction(A→B, C→D, A↔D, D→o, B→C, w)
+    @test @expectedError SeqConjunction(A→B, D→o, B→C, A↔D, C→D, w)
+
     # 陈述逻辑集
     @show s1 = ((A→B) ∧ ((A→B)⇒(B→C))) ⇒ (B→C)
     @test s1 == (((A→B) ∧ ((A→B)⇒(B→C))) ⇒ (B→C)) # 非唯一性
@@ -145,13 +158,13 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     
     @test se0 == narsese"<{SELF} --> [good]>! :|: %1.0;0.9%"
 
-    @test @JuNarsese.Util.exceptedError Sentence{Judgement}(
+    @test @expectedError Sentence{Judgement}(
         s5,
         Truth64(1.1, 0.9), # f越界
         StampBasic()
     )
 
-    @test @JuNarsese.Util.exceptedError Sentence{Judgement}(
+    @test @expectedError Sentence{Judgement}(
         s5,
         Truth64(0, -1.0), # c越界
         StampBasic()

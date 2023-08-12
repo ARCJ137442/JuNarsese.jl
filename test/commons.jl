@@ -4,6 +4,7 @@ if !isdefined(Main, :JuNarsese)
 
     # 自动导入JuNarsese模块
     using JuNarsese
+    using JuNarsese.Util # 特别using其中的「Util」
 end
 if !isdefined(Main, :Test)
     using Test
@@ -25,7 +26,7 @@ if !isdefined(Main, :Test)
     @show s2 = (|(A, B, C) → D) ⇒ ∨((A → D), (B → D), (C → D))
     # 快捷方式解析
     @show s3 = ShortcutParser.(
-        """(( q"A" * i"B" ) → o"C" ) ⇔ d"D" """
+        """ (( q"A" * i"B" ) → o"C" ) ⇔ (d"D" ↔ w"E") """
     )
     # 词项集&词项逻辑集
     
@@ -39,13 +40,13 @@ if !isdefined(Main, :Test)
         nse"<A --] B>"
         nse"<A {-] B>"
         
-        nse"<A =/> B>"
-        nse"<A =|> B>"
-        nse"<A =\> B>"
+        nse"<<A --> B> =/> <B --> C>>" # 【20230812 18:27:20】现在必须要陈述才能输入进去
+        nse"<<A --> B> =|> <B --> C>>" # 【20230812 18:27:20】现在必须要陈述才能输入进去
+        nse"<<A --> B> =\> <B --> C>>" # 【20230812 18:27:20】现在必须要陈述才能输入进去
         
-        nse"<A </> B>"
-        nse"<A <|> B>"
-        nse"<A <\> B>"
+        nse"<<A --> B> </> <B --> C>>" # 【20230812 18:27:20】现在必须要陈述才能输入进去
+        nse"<<A --> B> <|> <B --> C>>" # 【20230812 18:27:20】现在必须要陈述才能输入进去
+        nse"<<A --> B> <\> <B --> C>>" # 【20230812 18:27:20】现在必须要陈述才能输入进去
     ]...)
     @show s7
     # 极端嵌套情况
@@ -86,6 +87,7 @@ if !isdefined(Main, :Test)
         Sentence{Judgement}(s8)
     ]
     @info "sentences: " sentences
+    # 下面这些注释是利用系统报错精确获得堆栈信息/调试支持的
     # ASTParser.(ASTParser.(ASTParser.(sentences, Sentence), Sentence), Sentence)
     # XMLParser_optimized.(XMLParser_optimized.(XMLParser_optimized.(sentences, Sentence), Sentence), Sentence)
     # @info "sentences@AST: " ASTParser.(ASTParser.(ASTParser.(sentences, Sentence), Sentence), Sentence)

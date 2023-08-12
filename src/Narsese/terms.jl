@@ -442,17 +442,32 @@ begin "陈述词项"
     > 语句的基本形式是继承语句“S→P”，
     >   其中S为主词项，P为谓词项，“→”为继承系词，
     >   定义为从一个词项到另一个词项的自反传递关系。
-    > 如果S1和S2是语句，“S1⇒S2”当且仅当在IL中S2可以在有限的推理步骤中由S1导出时为真。
-    > 这里的“⇒”是隐含的联结词。形式上，它表示 (S1 ⇒ S2) ⟺ {S1} ⊢ S2。【译者注 LaTeX代码：`⟺iff`,`⊢vdash`】
+    > 如果S1和S2是陈述，“S1⇒S2”当且仅当在IL中S2可以在有限的推理步骤中由S1导出时为真。
+    >   这里的“⇒”是隐含的联结词。形式上，它表示 (S1 ⇒ S2) ⟺ {S1} ⊢ S2。【译者注 LaTeX代码：`⟺iff`,`⊢vdash`】
     """
-    struct Statement{Type <: AbstractStatementType} <: AbstractStatement
+    struct Statement{type <: AbstractStatementType} <: AbstractStatement
         ϕ1::AbstractTerm # subject 主词
         ϕ2::AbstractTerm # predicate 谓词
+
+        """
+        内部构造方法
+        - 采用「隐含第三参数」的形式，约束主项、谓项的类型
+            - 🎯用于在「实现『蕴含、等价关系的主谓项仅能为陈述』」的同时，最大程度保留可扩展性
+            - 可扩展性的体现：默认的「二参数构造方法」交给后续代码扩充
+        """
+        function Statement{type}(
+            ϕ1::T, ϕ2::T, # 类型限定
+            __limited_type::Type{T}
+            ) where {
+                type <: AbstractStatementType, # 陈述类型，后续作为分派依据
+                T <: AbstractTerm, # 指定是在「词项」之下
+            }
+            new{type}(ϕ1, ϕ2) # 构造之后丢失信息 【20230812 18:04:50】到底是否需要加进陈述的「泛型参数」内？加进去后会不会存在「类型身份问题」？
+            # 【20230812 18:05:44】或有一法：分开成「词项の陈述」和「陈述の陈述」实现（但不简洁）
+        end
     end
-    "Pair→陈述"
-    Statement{T}(p::Base.Pair) where {T} = Statement{T}(p.first, p.second)
-    "陈述→Pair"
-    Base.Pair(s::Statement) = (s.ϕ1 => s.ϕ2)
+    # 【20230812 18:06:28】因「主谓项类型限定」，不再提供「Pair↔陈述」的方案
+    # 具体对「二元陈述构造方法」的定义，参见methods.jl
 
     """
     [NAL-5]陈述逻辑集：{与/或/非}

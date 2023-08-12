@@ -3,7 +3,7 @@
 """
 module Util
 
-export @reverse_dict_content, @redirect_SRS, @exceptedError
+export @reverse_dict_content, @redirect_SRS, @expectedError
 export match_first, allproperties, allproperties_generator
 export get_pure_type_name, get_pure_type_symbol, verify_type_expr, assert_type_expr
 export SYMBOL_NULL
@@ -36,7 +36,7 @@ macro redirect_SRS(para::Expr, code::Expr)
 end
 
 "【用于调试】判断「期望出错」（仿官方库show语法）"
-macro exceptedError(exs...)
+macro expectedError(exs...)
     Expr(:block, [ # 生成一个block，并使用列表推导式自动填充args
         quote
             local e = nothing
@@ -236,49 +236,43 @@ d = Dict(
 )
 
 """
-随机选择宏的等价函数
+宏的等价函数
 用于自动
 1. 构造随机数
 2. 生成`if-elseif-else`表达式
 """
-function rand_macro(exprs...)::Expr
+function rand_macro(exprs...)::Union{Symbol, Expr}
+
     # 预先计算表达式数量
     n = length(exprs)
-    @assert n > 1 "随机选择至少需要两个备选结果"
 
-    # 构造代码块
-    blk::Expr = Expr(:block)
+    # 可能是封装到数组里面去了
+    if n == 1
+        exprs = exprs[1].args
+        n = length(exprs)
+    end
+
+    # 只有一个⇒优化：直接返回
+    if n == 1
+        return exprs[1] # 可能是Symbol
+    end
+    # @assert n > 1 "随机选择至少需要两个备选结果"
 
     rand_variable::Symbol = Symbol(":rand_n:")
 
-    # 预置n
-    push!(blk.args, :(local $rand_variable = rand(1:$n)))
-
-    current_args::Vector = blk.args
-    push!(
-        current_args, 
-        Expr(
-            :if, 
-            :($rand_variable == 1),
-            exprs[1]
-        )
+    # 构造代码块
+    blk::Expr = Expr(
+        :block,
+        :(local $rand_variable = rand(1:$n))
     )
 
-    for i in 2:n
-        expr = exprs[i]
-        current_args = current_args[end].args # 跳到if/elseif表达式的末尾
-        # i+1是为了跳过第一个
-        push!(
-            current_args, 
-            Expr(
-                :elseif, 
-                :($rand_variable == $(i)), 
-                expr
-            )
-        )
-    end
-
-    return blk
+    return generate_ifelseif_expressions!(
+        blk,
+        (
+            :($rand_variable == $i) => expr
+            for (i, expr) in enumerate(exprs)
+        )...
+    )
 end
 
 """

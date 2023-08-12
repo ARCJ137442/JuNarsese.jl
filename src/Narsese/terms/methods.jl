@@ -259,3 +259,39 @@ begin "NAL信息支持"
     get_syntactic_simplicity(t::Term, r::Number) = 1 / get_syntactic_complexity(t)^r
 
 end
+
+begin "四种类型陈述的构造方法，用于示例"
+        
+    """
+    继承 & 相似：基于词项的陈述 TermBasedSTs
+    """
+    Statement{T}(
+        ϕ1::AbstractTerm, ϕ2::AbstractTerm
+    ) where {
+        T <: TermBasedSTs
+    } = Statement{T}(ϕ1, ϕ2, AbstractTerm)
+
+    """
+    蕴含 & 等价：基于陈述的陈述 StatementBasedSTs
+    - ⚠此处的「抽象陈述」不仅仅包含「陈述」，
+        - 还包括「陈述逻辑集」「陈述时序集」等
+    """
+    Statement{T}(
+        ϕ1::AbstractStatement, ϕ2::AbstractStatement
+    ) where {
+        T <: StatementBasedSTs
+    } = Statement{T}(ϕ1, ϕ2, AbstractStatement)
+
+    """
+    （默认报错）提供可解释的报错功能：蕴含、等价只接受陈述
+    """
+    Statement{T}(::AbstractStatement, t::Term) where {
+        T <: StatementBasedSTs
+    } = error("蕴含、等价的参数只能是陈述，不支持非陈述词项！检测到「非陈述词项」$t")
+    Statement{T}(t::Term, ::AbstractStatement) where {
+        T <: StatementBasedSTs
+    } = error("蕴含、等价的参数只能是陈述，不支持非陈述词项！检测到「非陈述词项」$t")
+    Statement{T}(t1::Term, t2::Term) where {
+        T <: StatementBasedSTs
+    } = error("蕴含、等价的参数只能是陈述，不支持非陈述词项！检测到「非陈述词项」$t1、$t2")
+end

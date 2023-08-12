@@ -150,8 +150,9 @@ begin "复合词项"
     """
     →(t1::Term, t2::Term) = Inheriance(t1, t2)
     ↔(t1::Term, t2::Term) = Similarity(t1, t2)
-    ⇒(t1::Term, t2::Term) = Implication(t1, t2)
-    ⇔(t1::Term, t2::Term) = Equivalence(t1, t2)
+    # 基于陈述而非全体词项
+    ⇒(t1::AbstractStatement, t2::AbstractStatement) = Implication(t1, t2)
+    ⇔(t1::AbstractStatement, t2::AbstractStatement) = Equivalence(t1, t2)
 
     """
     陈述逻辑「非」
@@ -161,24 +162,24 @@ begin "复合词项"
     """
     陈述逻辑「与」
     """
-    ∧(terms::Vararg{Term}) = Conjunction(terms...)
+    ∧(terms::Vararg{AbstractStatement}) = Conjunction(terms...)
 
     """
     陈述逻辑「或」
     """
-    ∨(terms::Vararg{Term}) = Disjunction(terms...)
+    ∨(terms::Vararg{AbstractStatement}) = Disjunction(terms...)
 
     """
     陈述时序「平行」（原创）
     - LaTeX: `\\wedgemidvert`
     """
-    ⩚(terms::Vararg{Term}) = ParConjunction(terms...)
+    ⩚(terms::Vararg{AbstractStatement}) = ParConjunction(terms...)
 
     """
     陈述时序「序列」（原创）
     - LaTeX: `\\midbarwedge`
     """
-    ⩜(terms::Vararg{Term}) = SeqConjunction(terms...)
+    ⩜(terms::Vararg{AbstractStatement}) = SeqConjunction(terms...)
 
 
 end

@@ -25,7 +25,7 @@ export ALOperation, ALogicOperation
 
 export IVar, DVar, QVar
 export STInheriance, STSimilarity, STImplication, STEquivalence,
-         Inheriance,   Similarity,   Implication,   Equivalence
+      Inheriance,   Similarity,   Implication,   Equivalence
 export TemporalStatementTypes
 export STImplicationPast, STImplicationPresent, STImplicationFuture
 export   ImplicationPast,   ImplicationPresent,   ImplicationFuture
@@ -33,14 +33,14 @@ export STEquivalencePast, STEquivalencePresent, STEquivalenceFuture
 export   EquivalencePast,   EquivalencePresent,   EquivalenceFuture
 export Negation, Conjunction, Disjunction
 export ExtSet, ExtensionSet, 
-       IntSet, IntensionSet
+    IntSet, IntensionSet
 export ExtImage, ExtensionImage, 
-       IntImage, IntensionImage
+    IntImage, IntensionImage
 export ExtIntersection, ExtensionIntersection, 
-       IntIntersection, IntensionIntersection
+    IntIntersection, IntensionIntersection
 export ExtUnion, ExtensionUnion, IntUnion, IntensionUnion
 export ExtDiff, ExtensionDiff, ExtDifference, ExtensionDifference, 
-       IntDiff, IntensionDiff, IntDifference, IntensionDifference
+    IntDiff, IntensionDiff, IntDifference, IntensionDifference
 export ParConjunction, SeqConjunction
 export TermSetLike, TermCompoundSetLike
 
@@ -67,7 +67,7 @@ const Var = Variable
 const Op  = Operator
 
 const TSet     = TermSet
-const TLSet    = TermLSet       = TLogicSet    = TermLogicalSet
+const TLSet    = TermLSet    = TLogicSet    = TermLogicalSet
 const TImage   = TermImage
 const TProduct = TermProduct
 const ASLSet   = AStatementLSet = ASLogicSet   = AbstractStatementLogicalSet
@@ -140,15 +140,25 @@ const IntDiff = IntensionDiff = IntDifference = IntensionDifference = TermLogica
 const ParConjunction = STSet{Parallel}
 const SeqConjunction = STSet{Sequential}
 
+# （内置）陈述的类型：基于词项/基于陈述 [因其「内部不可扩展性」不予导出]
+const TermBasedSTs = Union{
+    STInheriance,
+    STSimilarity
+}
+const StatementBasedSTs = Union{
+    StatementTypeImplication, # 注意：ST开头的是「永恒」时态变种
+    StatementTypeEquivalence, # 注意：ST开头的是「永恒」时态变种
+}
+
 # 集合类的词项: 形如`(操作符, 词项...)`与其它「有`terms`字段，且有多个元素的集合」
 const TermLogicalSetLike  = Union{TermLSet, StatementLSet{And}, StatementLSet{Or}, StatementTSet} # 「逻辑非」不含在内
 const TermCompoundSetLike = Union{TermLogicalSetLike, TermImage, TermProduct, StatementLSet{Not}}
-const TermSetLike         = Union{TermSet, TermCompoundSetLike} # 与OpenJunars不同的是，还包括「乘积」与「像」
+const TermSetLike      = Union{TermSet, TermCompoundSetLike} # 与OpenJunars不同的是，还包括「乘积」与「像」
 # const TermSetSymmetric    = Union{
-#        TermSet, 
-#        TermLSet{Extension, And}, TermLSet{Extension, Or}, TermLSet{Intension, And}, TermLSet{Intension, Or},
-#        StatementLSet{And}, StatementLSet{Or}, 
-#        StatementTemporalSet{Parallel}
+#     TermSet, 
+#     TermLSet{Extension, And}, TermLSet{Extension, Or}, TermLSet{Intension, And}, TermLSet{Intension, Or},
+#     StatementLSet{And}, StatementLSet{Or}, 
+#     StatementTemporalSet{Parallel}
 # } # 所有具有「对称性」的词项/陈述集合 【20230811 13:55:37】这个应该被更灵活地定义，以便后续扩展
 
 # const SymmetricStatementTypes = Union{STSimilarity, STEquivalence} # 同上，需要更好地扩展

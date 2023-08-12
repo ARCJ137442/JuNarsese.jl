@@ -70,8 +70,8 @@ end
         # 陈述 #
     
         # 陈述↔字符串
-        @show s0 = *(A,B,C) ⇔ o"op"
-        @test string(s0) == "<(*, A, B, C) <=> ^op>"
+        @show s0 = *(A,B,C) ↔ *(o"op", d"i")
+        @test string(s0) == "<(*, A, B, C) <-> (*, ^op, #i)>"
     
     end
 
