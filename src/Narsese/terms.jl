@@ -32,10 +32,10 @@
     - 因此：Symbol在用作「唯一标识符」时，比String更有效率
 
     英文维基的「字符串内联」资料：
-    > String interning speeds up string comparisons, 
-    > which are sometimes a performance bottleneck in applications 
-    > (such as compilers and dynamic programming language runtimes) 
-    > that rely heavily on associative arrays with string keys to look up the attributes and methods of an object. 
+    > String interning speeds up string comparisons,
+    > which are sometimes a performance bottleneck in applications
+    > (such as compilers and dynamic programming language runtimes)
+    > that rely heavily on associative arrays with string keys to look up the attributes and methods of an object.
     > Without interning, comparing two distinct strings may involve examining every character of both.
 
     GPTの答：
@@ -57,13 +57,13 @@
         "string_symbol" == a
         for _ in 1:0xfffff
         ]
-    # 0.057884 seconds (31.06 k allocations: 3.075 MiB, 67.64% compilation time)
+ # 0.057884 seconds (31.06 k allocations: 3.075 MiB, 67.64% compilation time)
     a = :string_symbol
     @time [
         :string_symbol == a
         for _ in 1:0xfffff
         ]
-    # 0.053276 seconds (38.77 k allocations: 3.656 MiB, 98.21% compilation time)
+ # 0.053276 seconds (38.77 k allocations: 3.656 MiB, 98.21% compilation time)
     ```
 =#
 
@@ -196,16 +196,21 @@ begin "单体词项"
     > In this document the alphabet includes English letters, digits 0 to 9, and a few special signs, such as hyphen (‘-’).
     > In the examples in this book, we often use common English nouns for terms, such as bird and animal, just to make the examples easy to understand.
     > There is no problem to do the same in a different natural language, such as Chinese.On the other hand, it is also fine to use terms that are meaningless to human beings, such as drib and aminal.
-    
+
     中译：
     > 一个词项的基本形式是一个「词语」，即来自有限字母表的一串字符。
     > 除此之外对字母表没有要求。
     > 本书中字母表包括英文字母、数字0 ~ 9和一些特殊符号，如“-”，并常用常见的英语名词来表示术语，例如bird和animal，只是为了使示例易于理解。
     > 用一种不同的自然语言(如中文)做同样的事情是没有问题的。另一方面，也可以使用对人类没有意义的术语，如drib和aminal。
-    
+
     """
     struct Word <: AbstractAtom
         name::Symbol # 为何不用String？见上文笔记
+
+        "加入合法性检查"
+        Word(name::Symbol) = check_valid_explainable(
+            new(name)
+        ) # 增加合法性检查_explainable
     end
     """
     支持从String构造
@@ -239,21 +244,26 @@ begin "单体词项"
     > 它被命名为具有由它所依赖的独立变量组成的依赖列表的独立变量，
     > 该列表可以为空。
     """
-    struct Variable{Type <: AbstractVariableType} <: AbstractAtom
+    struct Variable{T <: AbstractVariableType} <: AbstractAtom
         name::Symbol
+
+        "加入合法性检查"
+        Variable{T}(name::Symbol) where {T <: AbstractVariableType} = check_valid_explainable(
+            new(name)
+        ) # 增加合法性检查
     end
     "支持从String构造"
     Variable{T}(name::String) where {T<:AbstractVariableType} = name |> Symbol |> Variable{T}
 
     """
     [NAL-8]操作词项(Action)
-    
+
     参考：《NAL》定义12.2
 
-    > An atomic operation is represented as an operator (a special term whose name starts with ‘⇑’) 
+    > An atomic operation is represented as an operator (a special term whose name starts with ‘⇑’)
     > followed by an argument list (a sequence of terms, though can be empty).
-    > Within the system, operation “(⇑op a₁ ··· aₙ)” is treated as statement “(× self a₁ ··· aₙ) → op”, 
-    > where op belongs to a special type of term that has a procedural interpretation, 
+    > Within the system, operation “(⇑op a₁ ··· aₙ)” is treated as statement “(× self a₁ ··· aₙ) → op”,
+    > where op belongs to a special type of term that has a procedural interpretation,
     > and self is a special term referring to the system itself.
 
     中译：
@@ -264,6 +274,11 @@ begin "单体词项"
     """
     struct Operator <: AbstractAtom
         name::Symbol
+
+        "加入合法性检查"
+        Operator(name::Symbol) = check_valid_explainable(
+            new(name)
+        ) # 增加合法性检查
     end
     "支持从String构造"
     Operator(name::String) = name |> Symbol |> Operator
@@ -281,6 +296,13 @@ begin "单体词项"
     """
     struct TermSet{EIType <: AbstractEI} <: AbstractTermSet
         terms::Set{<:AbstractTerm}
+
+        "加入合法性检查"
+        TermSet{EIType}(terms::Set{T}) where {
+            T <: AbstractTerm, EIType <: AbstractEI
+        } = check_valid_explainable(
+            new{EIType}(terms)
+        ) # 增加合法性检查
     end
 
     "任意长参数"
@@ -295,17 +317,17 @@ begin "单体词项"
         - 注意：此处不会使用，会自动转换（见📝「为何不使用外延/内涵 并？」）
     - Not: 差集 - ~
         - 有序(其余皆无序)
-    
+
     参考：《NAL》定义7.6~9
     > Given terms T1 and T2, their extensional intersection (T1 ∩ T2)
     >   is a compound term defined by (∀x)((x → (T1 ∩ T2)) ⟺ ((x → T1) ∧ (x → T2))).
-    > Given terms T1 and T2, their intensional intersection (T1∪T2) 
+    > Given terms T1 and T2, their intensional intersection (T1∪T2)
     >   is a compound term defined by (∀x)(((T1 ∪ T2) → x) ⟺ ((T1 → x) ∧ (T2 → x))).
     > If T1 and T2 are different terms, their extensional difference (T1 - T2)
     >   is a compound term defined by (∀x)((x → (T1 - T2)) ⟺((x → T1) ∧ ¬(x → T2))).
     > If T1 and T2 are different terms, their intensional difference (T1⊖T2)
     >   is a compound term defined by (∀x)(((T1⊖T2) → x) ⟺ ((T1 → x) ∧ ¬(T2 → x))).
-    
+
 
     中译：
     > 给定词项T1与T2，它们的外延交(T1∩T2)是一个复合词项，定义为 (∀x)((x → (T1 ∩ T2)) ⟺ ((x → T1) ∧ (x → T2)))。
@@ -318,9 +340,11 @@ begin "单体词项"
 
         "(无序)交集 Intersection{外延/内涵} ∩& ∩|"
         function TermLogicalSet{EIType, And}(terms::Vararg{AbstractTerm}) where EIType # 此EIType构造时还会被检查类型
-            new{EIType, And}( # 把元组转换成对应数据结构
-                terms |> Set{AbstractTerm}
-            )
+            check_valid_explainable(
+                new{EIType, And}( # 把元组转换成对应数据结构
+                    terms |> Set{AbstractTerm}
+                )
+            ) # 增加合法性检查
         end
 
         "(无序，重定向)并集 Union{外延/内涵} ∪& ∪|" # 【20230724 14:12:33】暂且自动转换成交集（返回值类型参数转换不影响）（参考《NAL》定理7.4）
@@ -329,9 +353,11 @@ begin "单体词项"
 
         "(有序)差集 Difference{外延/内涵} - ~" # 注意：这是二元的 参数命名参考自OpenJunars
         function TermLogicalSet{EIType, Not}(ϕ₁::AbstractTerm, ϕ₂::AbstractTerm) where EIType # 此EIType构造时还会被检查类型
-            new{EIType, Not}( # 把元组转换成对应数据结构，再深拷贝
-                AbstractTerm[ϕ₁, ϕ₂]
-            )
+            check_valid_explainable(
+                new{EIType, Not}( # 把元组转换成对应数据结构，再深拷贝
+                    AbstractTerm[ϕ₁, ϕ₂]
+                )
+            ) # 增加合法性检查
         end
 
     end
@@ -343,7 +369,7 @@ begin "单体词项"
     - 用于关系词项「(*, 水, 盐) --> 前者可被后者溶解」
 
     参考：《NAL》定义8.1
-    > The product connector ‘×’ takes two or more terms as components, 
+    > The product connector ‘×’ takes two or more terms as components,
     >   and forms a compound term that satisfies ((× S₁ ··· Sₙ) → (× P₁ ··· Pₙ)) ⟺ ((S₁ → P₁) ∧ ··· ∧ (Sₙ → Pₙ)).
 
     中译：
@@ -352,6 +378,11 @@ begin "单体词项"
     """
     struct TermProduct <: AbstractTermSet
         terms::Vector{<:AbstractTerm}
+
+        "加入合法性检查"
+        TermProduct(terms::Vector{T}) where {T <: AbstractTerm} = check_valid_explainable(
+            new(terms)
+        ) # 增加合法性检查
     end
 
     "多参数构造"
@@ -367,8 +398,8 @@ begin "单体词项"
     例：`TermImage{Extension}([a,b,c], 3)` = (/, a, b, _, c)
 
     参考：《NAL》定义8.4
-    > For a relation R and a product (× T1 T2), 
-    >   the extensional image connector, ‘/’, and intensional image connector, ‘\’, 
+    > For a relation R and a product (× T1 T2),
+    >   the extensional image connector, ‘/’, and intensional image connector, ‘\’,
     >   of the relation on the product are defined as the following, respectively:
     >     ((× T1 T2) → R) ⟺ (T1 → (/ R ⋄ T2)) ⟺ (T2 → (/ R T1 ⋄))
     >     (R → (× T1 T2)) ⟺ ((\ R ⋄ T2) → T1) ⟺ ((\ R T1 ⋄) → T2)
@@ -377,7 +408,7 @@ begin "单体词项"
     > 对于关系R和乘积(× T1 T2)，乘积上关系的外延像连接符“/”和内延像连接符“\”分别定义为：
     >     ((× T1 T2) → R) ⟺ (T1 → (/ R ⋄ T2)) ⟺ (T2 → (/ R T1 ⋄))
     >     (R → (× T1 T2)) ⟺ ((\ R ⋄ T2) → T1) ⟺ ((\ R T1 ⋄) → T2)
-    
+
     """
     struct TermImage{EIType <: AbstractEI} <: AbstractTermSet
         terms::Tuple{Vararg{AbstractTerm}}
@@ -385,7 +416,7 @@ begin "单体词项"
 
         """
         限制占位符位置（0除外）
-        
+
         📌莫使用`Tuple{Vararg{T}} where T <: AbstractTerm`
         - 理：Julia参数类型的「不变性」，参数类型的子类关系不会反映到整体上
             - 例: `Tuple{Int} <: Tuple{Integer} == false`
@@ -396,10 +427,12 @@ begin "单体词项"
             - 例如：只用`Tuple{Integer}`而不用`Tuple{Int}`
         """
         function TermImage{EIType}(terms::Tuple{Vararg{AbstractTerm}}, relation_index::Unsigned) where {EIType}
-            # 检查
+ # 检查
             relation_index == 0 || @assert relation_index ≤ length(terms) + 1 "索引`$relation_index`越界！"
-            # 构造
-            new{EIType}(terms, relation_index)
+ # 构造
+            check_valid_explainable(
+                new{EIType}(terms, relation_index) # 加入合法性检查
+            ) # 增加合法性检查
         end
     end
 
@@ -430,12 +463,13 @@ begin "陈述词项"
     - 现只支持「二元」陈述，只表达两个词项之间的关系
     - ❎【20230804 14:17:30】现增加「时序」参数，以便在词项层面解析「时序关系」
     - 【20230804 14:44:13】现把「时序系词」作为「主系词」（参考自OpenNARS）
+    - 【20230812 22:19:20】加入「合法性检查」机制
 
     参考：《NAL》定义2.2、9.1
     > The basic form of a statement is an inheritance statement,
-    >   “S → P”, where S is the subject term, P is the predicate term, and ‘→’ is the inheritance copula, 
+    >   “S → P”, where S is the subject term, P is the predicate term, and ‘→’ is the inheritance copula,
     >   defined as being a reflexive and transitive relation from one term to another term.
-    > If S1 and S2 are statements, “S1 ⇒ S2” is true if and only if in IL S2 can be derived from S1 in a finite number of inference steps. 
+    > If S1 and S2 are statements, “S1 ⇒ S2” is true if and only if in IL S2 can be derived from S1 in a finite number of inference steps.
     >   Here ‘⇒’ is the implication copula. Formally, it means (S1 ⇒ S2) ⟺ {S1} ⊢ S2.
 
     中译：
@@ -451,23 +485,16 @@ begin "陈述词项"
 
         """
         内部构造方法
-        - 采用「隐含第三参数」的形式，约束主项、谓项的类型
-            - 🎯用于在「实现『蕴含、等价关系的主谓项仅能为陈述』」的同时，最大程度保留可扩展性
-            - 可扩展性的体现：默认的「二参数构造方法」交给后续代码扩充
+        - 【20230812 22:20:01】现调用外部定义的「内联可解释合法性检查」函数
         """
         function Statement{type}(
-            ϕ1::T, ϕ2::T, # 类型限定
-            __limited_type::Type{T}
-            ) where {
-                type <: AbstractStatementType, # 陈述类型，后续作为分派依据
-                T <: AbstractTerm, # 指定是在「词项」之下
-            }
-            new{type}(ϕ1, ϕ2) # 构造之后丢失信息 【20230812 18:04:50】到底是否需要加进陈述的「泛型参数」内？加进去后会不会存在「类型身份问题」？
-            # 【20230812 18:05:44】或有一法：分开成「词项の陈述」和「陈述の陈述」实现（但不简洁）
+            ϕ1::AbstractTerm, ϕ2::AbstractTerm,
+            ) where {type <: AbstractStatementType}
+            check_valid_explainable(
+                new{type}(ϕ1, ϕ2)
+            ) # 增加合法性检查
         end
     end
-    # 【20230812 18:06:28】因「主谓项类型限定」，不再提供「Pair↔陈述」的方案
-    # 具体对「二元陈述构造方法」的定义，参见methods.jl
 
     """
     [NAL-5]陈述逻辑集：{与/或/非}
@@ -478,8 +505,8 @@ begin "陈述词项"
     注意：都是「对称」的⇒集合(无序)
 
     参考：《NAL》定义9.6
-    
-    > When S1 and S2 are different statements, 
+
+    > When S1 and S2 are different statements,
     >   their conjunction, (S1 ∧ S2), is a compound statement defined by
     >     (∀x)((x ⇒ (S1 ∧ S2)) ⟺ ((x ⇒ S1) ∧ (x ⇒ S2))).
     >   Their disjunction, (S1 ∨ S2), is a compound statement defined by
@@ -500,12 +527,16 @@ begin "陈述词项"
         function StatementLogicalSet{T}(
             terms::Vararg{AbstractStatement}, # 实质上是个元组
             ) where {T <: Union{And, Or}} # 与或都行
-            new{T}(terms |> Set) # 收集元组成集合
+            check_valid_explainable(
+                new{T}(terms |> Set) # 收集元组成集合
+            ) # 增加合法性检查
         end
 
         "陈述非 Negation"
         function StatementLogicalSet{Not}(ϕ::AbstractStatement)
-            new{Not}((ϕ,) |> Set{AbstractStatement}) # 只有一个
+            check_valid_explainable(
+                new{Not}((ϕ,) |> Set{AbstractStatement}) # 只有一个
+            ) # 增加合法性检查
         end
 
     end
@@ -534,14 +565,18 @@ begin "陈述词项"
         function StatementTemporalSet{Sequential}(
             terms::Vararg{AbstractStatement}, # 实质上是个元组
             )
-            new{Sequential}(terms |> collect) # 收集元组成向量
+            check_valid_explainable(
+                new{Sequential}(terms |> collect) # 收集元组成向量
+            ) # 增加合法性检查
         end
 
         "平行合取 Parallel Conjunction"
         function StatementTemporalSet{Parallel}(
             terms::Vararg{AbstractStatement}, # 实质上是个元组
             )
-            new{Parallel}(terms |> Set) # 收集元组成集合
+            check_valid_explainable(
+                new{Parallel}(terms |> Set) # 收集元组成集合
+            ) # 增加合法性检查
         end
 
     end

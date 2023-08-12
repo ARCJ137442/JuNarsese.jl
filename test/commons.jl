@@ -5,6 +5,9 @@ if !isdefined(Main, :JuNarsese)
     # 自动导入JuNarsese模块
     using JuNarsese
     using JuNarsese.Util # 特别using其中的「Util」
+
+    # 启用「严格模式」
+    include("use_strict.jl")
 end
 if !isdefined(Main, :Test)
     using Test
@@ -50,16 +53,17 @@ if !isdefined(Main, :Test)
     ]...)
     @show s7
     # 极端嵌套情况
-    s8 = *(
+    s8 = (*(
         ⩚(
             ⩜(A→B, B→C, C→D), 
-            ∨(ExtSet(A, B, C)→D, w→o), ⩚(A→B, B→C, C→D)
+            ∨(ExtSet(A, B, C)→D, w→o), 
+            ⩚(A→B, B→C, C→D)
         ), 
         ∧(s1, s2), 
-        \(A, ⋄, s3, s5) → s2,
-        /(s1, ⋄, B, s4) → s3,
+        \(A, ⋄, s3, s5) → /(s1, ⋄, B, s4),
+        s2 ⇒ s3,
         ¬(⩀(w, i, d, q, o) → IntSet(s6, ∩(A, B, C)))
-    ) → (s6 ⇒ s7)
+    ) → s4) ⇔ (s6 ⇒ s7)
     @show s8
 
     terms = [w, i, d, q, o, s1, s2, s3, s4, s5, s6, s7, s8]
@@ -76,7 +80,7 @@ if !isdefined(Main, :Test)
         nse"「（与，「凉白开是水」，「水是有毒的」）得「凉白开是有毒的」」将来真值=0.8真0.3信"han
         nse"「「（积，甲，乙）是（积，丙，丁）」将得（与，「甲是丙」，「乙是丁」）」？"han
         nse"「「（积，『爱因斯坦』，专利局）是坐在」曾得「（外像，『爱因斯坦』，坐在，某）是专利局」」曾经真值=0.5真0.9信"han
-        nse"「「『我』是【好】」似（与，「我为【好】」，「『我』有好」，「我具有好」）」；"han
+        nse"「「『我』是【好】」同（与，「我为【好】」，「『我』有好」，「我具有好」）」；"han
         nse"「（外交，【词项，任一独立变量，其一非独变量】，【所问查询变量，操作操作】）似【词项，任一独立变量，其一非独变量，所问查询变量，操作操作】」"han
         nse"「（内交，【词项，任一独立变量，其一非独变量，所问查询变量】，【所问查询变量，操作操作】）似【所问查询变量】」"han
         nse"「（内差，【词项，任一独立变量，其一非独变量】，【词项】）似【任一独立变量，其一非独变量】」"han

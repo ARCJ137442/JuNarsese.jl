@@ -56,16 +56,27 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @show p = TermProduct(A,B,C)
     @test p == *(A, B, C) == (A*B*C) ≠ (B*A*C) # 有序性 老式构造方法仍可使用
 
-    # 陈述
+    # 前面「严格模式」的具体作用
 
-    # 基于陈述的陈述：不能用「非陈述词项」构造蕴含、等价
+    # 基于词项的陈述：必须是「一等公民」而非陈述
+    @test @expectedError Inheriance(A, A)
+    @test @expectedError Similarity(p, p)
+    @test @expectedError Inheriance(w, A→B)
+    @test @expectedError Inheriance(A→B, d)
+    @test @expectedError Similarity(p, p→q)
+    @test @expectedError Similarity(p→q, p)
+
+    # 基于陈述的陈述：不能用「非陈述词项」构造蕴含、等价（【20230812 22:35:36】现在不再是「数据结构内嵌」）
+    @test @expectedError Implication(A→B, A→B)
+    @test @expectedError Equivalence(p↔C, p↔C)
     @test @expectedError Implication(Word(:a), Word(:b))
     @test @expectedError Equivalence(i, d)
     @test @expectedError Implication(q, o)
     @test @expectedError Equivalence(eI, iI)
     @test @expectedError Implication(p, A→B)
+    @test @expectedError Equivalence(p, p)
     
-    # 陈述逻辑集、陈述时序集都不支持「非陈述词项」
+    # 陈述逻辑集、陈述时序集都不支持「非陈述词项」（此为数据结构内嵌）
     @test @expectedError Conjunction(A→B, B→C, A↔D, C→D, D→o, p)
     @test @expectedError Disjunction(A→B, C→D, D→o, B→C, A↔D, d)
     @test @expectedError ParConjunction(A→B, C→D, A↔D, D→o, B→C, w)

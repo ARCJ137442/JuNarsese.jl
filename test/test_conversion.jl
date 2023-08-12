@@ -67,12 +67,6 @@ end
         # 测试@漢
         @equal_test StringParser_han test_set
 
-        # 陈述 #
-    
-        # 陈述↔字符串
-        @show s0 = *(A,B,C) ↔ *(o"op", d"i")
-        @test string(s0) == "<(*, A, B, C) <-> (*, ^op, #i)>"
-    
     end
 
     # @testset "ShortcutParser" begin # 这玩意儿只有解析器没有打包器

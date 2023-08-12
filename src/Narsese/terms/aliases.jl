@@ -140,15 +140,19 @@ const IntDiff = IntensionDiff = IntDifference = IntensionDifference = TermLogica
 const ParConjunction = STSet{Parallel}
 const SeqConjunction = STSet{Sequential}
 
-# （内置）陈述的类型：基于词项/基于陈述 [因其「内部不可扩展性」不予导出]
-const TermBasedSTs = Union{
+"（内置）陈述的类型：基于词项"
+const TermBasedSTs = Union{ # 因其「内部不可扩展性」不予导出
     STInheriance,
     STSimilarity
 }
-const StatementBasedSTs = Union{
+"（内置）陈述的类型：基于陈述"
+const StatementBasedSTs = Union{ # 不予导出，理由同上
     StatementTypeImplication, # 注意：ST开头的是「永恒」时态变种
     StatementTypeEquivalence, # 注意：ST开头的是「永恒」时态变种
 }
+
+"（内置）一等公民词项" # 不予导出，理由同上
+const FOTerm = FirstOrderTerm = Union{Atom, AbstractTermSet} # 原子词项&词项集
 
 # 集合类的词项: 形如`(操作符, 词项...)`与其它「有`terms`字段，且有多个元素的集合」
 const TermLogicalSetLike  = Union{TermLSet, StatementLSet{And}, StatementLSet{Or}, StatementTSet} # 「逻辑非」不含在内
