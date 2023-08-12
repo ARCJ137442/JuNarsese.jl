@@ -113,7 +113,7 @@ include("Terms/tense.jl")
 # 导出 #
 
 export AbstractVariableType, VariableTypeIndependent, VariableTypeDependent, VariableTypeQuery
-export AbstractStatementType, StatementTypeInheriance, StatementTypeSimilarity, StatementTypeImplication, StatementTypeEquivalance
+export AbstractStatementType, StatementTypeInheriance, StatementTypeSimilarity, StatementTypeImplication, StatementTypeEquivalence
 export AbstractLogicOperation, And, Or, Not
 export AbstractEI, Extension, Intension
 export AbstractTemporalRelation, Sequential, Parallel
@@ -133,7 +133,7 @@ abstract type AbstractStatementType end
 abstract type StatementTypeInheriance <: AbstractStatementType end # NAL-1
 abstract type StatementTypeSimilarity <: AbstractStatementType end # NAL-2
 abstract type StatementTypeImplication{T <: Tense} <: AbstractStatementType end # NAL-5|NAL-7
-abstract type StatementTypeEquivalance{T <: Tense} <: AbstractStatementType end # NAL-5|NAL-7
+abstract type StatementTypeEquivalence{T <: Tense} <: AbstractStatementType end # NAL-5|NAL-7
 
 "[NAL-2]区分「外延」与「内涵」"
 abstract type AbstractEI end # NAL-2

@@ -43,7 +43,7 @@ const StringParser_ascii::StringParser = StringParser{String}(
         STInheriance       => "-->",
         STSimilarity       => "<->",
         STImplication      => "==>",
-        STEquivalance      => "<=>",
+        STEquivalence      => "<=>",
         # 副系词: 实例&属性
         Instance           => "{--",
         Property           => "--]",
@@ -53,9 +53,9 @@ const StringParser_ascii::StringParser = StringParser{String}(
         STImplicationPresent => raw"=|>",
         STImplicationFuture  => raw"=/>",
         # 副系词: 时序等价
-        STEquivalancePast    => raw"<\>",
-        STEquivalancePresent => raw"<|>",
-        STEquivalanceFuture  => raw"</>",
+        STEquivalencePast    => raw"<\>",
+        STEquivalencePresent => raw"<|>",
+        STEquivalenceFuture  => raw"</>",
     ),
     Dict( # 时态
         Eternal    => "",
@@ -124,7 +124,7 @@ const StringParser_latex::StringParser = StringParser{String}(
         STInheriance       => "\\rightarrow",
         STSimilarity       => "\\leftrightarrow",
         STImplication      => "\\Rightarrow",
-        STEquivalance      => "\\LeftRightArrow",
+        STEquivalence      => "\\LeftRightArrow",
         # 副系词: 实例&属性
         Instance           => raw"\circ\!\!\!\rightarrow",
         Property           => raw"\rightarrow\!\!\!\circ",
@@ -134,9 +134,9 @@ const StringParser_latex::StringParser = StringParser{String}(
         STImplicationPresent => raw"|\!\!\!\!\Rightarrow",
         STImplicationFuture  => raw"/\!\!\!\!\Rightarrow",
         # 副系词: 时序等价
-        STEquivalancePast    => raw"\\!\!\!\!\Leftrightarrow",
-        STEquivalancePresent => raw"|\!\!\!\!\Leftrightarrow",
-        STEquivalanceFuture  => raw"/\!\!\!\!\Leftrightarrow",
+        STEquivalencePast    => raw"\\!\!\!\!\Leftrightarrow",
+        STEquivalencePresent => raw"|\!\!\!\!\Leftrightarrow",
+        STEquivalenceFuture  => raw"/\!\!\!\!\Leftrightarrow",
     ),
     Dict( # 时态
         Eternal      => "",
@@ -201,7 +201,7 @@ const StringParser_han::StringParser = StringParser{String}(
         STInheriance       => "是",
         STSimilarity       => "似",
         STImplication      => "得",
-        STEquivalance      => "同",
+        STEquivalence      => "同",
         # 副系词: 实例&属性
         Instance           => "为",
         Property           => "有",
@@ -211,9 +211,9 @@ const StringParser_han::StringParser = StringParser{String}(
         STImplicationPresent => "现得",
         STImplicationFuture  => "将得",
         # 副系词: 时序等价
-        STEquivalancePast    => "曾同",
-        STEquivalancePresent => "现同",
-        STEquivalanceFuture  => "将同",
+        STEquivalencePast    => "曾同",
+        STEquivalencePresent => "现同",
+        STEquivalenceFuture  => "将同",
     ),
     Dict( # 时态
         Eternal      => "",

@@ -24,13 +24,13 @@ export AVType, AVariableType
 export ALOperation, ALogicOperation
 
 export IVar, DVar, QVar
-export STInheriance, STSimilarity, STImplication, STEquivalance,
-         Inheriance,   Similarity,   Implication,   Equivalance
+export STInheriance, STSimilarity, STImplication, STEquivalence,
+         Inheriance,   Similarity,   Implication,   Equivalence
 export TemporalStatementTypes
 export STImplicationPast, STImplicationPresent, STImplicationFuture
 export   ImplicationPast,   ImplicationPresent,   ImplicationFuture
-export STEquivalancePast, STEquivalancePresent, STEquivalanceFuture
-export   EquivalancePast,   EquivalancePresent,   EquivalanceFuture
+export STEquivalencePast, STEquivalencePresent, STEquivalenceFuture
+export   EquivalencePast,   EquivalencePresent,   EquivalenceFuture
 export Negation, Conjunction, Disjunction
 export ExtSet, ExtensionSet, 
        IntSet, IntensionSet
@@ -78,15 +78,15 @@ const STSet    = StatementTSet  = STemporalSet = StatementTemporalSet
 const STInheriance  = StatementTypeInheriance
 const STSimilarity  = StatementTypeSimilarity
 const STImplication = StatementTypeImplication{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
-const STEquivalance = StatementTypeEquivalance{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
+const STEquivalence = StatementTypeEquivalence{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
 # 三个「带时态蕴含」
 const STImplicationPast    = StatementTypeImplication{Past}
 const STImplicationPresent = StatementTypeImplication{Present}
 const STImplicationFuture  = StatementTypeImplication{Future}
 # 三个「带时态等价」
-const STEquivalancePast    = StatementTypeEquivalance{Past}
-const STEquivalancePresent = StatementTypeEquivalance{Present}
-const STEquivalanceFuture  = StatementTypeEquivalance{Future}
+const STEquivalencePast    = StatementTypeEquivalence{Past}
+const STEquivalencePresent = StatementTypeEquivalence{Present}
+const STEquivalenceFuture  = StatementTypeEquivalence{Future}
 
 # 对接OpenJunars #
 
@@ -99,20 +99,20 @@ const QVar = Variable{VTQuery}
 const Inheriance  = Statement{STInheriance}
 const Similarity  = Statement{STSimilarity}
 const Implication = Statement{STImplication}
-const Equivalance = Statement{STEquivalance}
+const Equivalence = Statement{STEquivalence}
 "「有时态系词」：需要有格式`ST{时态<:Tense}`"
 const TemporalStatementTypes = Union{
     STImplication, # 所有蕴含
-    STEquivalance  # 所有等价
+    STEquivalence  # 所有等价
 }
 # 三个「带时态蕴含」
 const ImplicationPast    = Statement{STImplicationPast}
 const ImplicationPresent = Statement{STImplicationPresent}
 const ImplicationFuture  = Statement{STImplicationFuture}
 # 三个「带时态等价」
-const EquivalancePast    = Statement{STEquivalancePast}
-const EquivalancePresent = Statement{STEquivalancePresent}
-const EquivalanceFuture  = Statement{STEquivalanceFuture}
+const EquivalencePast    = Statement{STEquivalencePast}
+const EquivalencePresent = Statement{STEquivalencePresent}
+const EquivalenceFuture  = Statement{STEquivalenceFuture}
 
 # 词项集
 const Negation = StatementLSet{Not}
@@ -151,4 +151,4 @@ const TermSetLike         = Union{TermSet, TermCompoundSetLike} # 与OpenJunars�
 #        StatementTemporalSet{Parallel}
 # } # 所有具有「对称性」的词项/陈述集合 【20230811 13:55:37】这个应该被更灵活地定义，以便后续扩展
 
-# const SymmetricStatementTypes = Union{STSimilarity, STEquivalance} # 同上，需要更好地扩展
+# const SymmetricStatementTypes = Union{STSimilarity, STEquivalence} # 同上，需要更好地扩展

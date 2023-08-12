@@ -151,7 +151,7 @@ begin "复合词项"
     →(t1::Term, t2::Term) = Inheriance(t1, t2)
     ↔(t1::Term, t2::Term) = Similarity(t1, t2)
     ⇒(t1::Term, t2::Term) = Implication(t1, t2)
-    ⇔(t1::Term, t2::Term) = Equivalance(t1, t2)
+    ⇔(t1::Term, t2::Term) = Equivalence(t1, t2)
 
     """
     陈述逻辑「非」

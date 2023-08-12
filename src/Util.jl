@@ -7,6 +7,7 @@ export @reverse_dict_content, @redirect_SRS, @exceptedError
 export match_first, allproperties, allproperties_generator
 export get_pure_type_name, get_pure_type_symbol, verify_type_expr, assert_type_expr
 export SYMBOL_NULL
+export @generate_ifelseif, @rand
 
 # "可变长参数的自动转换支持" # 用于terms.jl的构造方法 ！添加报错：Unreachable reached at 000002d1cdac1f57
 # Base.convert(::Type{Vector{T}}, args::Tuple) where T = args |> collect |> Vector{T}
@@ -159,5 +160,133 @@ assert_type_expr(expr::Expr)::Expr = (
 )
 "符号总是通过"
 assert_type_expr(symbol::Symbol)::Symbol = symbol
+
+"""
+自动生成if-elseif-else表达式
+使得其中的表达式只有在运行到时才会计算
+
+参数：
+- 元组：(条件, 内容)
+"""
+function generate_ifelseif_macro(exprs::Vararg{Pair})
+    return generate_ifelseif_macro(nothing, exprs...)
+end
+
+"+默认情况"
+function generate_ifelseif_macro(default, exprs::Vararg{Pair})
+    blk::Expr = Expr(:block)
+    return generate_ifelseif_macro!(blk, default, exprs...)
+end
+
+"""
+基于已有的:block表达式，附带默认情况
+"""
+function generate_ifelseif_macro!(parent::Expr, default, exprs::Vararg{Pair})
+
+    current_args::Vector = parent.args
+    is_first::Bool = true
+    for expr_pair::Pair in exprs
+        push!(
+            current_args, 
+            Expr(
+                is_first ? begin
+                    is_first = false
+                    :if
+                end : :elseif,
+                expr_pair.first, 
+                expr_pair.second
+            )
+        )
+        current_args = current_args[end].args # 跳到if/elseif表达式的末尾
+    end
+
+    # 默认情况：增加else
+    !isnothing(default) && push!(
+        current_args, 
+        default
+    )
+
+    return parent
+end
+
+"""
+基于已有的:block表达式
+"""
+function generate_ifelseif_macro!(parent::Expr, exprs::Vararg{Pair})
+    generate_ifelseif_macro!(parent, nothing, exprs...)
+end
+
+"""
+宏の形式
+注意：传入的每个Pair表达式都是`Expr(:call, :(=>), 前, 后)`的形式
+"""
+macro generate_ifelseif(default, exprs::Vararg{Expr})
+    # 直接获取第二、第三个参数
+    return generate_ifelseif_macro(
+        default,
+        (
+            expr.args[2] => expr.args[3]
+            for expr in exprs
+        )...
+    ) |> esc
+end
+
+d = Dict(
+    1 => 1, 2 => 2, 3 => 3
+)
+
+"""
+随机选择宏的等价函数
+用于自动
+1. 构造随机数
+2. 生成`if-elseif-else`表达式
+"""
+function rand_macro(exprs...)::Expr
+    # 预先计算表达式数量
+    n = length(exprs)
+    @assert n > 1 "随机选择至少需要两个备选结果"
+
+    # 构造代码块
+    blk::Expr = Expr(:block)
+
+    rand_variable::Symbol = Symbol(":rand_n:")
+
+    # 预置n
+    push!(blk.args, :(local $rand_variable = rand(1:$n)))
+
+    current_args::Vector = blk.args
+    push!(
+        current_args, 
+        Expr(
+            :if, 
+            :($rand_variable == 1),
+            exprs[1]
+        )
+    )
+
+    for i in 2:n
+        expr = exprs[i]
+        current_args = current_args[end].args # 跳到if/elseif表达式的末尾
+        # i+1是为了跳过第一个
+        push!(
+            current_args, 
+            Expr(
+                :elseif, 
+                :($rand_variable == $(i)), 
+                expr
+            )
+        )
+    end
+
+    return blk
+end
+
+"""
+一个用于随机选择代码执行的宏
+避免「在随机选择之前，预先计算出所有的备选结果」
+"""
+macro rand(exprs...)
+    rand_macro(exprs...) |> esc
+end
 
 end
