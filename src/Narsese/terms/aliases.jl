@@ -32,10 +32,10 @@ export STImplicationRetrospective, STImplicationConcurrent, STImplicationPredict
 export   ImplicationRetrospective,   ImplicationConcurrent,   ImplicationPredictive
 export STEquivalenceRetrospective, STEquivalenceConcurrent, STEquivalencePredictive
 export   EquivalenceRetrospective,   EquivalenceConcurrent,   EquivalencePredictive
-export STImplicationPast, STImplicationPresent, STImplicationFuture
-export   ImplicationPast,   ImplicationPresent,   ImplicationFuture
-export STEquivalencePast, STEquivalencePresent, STEquivalenceFuture
-export   EquivalencePast,   EquivalencePresent,   EquivalenceFuture
+export STImplicationRetrospective, STImplicationConcurrent, STImplicationPredictive
+export   ImplicationRetrospective,   ImplicationConcurrent,   ImplicationPredictive
+export STEquivalenceRetrospective, STEquivalenceConcurrent, STEquivalencePredictive
+export   EquivalenceRetrospective,   EquivalenceConcurrent,   EquivalencePredictive
 
 export Negation, Conjunction, Disjunction
 export ExtSet, ExtensionSet, 
@@ -93,14 +93,6 @@ const STImplicationPredictive    = StatementTypeImplication{Predictive}
 const STEquivalenceRetrospective = StatementTypeEquivalence{Retrospective}
 const STEquivalenceConcurrent    = StatementTypeEquivalence{Concurrent}
 const STEquivalencePredictive    = StatementTypeEquivalence{Predictive}
-# 三个「带时态蕴含」（【20230814 15:55:24】简化别名）
-const STImplicationPast    = STImplicationRetrospective
-const STImplicationPresent = STImplicationConcurrent
-const STImplicationFuture  = STImplicationPredictive
-# 三个「带时态等价」（【20230814 15:55:24】简化别名）
-const STEquivalencePast    = STEquivalenceRetrospective
-const STEquivalencePresent = STEquivalenceConcurrent
-const STEquivalenceFuture  = STEquivalencePredictive
 
 # 对接OpenJunars #
 
@@ -119,7 +111,7 @@ const TemporalStatementTypes = Union{
     STImplication, # 所有蕴含
     STEquivalence  # 所有等价
 }
-# 三个「带时态蕴含」
+# 三个「带时态蕴含」 【20230814 23:14:55】不再采用「Past/Present/Future」别名，此举会导致外部引用发生歧义（显示为原本的「参数类型」形式）
 const ImplicationRetrospective = Statement{STImplicationRetrospective}
 const ImplicationConcurrent    = Statement{STImplicationConcurrent}
 const ImplicationPredictive    = Statement{STImplicationPredictive}
@@ -127,14 +119,6 @@ const ImplicationPredictive    = Statement{STImplicationPredictive}
 const EquivalenceRetrospective = Statement{STEquivalenceRetrospective}
 const EquivalenceConcurrent    = Statement{STEquivalenceConcurrent}
 const EquivalencePredictive    = Statement{STEquivalencePredictive}
-# 三个「带时态蕴含」（【20230814 15:55:01】现作为简化别名）
-const ImplicationPast    = Statement{STImplicationPast}
-const ImplicationPresent = Statement{STImplicationPresent}
-const ImplicationFuture  = Statement{STImplicationFuture}
-# 三个「带时态等价」（【20230814 15:55:01】现作为简化别名）
-const EquivalencePast    = Statement{STEquivalencePast}
-const EquivalencePresent = Statement{STEquivalencePresent}
-const EquivalenceFuture  = Statement{STEquivalenceFuture}
 
 # 词项集
 const Negation = StatementLSet{Not}

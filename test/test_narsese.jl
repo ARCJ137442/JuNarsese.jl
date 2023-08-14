@@ -65,7 +65,7 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
 
     # 回顾性等价 = 预测性等价
 
-    @test EquivalencePast(A→B, B→A) == EquivalenceFuture(B→A, A→B)
+    @test EquivalenceRetrospective(A→B, B→A) == EquivalencePredictive(B→A, A→B)
 
     # 合法性测试 & 严格模式 #
 

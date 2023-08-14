@@ -74,7 +74,7 @@ begin "构造函数扩展：提供自动解析の方法"
 
     参考：《NAL》定义11.7/(3)
     """
-    Statement{STEquivalencePast}(ϕ1::Term, ϕ2::Term) = EquivalenceFuture(
+    Statement{STEquivalenceRetrospective}(ϕ1::Term, ϕ2::Term) = EquivalencePredictive(
         ϕ2,
         ϕ1
     )

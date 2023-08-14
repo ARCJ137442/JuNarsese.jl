@@ -49,13 +49,13 @@ const StringParser_ascii::StringParser = StringParser{String}(
         STProperty           => "--]",
         STInstanceProperty   => "{-]",
         # 副系词: 时序蕴含
-        STImplicationPast    => raw"=\>",
-        STImplicationPresent => raw"=|>",
-        STImplicationFuture  => raw"=/>",
+        STImplicationRetrospective    => raw"=\>",
+        STImplicationConcurrent => raw"=|>",
+        STImplicationPredictive  => raw"=/>",
         # 副系词: 时序等价
-        STEquivalencePast    => raw"<\>",
-        STEquivalencePresent => raw"<|>",
-        STEquivalenceFuture  => raw"</>",
+        STEquivalenceRetrospective    => raw"<\>",
+        STEquivalenceConcurrent => raw"<|>",
+        STEquivalencePredictive  => raw"</>",
     ),
     Dict( # 时态
         Eternal    => "",
@@ -131,13 +131,13 @@ const StringParser_latex::StringParser = StringParser{String}(
         STProperty           => raw"\rightarrow\!\!\!\circ",
         STInstanceProperty   => raw"\circ\!\!\!\rightarrow\!\!\!\circ",
         # 副系词: 时序蕴含
-        STImplicationPast    => raw"\\!\!\!\!\Rightarrow",
-        STImplicationPresent => raw"|\!\!\!\!\Rightarrow",
-        STImplicationFuture  => raw"/\!\!\!\!\Rightarrow",
+        STImplicationRetrospective    => raw"\\!\!\!\!\Rightarrow",
+        STImplicationConcurrent => raw"|\!\!\!\!\Rightarrow",
+        STImplicationPredictive  => raw"/\!\!\!\!\Rightarrow",
         # 副系词: 时序等价
-        STEquivalencePast    => raw"\\!\!\!\!\Leftrightarrow",
-        STEquivalencePresent => raw"|\!\!\!\!\Leftrightarrow",
-        STEquivalenceFuture  => raw"/\!\!\!\!\Leftrightarrow",
+        STEquivalenceRetrospective    => raw"\\!\!\!\!\Leftrightarrow",
+        STEquivalenceConcurrent => raw"|\!\!\!\!\Leftrightarrow",
+        STEquivalencePredictive  => raw"/\!\!\!\!\Leftrightarrow",
     ),
     Dict( # 时态
         Eternal      => "",
@@ -209,13 +209,13 @@ const StringParser_han::StringParser = StringParser{String}(
         STProperty           => "有",
         STInstanceProperty   => "具有",
         # 副系词: 时序蕴含
-        STImplicationPast    => "曾得",
-        STImplicationPresent => "现得",
-        STImplicationFuture  => "将得",
+        STImplicationRetrospective    => "曾得",
+        STImplicationConcurrent => "现得",
+        STImplicationPredictive  => "将得",
         # 副系词: 时序等价
-        STEquivalencePast    => "曾同",
-        STEquivalencePresent => "现同",
-        STEquivalenceFuture  => "将同",
+        STEquivalenceRetrospective    => "曾同",
+        STEquivalenceConcurrent => "现同",
+        STEquivalencePredictive  => "将同",
     ),
     Dict( # 时态
         Eternal      => "",
