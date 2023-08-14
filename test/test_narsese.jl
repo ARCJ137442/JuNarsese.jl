@@ -56,6 +56,11 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @show p = TermProduct(A,B,C)
     @test p == *(A, B, C) == (A*B*C) ≠ (B*A*C) # 有序性 老式构造方法仍可使用
 
+    # 原子词项名的合法性测试
+
+    @test @expectedError Word(":A")
+    @test @expectedError IVar("<A --> B>")
+
     # 前面「严格模式」的具体作用
 
     # 基于词项的陈述：必须是「一等公民」而非陈述

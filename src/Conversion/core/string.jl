@@ -415,10 +415,7 @@ begin "原子↔字符串"
                 break
             end
         end
-        # 合法性检查
-        if !isnothing(findfirst(r"[^\w]", term_literal))
-            "非法词项名「$s」" |> ArgumentError |> throw
-        end
+        # 【20230814 12:55:58】合法性检查现迁移至专门的「合法性检查」中，以作用例
         term_literal |> Symbol |> term_type # 根据前缀自动截取
     end
 

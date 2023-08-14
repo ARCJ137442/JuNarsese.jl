@@ -336,7 +336,7 @@ begin "单体词项"
     > 如果T1和T2是不同的词项，它们的内涵差(T1 * T2)是一个复合词项，定义为 (∀x)(((T1⊖T2) → x) ⟺ ((T1 → x) ∧ ¬(T2 → x)))。
     """ # 此处「&」「|」是对应的「外延交&」「外延并|」
     struct TermLogicalSet{EIType <: AbstractEI, LogicOperation <: AbstractLogicOperation} <: AbstractTermSet
-        terms::Union{Vector{AbstractTerm}, Set{AbstractTerm}}
+        terms::Union{Tuple{Vararg{AbstractTerm}}, Set{AbstractTerm}}
 
         "(无序)交集 Intersection{外延/内涵} ∩& ∩|"
         function TermLogicalSet{EIType, And}(terms::Vararg{AbstractTerm}) where EIType # 此EIType构造时还会被检查类型
@@ -354,8 +354,8 @@ begin "单体词项"
         "(有序)差集 Difference{外延/内涵} - ~" # 注意：这是二元的 参数命名参考自OpenJunars
         function TermLogicalSet{EIType, Not}(ϕ₁::AbstractTerm, ϕ₂::AbstractTerm) where EIType # 此EIType构造时还会被检查类型
             check_valid_explainable(
-                new{EIType, Not}( # 把元组转换成对应数据结构，再深拷贝
-                    AbstractTerm[ϕ₁, ϕ₂]
+                new{EIType, Not}(
+                    (ϕ₁, ϕ₂) # 【20230814 13:21:55】直接构造元组
                 )
             ) # 增加合法性检查
         end
@@ -377,19 +377,22 @@ begin "单体词项"
     >   满足 ((× S₁ ··· Sₙ) → (× P₁ ··· Pₙ)) ⟺ ((S₁ → P₁) ∧ ··· ∧ (Sₙ → Pₙ))。
     """
     struct TermProduct <: AbstractTermSet
-        terms::Vector{<:AbstractTerm}
+        terms::Tuple{Vararg{AbstractTerm}}
 
-        "加入合法性检查"
-        TermProduct(terms::Vector{T}) where {T <: AbstractTerm} = check_valid_explainable(
+        "多参数构造：直接使用元组"
+        TermProduct(terms::Tuple{Vararg{AbstractTerm}}) = check_valid_explainable(
             new(terms)
         ) # 增加合法性检查
     end
 
-    "多参数构造"
-    function TermProduct(terms::Vararg{AbstractTerm})
-        TermProduct(terms |> collect)
-    end
+    "多参数构造：Vararg⇒元组"
+    TermProduct(terms::Vararg{<:AbstractTerm}) = TermProduct(terms)
 
+    "多参数构造：直接使用向量"
+    TermProduct(terms::Vector{<:AbstractTerm}) = TermProduct(
+        terms |> Tuple
+    )
+        
     raw"""
     [NAL-4]像{外延/内涵} (/, a, b, _, c) (\, a, b, _, c)
     - 有序
@@ -427,9 +430,7 @@ begin "单体词项"
             - 例如：只用`Tuple{Integer}`而不用`Tuple{Int}`
         """
         function TermImage{EIType}(terms::Tuple{Vararg{AbstractTerm}}, relation_index::Unsigned) where {EIType}
- # 检查
             relation_index == 0 || @assert relation_index ≤ length(terms) + 1 "索引`$relation_index`越界！"
- # 构造
             check_valid_explainable(
                 new{EIType}(terms, relation_index) # 加入合法性检查
             ) # 增加合法性检查
@@ -559,27 +560,33 @@ begin "陈述词项"
     """ # 与「TermSet」不同的是：只使用最多两个词项（陈述）
     struct StatementTemporalSet{TemporalRelation <: AbstractTemporalRelation} <: AbstractStatementLogicalSet{And}
 
-        terms::Union{Set{<:AbstractStatement}, Vector{<:AbstractStatement}}
+        # 【20230814 13:19:47】现在重新使用不可变的元组（使用`@code_llvm`比较）
+        terms::Union{
+            Set{AbstractStatement}, # 无序使用这个
+            Tuple{Vararg{AbstractStatement}} # 有序使用这个
+        }
 
         "序列合取 Sequential Conjunction"
-        function StatementTemporalSet{Sequential}(
-            terms::Vararg{AbstractStatement}, # 实质上是个元组
-            )
-            check_valid_explainable(
-                new{Sequential}(terms |> collect) # 收集元组成向量
-            ) # 增加合法性检查
-        end
+        StatementTemporalSet{Sequential}(terms::Tuple{Vararg{AbstractStatement}}) = check_valid_explainable(
+            new{Sequential}(terms) # 直接转换元组
+        ) # 增加合法性检查
 
         "平行合取 Parallel Conjunction"
-        function StatementTemporalSet{Parallel}(
-            terms::Vararg{AbstractStatement}, # 实质上是个元组
-            )
-            check_valid_explainable(
-                new{Parallel}(terms |> Set) # 收集元组成集合
-            ) # 增加合法性检查
-        end
+        StatementTemporalSet{Parallel}(terms::Set{AbstractStatement}) = check_valid_explainable(
+            new{Parallel}(Set{AbstractStatement}(terms)) # 收集元组成集合(标注好类型)
+        ) # 增加合法性检查
 
     end
+
+    "外部构造方法：支持任意参数 @ 序列合取 Sequential Conjunction"
+    StatementTemporalSet{Sequential}(terms::Vararg{AbstractStatement}) = check_valid_explainable(
+        StatementTemporalSet{Sequential}(terms) # 直接转换元组
+    ) # 增加合法性检查
+
+    "外部构造方法：支持任意参数 @ 平行合取 Parallel Conjunction"
+    StatementTemporalSet{Parallel}(terms::Vararg{AbstractStatement}) = check_valid_explainable(
+        StatementTemporalSet{Parallel}(terms |> Set{AbstractStatement}) # 收集元组成集合(标注好类型)
+    ) # 增加合法性检查
 
 end
 
