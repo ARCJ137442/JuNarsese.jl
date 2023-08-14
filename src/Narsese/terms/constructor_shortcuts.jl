@@ -148,7 +148,7 @@ begin "复合词项"
     - 📌关于这些陈述「是否是对称的」，交给下一层次的「NAL」处理
         - 本质上只是「视觉上看起来对称」而已
     """
-    →(t1::Term, t2::Term) = Inheriance(t1, t2)
+    →(t1::Term, t2::Term) = Inheritance(t1, t2)
     ↔(t1::Term, t2::Term) = Similarity(t1, t2)
     # 基于陈述而非全体词项
     ⇒(t1::AbstractStatement, t2::AbstractStatement) = Implication(t1, t2)

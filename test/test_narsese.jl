@@ -56,6 +56,19 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @show p = TermProduct(A,B,C)
     @test p == *(A, B, C) == (A*B*C) ≠ (B*A*C) # 有序性 老式构造方法仍可使用
 
+    # 测试Narsese特性之「同义重定向」 #
+
+    # 外延/内涵 并 ⇒ 内涵/外延 交
+
+    @test ExtUnion(A, B) isa IntIntersection # 外延并=内涵交
+    @test IntUnion(A, B) isa ExtIntersection # 内涵并=外延交
+
+    # 回顾性等价 = 预测性等价
+
+    @test EquivalencePast(A→B, B→A) == EquivalenceFuture(B→A, A→B)
+
+    # 合法性测试 & 严格模式 #
+
     # 原子词项名的合法性测试
 
     @test @expectedError Word(":A")
@@ -64,10 +77,10 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     # 前面「严格模式」的具体作用
 
     # 基于词项的陈述：必须是「一等公民」而非陈述
-    @test @expectedError Inheriance(A, A)
+    @test @expectedError Inheritance(A, A)
     @test @expectedError Similarity(p, p)
-    @test @expectedError Inheriance(w, A→B)
-    @test @expectedError Inheriance(A→B, d)
+    @test @expectedError Inheritance(w, A→B)
+    @test @expectedError Inheritance(A→B, d)
     @test @expectedError Similarity(p, p→q)
     @test @expectedError Similarity(p→q, p)
 
@@ -93,13 +106,13 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @test ((A→B) ∨ ((A→B)∧(B→C))) == ((A→B) ∨ ((A→B)∧(B→C))) # 非唯一性: 嵌套集合的刁钻
     @test s1 == Implication( # 等价性
         Conjunction(
-            Inheriance(A,B),
+            Inheritance(A,B),
             Implication(
-                Inheriance(A,B),
-                Inheriance(B,C)
+                Inheritance(A,B),
+                Inheritance(B,C)
             )
         ),
-        Inheriance(B,C)
+        Inheritance(B,C)
     ) == ((((A→B)⇒(B→C)) ∧ (A→B)) ⇒ (B→C)) # 无序性
     @test get_syntactic_complexity(s1) == 1+(
         1+(
@@ -117,13 +130,13 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     ) ⇒ (w"苏格拉底"→w"会死")
     @test s2 == Implication(
         Conjunction(
-            Inheriance(w"苏格拉底", w"人"),
+            Inheritance(w"苏格拉底", w"人"),
             Implication(
-                Inheriance(i"甲", w"人"),
-                Inheriance(i"甲", w"会死")
+                Inheritance(i"甲", w"人"),
+                Inheritance(i"甲", w"会死")
             )
         ),
-        Inheriance(w"苏格拉底", w"会死")
+        Inheritance(w"苏格拉底", w"会死")
     )
     @test get_syntactic_complexity(s2) == 1+(
         1+(
@@ -152,7 +165,7 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
                 A→B, B→C, C→D
             ),
         ),
-        Inheriance(A, D)
+        Inheritance(A, D)
     )
     @test s5 == (∨(⩚(A→B, B→C, C→D), ⩜(A→B, B→C, C→D)) ⇒ (A→D))
     @test s5 == (∨(⩚(A→B, C→D, B→C), ⩜(A→B, B→C, C→D)) ⇒ (A→D))

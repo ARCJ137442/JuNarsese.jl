@@ -40,14 +40,14 @@ const StringParser_ascii::StringParser = StringParser{String}(
         SeqConjunction  => "&/",
     ),
     Dict( # 系词
-        STInheriance       => "-->",
+        STInheritance       => "-->",
         STSimilarity       => "<->",
         STImplication      => "==>",
         STEquivalence      => "<=>",
         # 副系词: 实例&属性
-        Instance           => "{--",
-        Property           => "--]",
-        InstanceProperty   => "{-]",
+        STInstance           => "{--",
+        STProperty           => "--]",
+        STInstanceProperty   => "{-]",
         # 副系词: 时序蕴含
         STImplicationPast    => raw"=\>",
         STImplicationPresent => raw"=|>",
@@ -121,14 +121,14 @@ const StringParser_latex::StringParser = StringParser{String}(
         SeqConjunction  => ",",
     ),
     Dict( # 系词
-        STInheriance       => "\\rightarrow",
+        STInheritance       => "\\rightarrow",
         STSimilarity       => "\\leftrightarrow",
         STImplication      => "\\Rightarrow",
         STEquivalence      => "\\LeftRightArrow",
         # 副系词: 实例&属性
-        Instance           => raw"\circ\!\!\!\rightarrow",
-        Property           => raw"\rightarrow\!\!\!\circ",
-        InstanceProperty   => raw"\circ\!\!\!\rightarrow\!\!\!\circ",
+        STInstance           => raw"\circ\!\!\!\rightarrow",
+        STProperty           => raw"\rightarrow\!\!\!\circ",
+        STInstanceProperty   => raw"\circ\!\!\!\rightarrow\!\!\!\circ",
         # 副系词: 时序蕴含
         STImplicationPast    => raw"\\!\!\!\!\Rightarrow",
         STImplicationPresent => raw"|\!\!\!\!\Rightarrow",
@@ -198,14 +198,14 @@ const StringParser_han::StringParser = StringParser{String}(
         SeqConjunction  => "接连",
     ),
     Dict( # 系词 【20230809 11:42:04】注意！因字串判断机制为「前缀判断」，因此这里不能存在「一个词是另一个词的前缀」的情况
-        STInheriance       => "是",
+        STInheritance       => "是",
         STSimilarity       => "似",
         STImplication      => "得",
         STEquivalence      => "同",
         # 副系词: 实例&属性
-        Instance           => "为",
-        Property           => "有",
-        InstanceProperty   => "具有",
+        STInstance           => "为",
+        STProperty           => "有",
+        STInstanceProperty   => "具有",
         # 副系词: 时序蕴含
         STImplicationPast    => "曾得",
         STImplicationPresent => "现得",

@@ -10,14 +10,14 @@
     > in set theory — intensional intersection corresponds to extensional union,
     > and extensional intersection corresponds to intensional union. Since set
     > theory is purely extensional, the ‘∪’ is associated to union only. To stress
-    > the symmetry between extension and intense in NAL, here it is called “intensional intersection”, rather than “extensional union”, though the latter
+    > the symmetry between extension and intense in NAL, here it is called “intensional intersection」, rather than “extensional union」, though the latter
     > is also correct, and sounds more natural to people familiar with set theory.
 
     中译：
 
     > 上述定义和定理证明了NAL中的外延与内涵的对偶性，对应于集合论中的交与并的对偶性——内涵交对应于外延并，而外延交对应于内涵并。
     > 因为集合论是纯外延的，所以'∪'只与并集有关。
-    > 为了强调NAL中外延与内涵的对称性，这里称之为“内涵交”，而不是“外延并”，尽管后者也是正确的，对熟悉集合论的人来说听起来更自然。
+    > 为了强调NAL中外延与内涵的对称性，这里称之为「内涵交」，而不是「外延并」，尽管后者也是正确的，对熟悉集合论的人来说听起来更自然。
 
 =#
 
@@ -113,7 +113,7 @@ include("Terms/tense.jl")
 # 导出 #
 
 export AbstractVariableType, VariableTypeIndependent, VariableTypeDependent, VariableTypeQuery
-export AbstractStatementType, StatementTypeInheriance, StatementTypeSimilarity, StatementTypeImplication, StatementTypeEquivalence
+export AbstractStatementType, StatementTypeInheritance, StatementTypeSimilarity, StatementTypeImplication, StatementTypeEquivalence
 export AbstractLogicOperation, And, Or, Not
 export AbstractEI, Extension, Intension
 export AbstractTemporalRelation, Sequential, Parallel
@@ -130,7 +130,7 @@ export Statement, AbstractStatementLogicalSet, StatementLogicalSet, StatementTem
 
 "[NAL-1|NAL-2|NAL-5]陈述类型：继承&相似、蕴含&等价"
 abstract type AbstractStatementType end
-abstract type StatementTypeInheriance <: AbstractStatementType end # NAL-1
+abstract type StatementTypeInheritance <: AbstractStatementType end # NAL-1
 abstract type StatementTypeSimilarity <: AbstractStatementType end # NAL-2
 abstract type StatementTypeImplication{T <: Tense} <: AbstractStatementType end # NAL-5|NAL-7
 abstract type StatementTypeEquivalence{T <: Tense} <: AbstractStatementType end # NAL-5|NAL-7
@@ -200,7 +200,7 @@ begin "单体词项"
     中译：
     > 一个词项的基本形式是一个「词语」，即来自有限字母表的一串字符。
     > 除此之外对字母表没有要求。
-    > 本书中字母表包括英文字母、数字0 ~ 9和一些特殊符号，如“-”，并常用常见的英语名词来表示术语，例如bird和animal，只是为了使示例易于理解。
+    > 本书中字母表包括英文字母、数字0 ~ 9和一些特殊符号，如「-」，并常用常见的英语名词来表示术语，例如bird和animal，只是为了使示例易于理解。
     > 用一种不同的自然语言(如中文)做同样的事情是没有问题的。另一方面，也可以使用对人类没有意义的术语，如drib和aminal。
 
     """
@@ -239,7 +239,7 @@ begin "单体词项"
     > 可选后跟一个单词或数字。
 
     > 独立变量表示给定限制下的任何未指定项，
-    > 并以“#”前面的单词(或数字)命名。
+    > 并以「#」前面的单词(或数字)命名。
     > 非独变量表示给定限制下的某个未指定项，
     > 它被命名为具有由它所依赖的独立变量组成的依赖列表的独立变量，
     > 该列表可以为空。
@@ -262,13 +262,13 @@ begin "单体词项"
 
     > An atomic operation is represented as an operator (a special term whose name starts with ‘⇑’)
     > followed by an argument list (a sequence of terms, though can be empty).
-    > Within the system, operation “(⇑op a₁ ··· aₙ)” is treated as statement “(× self a₁ ··· aₙ) → op”,
+    > Within the system, operation “(⇑op a₁ ··· aₙ)” is treated as statement “(× self a₁ ··· aₙ) → op」,
     > where op belongs to a special type of term that has a procedural interpretation,
     > and self is a special term referring to the system itself.
 
     中译：
-    > 一个原子操作表示为一个操作符(一个特殊的词项，其名以“⇑”开头)跟一个参数列表(一个词项序列，但可为空)。
-    > 在系统内，操作“(⇑op a₁ ··· aₙ)”被视为语句“(× self a₁ ··· aₙ) → op”，
+    > 一个原子操作表示为一个操作符(一个特殊的词项，其名以「⇑」开头)跟一个参数列表(一个词项序列，但可为空)。
+    > 在系统内，操作「(⇑op a₁ ··· aₙ)」被视为语句「(× self a₁ ··· aₙ) → op」，
     >   其中op属于具有程序解释的特殊类型词项，【译者注：此「程序解释的特殊类型」即此处定义的类】
     >   而self是指系统本身的特殊词项。【译者注：此即NAL代码中经常出现的`{SELF}`】
     """
@@ -373,7 +373,7 @@ begin "单体词项"
     >   and forms a compound term that satisfies ((× S₁ ··· Sₙ) → (× P₁ ··· Pₙ)) ⟺ ((S₁ → P₁) ∧ ··· ∧ (Sₙ → Pₙ)).
 
     中译：
-    > 乘积连接符“×”采用两个或多个词项作为组分，形成一个复合词项，
+    > 乘积连接符「×」采用两个或多个词项作为组分，形成一个复合词项，
     >   满足 ((× S₁ ··· Sₙ) → (× P₁ ··· Pₙ)) ⟺ ((S₁ → P₁) ∧ ··· ∧ (Sₙ → Pₙ))。
     """
     struct TermProduct <: AbstractTermSet
@@ -408,7 +408,7 @@ begin "单体词项"
     >     (R → (× T1 T2)) ⟺ ((\ R ⋄ T2) → T1) ⟺ ((\ R T1 ⋄) → T2)
 
     中译：
-    > 对于关系R和乘积(× T1 T2)，乘积上关系的外延像连接符“/”和内延像连接符“\”分别定义为：
+    > 对于关系R和乘积(× T1 T2)，乘积上关系的外延像连接符「/」和内延像连接符「\」分别定义为：
     >     ((× T1 T2) → R) ⟺ (T1 → (/ R ⋄ T2)) ⟺ (T2 → (/ R T1 ⋄))
     >     (R → (× T1 T2)) ⟺ ((\ R ⋄ T2) → T1) ⟺ ((\ R T1 ⋄) → T2)
 
@@ -459,26 +459,90 @@ end
 
 begin "陈述词项"
 
-    """
-    [NAL=1|NAL-5]陈述Statement{继承/相似/蕴含/等价} --> <-> ==> <=>
+    raw"""
+    [NAL=1|NAL-5]陈述Statement{继承/相似/蕴含/等价/...} --> <-> ==> <=> ...
     - 现只支持「二元」陈述，只表达两个词项之间的关系
     - ❎【20230804 14:17:30】现增加「时序」参数，以便在词项层面解析「时序关系」
     - 【20230804 14:44:13】现把「时序系词」作为「主系词」（参考自OpenNARS）
     - 【20230812 22:19:20】加入「合法性检查」机制
 
-    参考：《NAL》定义2.2、9.1
-    > The basic form of a statement is an inheritance statement,
-    >   “S → P”, where S is the subject term, P is the predicate term, and ‘→’ is the inheritance copula,
-    >   defined as being a reflexive and transitive relation from one term to another term.
-    > If S1 and S2 are statements, “S1 ⇒ S2” is true if and only if in IL S2 can be derived from S1 in a finite number of inference steps.
-    >   Here ‘⇒’ is the implication copula. Formally, it means (S1 ⇒ S2) ⟺ {S1} ⊢ S2.
+    参考：《NAL》定义2.2、6.1、9.1、9.5、11.6、11.7
+        继承
+            参考：《NAL》定义2.2
+            > The basic form of a statement is an inheritance statement,
+            >   「S → P」, where S is the subject term, P is the predicate term, and ‘→’ is the inheritance copula,
+            >   defined as being a reflexive and transitive relation from one term to another term.
+            
+            中译：
+            > 陈述的基本形式是继承陈述「S→P」，
+            >   其中S为主词项，P为谓词项，「→」为继承系词，
+            >   定义为从一个词项到另一个词项的自反传递关系。
+        相似
+            参考：《NAL》定义6.1
+            > For any terms S and P, similarity ‘↔’ is a copula defined by
+            >   (S ↔ P) ⟺ ((S → P) ∧ (P → S)).
 
-    中译：
-    > 语句的基本形式是继承语句“S→P”，
-    >   其中S为主词项，P为谓词项，“→”为继承系词，
-    >   定义为从一个词项到另一个词项的自反传递关系。
-    > 如果S1和S2是陈述，“S1⇒S2”当且仅当在IL中S2可以在有限的推理步骤中由S1导出时为真。
-    >   这里的“⇒”是隐含的联结词。形式上，它表示 (S1 ⇒ S2) ⟺ {S1} ⊢ S2。【译者注 LaTeX代码：`⟺iff`,`⊢vdash`】
+            中译：
+            > 对于任何词项S和P，相似『↔』是由下者定义之词项：
+            >   (S ↔ P) ⟺ ((S → P) ∧ (P → S))。
+
+        蕴含
+            参考：《NAL》定义9.1
+            > If S1 and S2 are statements, “S1 ⇒ S2” is true if and only if in IL S2 can be derived from S1 in a finite number of inference steps. 
+            > Here ‘⇒’ is the implication copula. Formally, it means (S1 ⇒ S2) ⟺ {S1} ⊢ S2.
+
+            中译：  
+            > 如果 S1 和 S2 是陈述，则「S1 ⇒ S2」为真，如果且仅当在 IL 中，S2 可以从 S1 进行有限数量的推理步骤而得出。
+            > 这里的『⇒』是「蕴含」系词。形式上，它的意思是 (S1 ⇒ S2) ⟺ {S1} ⊢ S2。
+        等价
+            参考：《NAL》定义9.5
+            > The equivalence copula, ‘⇔’, is defined by 
+            >   (A ⇔ C) ⟺ ((A ⇒ C) ∧ (C ⇒ A))
+            > As a special type of compound terms, compound statements can be used to summarize existing statements.
+
+            中译：
+            > 「等价」系词『⇔』的定义是
+            >   (A ⇔ C) ⟺ ((A ⇒ C) ∧ (C ⇒ A))
+
+        时序蕴含/等价
+
+            参考：《NAL》定义11.6
+            > For an implication statement “S ⇒ T” between events S and T, three different temporal relations can be specified:
+            > (1) If S happens before T happens, 
+            > the statement is called “predictive implication」, and is rewritten as “S /⇒ T」, 
+            > where S is called a sufficient precondition of T, 
+            > and T a necessary postcondition of S.
+            > (2) If S happens after T happens, 
+            > the statement is called “retrospective implication」, and is rewritten as “S \⇒ T」, 
+            > where S is called a sufficient postcondition of T, 
+            > and T a necessary precondition of S.
+            > (3) If S happens when T happens, 
+            > the statement is called “concurrent implication」, and is rewritten as “S |⇒ T」, 
+            > where S is called a sufficient co-condition of T, 
+            > and T a necessary co-condition of S.
+
+            中译：
+            > 对于事件S和T之间的蕴含语句「S⇒T」，可以指定三种不同的时间关系:
+            > (1)如果S发生在T发生之前，该陈述称为「预测性蕴含」，并重写为「S/⇒T」，
+            > 其中S是T的充分前提，T是S的必要后置条件。
+            > (2)如果S发生在T发生之后，该陈述称为「回顾性蕴含」，并重写为「S\⇒T」，
+            > 其中S是T的充分后置条件，T是S的必要前提。
+            > (3)如果T发生时S同时发生，该陈述称为「并发性蕴含」，并重写为「S|⇒T」，
+            > 其中S是T的充分协条件，T是S的必要协条件。
+
+            参考：《NAL》定义11.7
+            Three “temporal equivalence」 (predictive, retrospective,
+            and concurrent) relations are defined as the following:
+            > (1) 「S /⇔ T」 (or equivalently, 「T \⇔ S」) means that S is an equivalent precondition of T, and T an equivalent postcondition of S.
+            > (2) 「S |⇔ T” means that S and T are equivalent co-conditions of each other.
+            > (3) To simplify the language, 「T \⇔ S” is always represented as “S /⇔ T」, so the copula “ \⇔” is not actually included in the grammar of Narsese.
+
+            中译：
+            三个「时间等价」(预测性、回顾性、并发性)关系定义如下:
+            > (1)「S /⇔ T」(或等价地，「T \⇔ S」)表示S是T的等价前提，T是S的等价后置条件。
+            > (2)「S |⇔ T」表示S和T是彼此的等价共条件。
+            > (3)为了简化语言，「T \⇔ S」总是被表示为「S /⇔ T」，所以关联词「\⇔」实际上并不在Narsese语法中。
+            >   - 译者注：此举与先前的「外延并/内涵并」类似
     """
     struct Statement{type <: AbstractStatementType} <: AbstractStatement
         ϕ1::AbstractTerm # subject 主词
@@ -551,12 +615,12 @@ begin "陈述词项"
     - 即便其类型确定，它仍然是一个「指针」，不会造成效率干扰
 
     参考：《NAL》定义11.5
-    > The conjunction connector (‘∧’) has two temporal variants: “sequential conjunction” (‘,’) and “parallel conjunction” (‘;’).
-    > “(E1, E2)” corresponds to the compound event consisting of E1 followed by E2, and “(E1; E2)” corresponds to the compound event consisting of E1 accompanied by E2.
+    > The conjunction connector (‘∧’) has two temporal variants: 「sequential conjunction」 (‘,’) and “parallel conjunction」 (‘;’).
+    > 「(E1, E2)” corresponds to the compound event consisting of E1 followed by E2, and “(E1; E2)” corresponds to the compound event consisting of E1 accompanied by E2.
 
     中译：
-    > 合取连接符 (‘∧’) 有两种时序变体变体:“序列合取” (‘,’) 和“平行合取” (‘;’)。
-    > “(E1, E2)” 对应由E1后接E2，“(E1; E2)” 对应由E1伴随E2组成的复合事件。
+    > 合取连接符 (‘∧’) 有两种时序变体变体:「序列合取」 (‘,’) 和「平行合取」 (‘;’)。
+    > 「(E1, E2)」 对应由E1后接E2，「(E1; E2)」 对应由E1伴随E2组成的复合事件。
     """ # 与「TermSet」不同的是：只使用最多两个词项（陈述）
     struct StatementTemporalSet{TemporalRelation <: AbstractTemporalRelation} <: AbstractStatementLogicalSet{And}
 

@@ -17,7 +17,8 @@ S{Int64}
 =#
 
 export SecondaryCopula
-export Instance, Property, InstanceProperty
+export STInstance, STProperty, STInstanceProperty
+export   Instance,   Property,   InstanceProperty
 
 
 """
@@ -31,9 +32,13 @@ export Instance, Property, InstanceProperty
 abstract type SecondaryCopula{U,V,W} <: AbstractStatementType end
 
 # 三个「实例/属性」副系词: {-- | --] | {-]
-const Instance         = SecondaryCopula{Extension, STInheriance}
-const Property         = SecondaryCopula{STInheriance, Intension}
-const InstanceProperty = SecondaryCopula{Extension, STInheriance, Intension}
+const STInstance::Type         = SecondaryCopula{Extension, STInheritance}
+const STProperty::Type         = SecondaryCopula{STInheritance, Intension}
+const STInstanceProperty::Type = SecondaryCopula{Extension, STInheritance, Intension}
+
+const Instance::Type         = Statement{STInstance}
+const Property::Type         = Statement{STProperty}
+const InstanceProperty::Type = Statement{STInstanceProperty}
 
 begin "构造函数扩展：提供自动解析の方法"
 
@@ -42,7 +47,7 @@ begin "构造函数扩展：提供自动解析の方法"
     """
     实例 `A {-- B` ⇔ `{A} --> B`
     """
-    Statement{Instance}(ϕ1::Term, ϕ2::Term) = Inheriance(
+    Statement{STInstance}(ϕ1::Term, ϕ2::Term) = Inheritance(
         ExtSet(ϕ1),
         ϕ2
     )
@@ -50,7 +55,7 @@ begin "构造函数扩展：提供自动解析の方法"
     """
     属性 `A --] B` ⇔ `A --> [B]`
     """
-    Statement{Property}(ϕ1::Term, ϕ2::Term) = Inheriance(
+    Statement{STProperty}(ϕ1::Term, ϕ2::Term) = Inheritance(
         ϕ1,
         IntSet(ϕ2)
     )
@@ -58,9 +63,20 @@ begin "构造函数扩展：提供自动解析の方法"
     """
     实例-属性 `A {-] B` ⇔ `{A} --> [B]`
     """
-    Statement{InstanceProperty}(ϕ1::Term, ϕ2::Term) = Inheriance(
+    Statement{STInstanceProperty}(ϕ1::Term, ϕ2::Term) = Inheritance(
         ExtSet(ϕ1),
         IntSet(ϕ2)
+    )
+
+    raw"""
+    回顾性等价⇒预测性等价
+    `S \⇔ T` ⇔ `T /⇔ S`
+
+    参考：《NAL》定义11.7/(3)
+    """
+    Statement{STEquivalencePast}(ϕ1::Term, ϕ2::Term) = EquivalenceFuture(
+        ϕ2,
+        ϕ1
     )
     
 end

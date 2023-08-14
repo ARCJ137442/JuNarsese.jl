@@ -151,7 +151,7 @@ export ASTParser
                     - `s(属性集...)` => Expr(:s, 递归回调(解析器, *每个属性*)...)
 
 打包の例：
-- "<A --> B>" ==(目标)=> `Expr(:Inheriance, Expr(:Word, "A"), Expr(:Word, "B"))`
+- "<A --> B>" ==(目标)=> `Expr(:Inheritance, Expr(:Word, "A"), Expr(:Word, "B"))`
 - "1=>2"      ==(结构)=> `Expr(:Pair, 1, 2)`
 - `1.0`       ==(原生)=> `1.0`
 - `[1,2,3]`   ==(保留)=> `Expr(:__PRESERVED__, :vect, 1, 2, 3)`

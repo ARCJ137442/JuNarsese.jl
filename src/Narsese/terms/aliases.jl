@@ -24,13 +24,19 @@ export AVType, AVariableType
 export ALOperation, ALogicOperation
 
 export IVar, DVar, QVar
-export STInheriance, STSimilarity, STImplication, STEquivalence,
-      Inheriance,   Similarity,   Implication,   Equivalence
+export STInheritance, STSimilarity, STImplication, STEquivalence,
+      Inheritance,   Similarity,   Implication,   Equivalence
 export TemporalStatementTypes
+
+export STImplicationRetrospective, STImplicationConcurrent, STImplicationPredictive
+export   ImplicationRetrospective,   ImplicationConcurrent,   ImplicationPredictive
+export STEquivalenceRetrospective, STEquivalenceConcurrent, STEquivalencePredictive
+export   EquivalenceRetrospective,   EquivalenceConcurrent,   EquivalencePredictive
 export STImplicationPast, STImplicationPresent, STImplicationFuture
 export   ImplicationPast,   ImplicationPresent,   ImplicationFuture
 export STEquivalencePast, STEquivalencePresent, STEquivalenceFuture
 export   EquivalencePast,   EquivalencePresent,   EquivalenceFuture
+
 export Negation, Conjunction, Disjunction
 export ExtSet, ExtensionSet, 
     IntSet, IntensionSet
@@ -75,18 +81,26 @@ const SLSet    = StatementLSet  = SLogicSet    = StatementLogicalSet
 const STSet    = StatementTSet  = STemporalSet = StatementTemporalSet
 
 # 陈述类型
-const STInheriance  = StatementTypeInheriance
+const STInheritance  = StatementTypeInheritance
 const STSimilarity  = StatementTypeSimilarity
 const STImplication = StatementTypeImplication{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
 const STEquivalence = StatementTypeEquivalence{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
 # 三个「带时态蕴含」
-const STImplicationPast    = StatementTypeImplication{Past}
-const STImplicationPresent = StatementTypeImplication{Present}
-const STImplicationFuture  = StatementTypeImplication{Future}
+const STImplicationRetrospective = StatementTypeImplication{Past}
+const STImplicationConcurrent    = StatementTypeImplication{Present}
+const STImplicationPredictive    = StatementTypeImplication{Future}
 # 三个「带时态等价」
-const STEquivalencePast    = StatementTypeEquivalence{Past}
-const STEquivalencePresent = StatementTypeEquivalence{Present}
-const STEquivalenceFuture  = StatementTypeEquivalence{Future}
+const STEquivalenceRetrospective = StatementTypeEquivalence{Past}
+const STEquivalenceConcurrent    = StatementTypeEquivalence{Present}
+const STEquivalencePredictive    = StatementTypeEquivalence{Future}
+# 三个「带时态蕴含」（【20230814 15:55:24】简化别名）
+const STImplicationPast    = STImplicationRetrospective
+const STImplicationPresent = STImplicationConcurrent
+const STImplicationFuture  = STImplicationPredictive
+# 三个「带时态等价」（【20230814 15:55:24】简化别名）
+const STEquivalencePast    = STEquivalenceRetrospective
+const STEquivalencePresent = STEquivalenceConcurrent
+const STEquivalenceFuture  = STEquivalencePredictive
 
 # 对接OpenJunars #
 
@@ -96,7 +110,7 @@ const DVar = Variable{VTDependent}
 const QVar = Variable{VTQuery}
 
 # 各类型陈述
-const Inheriance  = Statement{STInheriance}
+const Inheritance  = Statement{STInheritance}
 const Similarity  = Statement{STSimilarity}
 const Implication = Statement{STImplication}
 const Equivalence = Statement{STEquivalence}
@@ -106,10 +120,18 @@ const TemporalStatementTypes = Union{
     STEquivalence  # 所有等价
 }
 # 三个「带时态蕴含」
+const ImplicationRetrospective = Statement{STImplicationRetrospective}
+const ImplicationConcurrent    = Statement{STImplicationConcurrent}
+const ImplicationPredictive    = Statement{STImplicationPredictive}
+# 三个「带时态等价」
+const EquivalenceRetrospective = Statement{STEquivalenceRetrospective}
+const EquivalenceConcurrent    = Statement{STEquivalenceConcurrent}
+const EquivalencePredictive    = Statement{STEquivalencePredictive}
+# 三个「带时态蕴含」（【20230814 15:55:01】现作为简化别名）
 const ImplicationPast    = Statement{STImplicationPast}
 const ImplicationPresent = Statement{STImplicationPresent}
 const ImplicationFuture  = Statement{STImplicationFuture}
-# 三个「带时态等价」
+# 三个「带时态等价」（【20230814 15:55:01】现作为简化别名）
 const EquivalencePast    = Statement{STEquivalencePast}
 const EquivalencePresent = Statement{STEquivalencePresent}
 const EquivalenceFuture  = Statement{STEquivalenceFuture}
@@ -142,7 +164,7 @@ const SeqConjunction = STSet{Sequential}
 
 "（内置）陈述的类型：基于词项"
 const TermBasedSTs = Union{ # 因其「内部不可扩展性」不予导出
-    STInheriance,
+    STInheritance,
     STSimilarity
 }
 "（内置）陈述的类型：基于陈述"
