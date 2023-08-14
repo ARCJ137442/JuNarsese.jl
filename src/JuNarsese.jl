@@ -23,6 +23,8 @@ using Reexport
 # 配置类参数
 
 DEFAULT_FLOAT_PRECISION::Type{<:AbstractFloat} = Float64
+"按照「默认浮点精度」解析字符串(📝Julia这样定义函数不会形成闭包)"
+parse_default(s) = Base.parse(DEFAULT_FLOAT_PRECISION, s)
 export DEFAULT_FLOAT_PRECISION
 
 # 导入各个文件 #

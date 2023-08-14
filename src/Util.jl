@@ -3,16 +3,15 @@
 """
 module Util
 
+export UNothing
 export @reverse_dict_content, @redirect_SRS, @expectedError
 export match_first, allproperties, allproperties_generator
 export get_pure_type_name, get_pure_type_symbol, verify_type_expr, assert_type_expr
 export SYMBOL_NULL
 export @generate_ifelseif, @rand
 
-# "可变长参数的自动转换支持" # 用于terms.jl的构造方法 ！添加报错：Unreachable reached at 000002d1cdac1f57
-# Base.convert(::Type{Vector{T}}, args::Tuple) where T = args |> collect |> Vector{T}
-# Base.convert(::Type{Set{T}}, args::Tuple) where T = args |> Set{T}
-# Base.convert(::Type{Tuple{T}}, args::Tuple) where T = args |> Tuple{T}
+"便捷の可空の支持（同时不与Nullable.jl冲突）"
+const UNothing{T} = Union{T, Nothing} where T
 
 "反转字典"
 macro reverse_dict_content(name::Symbol)

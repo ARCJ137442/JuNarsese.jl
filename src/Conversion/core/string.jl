@@ -100,13 +100,16 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
     tenses::Vector{Content}
 
     """
-    标点 => 标点表示（文本）
+    标点 → 标点文本
     """
-    punctuation_dict::Dict{Type, Content}
-    "（自动生成）反向字典"
-    punctuation2type::Dict{Content, Type}
+    punctuation_dict::Dict{TPunctuation, Content}
+    "（自动生成）标点文本→标点"
+    punctuation2type::Dict{Content, TPunctuation}
     "（自动生成）所有标点"
     punctuations::Vector{Content}
+
+    "标点 → 语句类"
+    punctuation2sentence::Dict{TPunctuation, Type{<:ASentence}}
 
     """
     真值の括弧
@@ -132,6 +135,7 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
         copula_dict::Dict,
         tense_dict::Dict,
         punctuation_dict::Dict,
+        punctuation2sentence::Dict,
         truth_brackets::Tuple{Content, Content},
         truth_separator::Content,
         preprocess::Function,
@@ -177,6 +181,7 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
                 @reverse_dict_content punctuation_dict
             ),
             values(punctuation_dict) |> collect,
+            punctuation2sentence,
             truth_brackets,
             truth_separator,
             preprocess,
@@ -214,7 +219,7 @@ begin "【特殊链接】词项/语句↔字符串"
     @redirect_SRS t::Term narsese2data(StringParser_ascii, t) # 若想一直用narsese2data，则其也需要注明类型变成narsese2data(String, t)
 
     # 【特殊链接】语句(时间戳/真值)↔字符串 #
-    @redirect_SRS s::ASentence narsese2data(StringParser_ascii, s)
+    @redirect_SRS s::Sentence narsese2data(StringParser_ascii, s)
     # @redirect_SRS s::Stamp narsese2data(StringParser_ascii, s) # 把时间戳当做「默认对象」
     @redirect_SRS t::Truth narsese2data(StringParser_ascii, t)
 
@@ -373,7 +378,7 @@ function data2narsese(parser::StringParser, ::TYPE_TERMS, s::String)
     s::String = parser.preprocess(s)
 
     # 识别并自动切分(若返回nothing，隐含报错TypeError)
-    type::Union{Type, Nothing}, _, _, stripped::Union{AbstractString, Nothing} = auto_strip_term(
+    type::UNothing{Type}, _, _, stripped::Union{AbstractString, Nothing} = auto_strip_term(
         parser.compound_brackets,
         s
     )
@@ -568,7 +573,7 @@ begin "复合词项↔字符串"
             error("无效的复合词项符号「$connector_str")
         end
         # 解析剩余词项
-        components::Vector{Union{Term, Nothing}} = Union{Term, Nothing}[
+        components::Vector{UNothing{Term}} = UNothing{Term}[
             term_str == parser.placeholder_d2t ?
                 nothing : # 使用nothing兼容「像占位符」
                 data2narsese(parser, Term, term_str)
@@ -766,19 +771,20 @@ begin "语句相关"
 
     "时态→字符串: 有默认值"
     function narsese2data(
-        parser::StringParser, ::Type{T}, 
-        default::Type{T1} = Eternal
-        ) where {T <: Tense, T1 <: Tense}
+        parser::StringParser, T::TTense, 
+        default::TTense = Eternal
+        )
         get(parser.tense_dict, T, default)
     end
     
     "语句→字符串"
-    function narsese2data(parser::StringParser, s::ASentence{punctuation}) where punctuation <: Punctuation
+    function narsese2data(parser::StringParser, s::Sentence)
+        truth::UNothing{Truth} = get_truth(s) # 不为narsese2data设置对nothing的方法，避免污染分派
         form_sentence(
-            narsese2data(parser, s.term),
-            narsese2data(parser, punctuation),
-            narsese2data(parser, Base.get(s, Tense)),
-            narsese2data(parser, s.truth),
+            narsese2data(parser, get_term(s)),
+            narsese2data(parser, get_punctuation(s)),
+            narsese2data(parser, get_tense(s)),
+            isnothing(truth) ? "" : narsese2data(parser, truth),
             parser.space
         )
     end
@@ -795,7 +801,7 @@ begin "语句相关"
         parser::StringParser, ::Type{Punctuation}, 
         s::String,
         default::Type = Judgement, # 📌【20230808 9:46:21】此处不能用Type{P}限制，会导致类型变量连锁，类型转换失败
-        )::Type{ <: Union{Punctuation, Nothing}}
+        )::Type{ <: UNothing{Punctuation}}
         get(parser.punctuation2type, s, default)
     end
 
@@ -880,7 +886,8 @@ begin "语句相关"
         s::String,
         F::Type=DEFAULT_FLOAT_PRECISION, C::Type=DEFAULT_FLOAT_PRECISION;
         default_truth::Truth = Truth{DEFAULT_FLOAT_PRECISION}(1.0, 0.5), # 动态创建
-        default_punctuation::Type = Judgement # 默认类型
+        default_punctuation::Type = Judgement, # 实际无默认标点（语句类型）
+        punctuation2sentence::Dict{TPunctuation, Type{<:ASentence}} = parser.punctuation2sentence
         )::STRING_PARSE_TARGETS
         # 预处理覆盖局部变量
         str::String = parser.preprocess(s)
@@ -890,10 +897,10 @@ begin "语句相关"
         truth::Truth, index = _match_truth(parser, str, F, C; default_truth)
         str = str[begin:index] # 反复剪裁
 
-        tense::Type, index = _match_tense(parser, str)
+        tense::TTense, index = _match_tense(parser, str)
         str = str[begin:index] # 反复剪裁
 
-        punctuation::Type, index = _match_punctuation(parser, str, default_punctuation)
+        punctuation::TPunctuation, index = _match_punctuation(parser, str, default_punctuation)
         str = str[begin:index] # 反复剪裁
 
         term::Term = data2narsese(parser, Term, str) # 剩下就是词项
@@ -901,8 +908,12 @@ begin "语句相关"
         # 「真值」「时态」「标点」俱无⇒转换为词项
         index == index_start && return term
 
-        # 构造
-        return Sentence{punctuation}(term, truth, tense)
+        # 否则构造成语句(使用可选参数形式)
+        return punctuation2sentence[punctuation](
+            term; 
+            stamp = StampBasic{tense}(), # 兼容Lark中的语法。。。
+            truth
+        )
     end
 
     """
@@ -1028,4 +1039,5 @@ begin "语句相关"
             )
         )
     end
+    
 end

@@ -172,31 +172,30 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @test s5 ≠ (∨(⩚(A→B, B→C, C→D), ⩜(B→C, A→B, C→D)) ⇒ (A→D))
 
     # 语句
-    se = Sentence{Question}(
+    se = SentenceQuestion(
         s5,
-        Truth64(1, 0.9),
-        StampBasic()
+        StampBasic(),
     )
-    se0 = Sentence{Goal}(
+    se0 = SentenceGoal(
         ExtSet(w"SELF") → IntSet(w"good"),
+        StampBasic{Present}(),
         Truth64(1, 0.9),
-        StampBasic{Present}()
     )
-    se2 = Sentence{Judgement}(s2)
+    se2 = SentenceJudgement(s2)
     @show se se0 se2
     
     @test se0 == narsese"<{SELF} --> [good]>! :|: %1.0;0.9%"
 
-    @test @expectedError Sentence{Judgement}(
+    @test @expectedError SentenceJudgement(
         s5,
+        StampBasic(),
         Truth64(1.1, 0.9), # f越界
-        StampBasic()
     )
 
-    @test @expectedError Sentence{Judgement}(
+    @test @expectedError SentenceJudgement(
         s5,
+        StampBasic(),
         Truth64(0, -1.0), # c越界
-        StampBasic()
     )
     
 end

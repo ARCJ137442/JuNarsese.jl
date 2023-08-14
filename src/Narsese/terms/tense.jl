@@ -8,7 +8,7 @@
 使用「抽象类型参数@Stamp」实现枚举
 =#
 
-export AbstractTense, Tense
+export AbstractTense, Tense, TTense
 export TenseEternal, TensePast, TensePresent, TenseFuture
 export Eternal, Past, Present, Future
 export Retrospective, Concurrent, Predictive # 用于「时序蕴含/等价」的别名
@@ -17,6 +17,7 @@ export Retrospective, Concurrent, Predictive # 用于「时序蕴含/等价」�
 "抽象时态"
 abstract type AbstractTense end
 const Tense::DataType = AbstractTense # 别名
+const TTense::Type = Type{<:Tense} # 所有时态类都为此之实例
 
 "时态：永恒、过去、现在、未来"
 abstract type TenseEternal <: AbstractTense end

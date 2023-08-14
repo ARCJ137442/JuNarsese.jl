@@ -69,8 +69,9 @@ const StringParser_ascii::StringParser = StringParser{String}(
         Judgement => ".",
         Question  => "?",
         Goal      => "!",
-        Query     => "@",
+        Quest     => "@",
     ),
+    Narsese.DEFAULT_PUNCTUATION_SENTENCE_DICT, # 使用默认映射表
     # 真值: 括号&分隔符
     ("%", "%"),
     ";",
@@ -148,8 +149,9 @@ const StringParser_latex::StringParser = StringParser{String}(
         Judgement => ".",
         Question  => "?",
         Goal      => "!",
-        Query     => "¿", # 【20230806 23:46:18】倒问号没有对应的LaTeX。。。
+        Quest     => "¿", # 【20230806 23:46:18】倒问号没有对应的LaTeX。。。
     ),
+    Narsese.DEFAULT_PUNCTUATION_SENTENCE_DICT, # 使用默认映射表
     # 真值: 括号&分隔符
     ("\\langle", "\\rangle"),
     ",",
@@ -225,8 +227,9 @@ const StringParser_han::StringParser = StringParser{String}(
         Judgement => "。",
         Question  => "？",
         Goal      => "！",
-        Query     => "；", # 【20230809 10:35:15】这里的「请求」没有常用的中文标点做替代，暂且用个「分号」
+        Quest     => "；", # 【20230809 10:35:15】这里的「请求」没有常用的中文标点做替代，暂且用个「分号」
     ),
+    Narsese.DEFAULT_PUNCTUATION_SENTENCE_DICT, # 使用默认映射表
     # 真值: 括号&分隔符
     ("真值=", "信"), # 此处不能留空！！！
     "真",

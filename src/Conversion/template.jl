@@ -6,7 +6,7 @@
         - 例如：在被外部库调用时，`Term`变成了`JuNarsese.Narsese.Term`（字符串/Symbol）
     `nameof`：只获取类型的名称，但会被忽略掉「别名」与「参数类型」
         - 在明确类型所属模块（解析の上下文）时，表示形式相对简洁
-        - 例如：不论被什么库调用，`Sentence{Judgement}`都只会是`:SentenceBasic`
+        - 例如：不论被什么库调用，`ASentence{Judgement}`都只会是`:ASentenceJudgement`
 =#
 
 # 依赖：Narsese（数据结构）

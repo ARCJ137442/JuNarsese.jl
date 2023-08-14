@@ -175,7 +175,7 @@ begin "时态：用于获取(Base.collect)「时序蕴含/等价」中的「时�
     """
     function Base.get(::Statement{ST}, ::Type{Tense}) where {ST <: AbstractStatementType}
         if ST <: TemporalStatementTypes # 若其为「有时态系词」
-            return ST.parameters[1] # 获取ST{T <: Tense}的第一个类型参数，直接作为返回值
+            return ST.parameters[1] # 获取ST{::TTense}的第一个类型参数，直接作为返回值
         end
         return Eternal
     end

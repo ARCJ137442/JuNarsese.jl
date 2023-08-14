@@ -88,15 +88,15 @@ if !isdefined(Main, :Test)
         nse"「（与，「任一人是【会死的】」，「『苏格拉底』是人」）得「『苏格拉底』是【会死的】」」。"han
         nse"「（接连，「时间是黑夜」，「程序员有写代码」，「（外像，程序员，撞上，某）是bug」）将得「程序员是【熬夜的】」」。"han
         nse"「（同时，「系统有开放性」，「系统有自主性」，「系统有实时性」）将得「系统是AGI」」？"han
-        Sentence{Judgement}(s8)
+        SentenceJudgement(s8)
     ]
     @info "sentences: " sentences
     # 下面这些注释是利用系统报错精确获得堆栈信息/调试支持的
-    # ASTParser.(ASTParser.(ASTParser.(sentences, Sentence), Sentence), Sentence)
-    # XMLParser_optimized.(XMLParser_optimized.(XMLParser_optimized.(sentences, Sentence), Sentence), Sentence)
-    # @info "sentences@AST: " ASTParser.(ASTParser.(ASTParser.(sentences, Sentence), Sentence), Sentence)
-    # @info "sentences@XML: " XMLParser.(XMLParser.(XMLParser.(sentences, Sentence), Sentence), Sentence)
-    # @info "sentences@JSON: " JSONParser{Dict}.(JSONParser{Dict}.(JSONParser{Dict}.(sentences, Sentence), Sentence), Sentence)
+    # ASTParser.(ASTParser.(ASTParser.(sentences)))
+    # XMLParser_optimized.(XMLParser_optimized.(XMLParser_optimized.(sentences)))
+    # @info "sentences@AST: " ASTParser.(ASTParser.(ASTParser.(sentences)))
+    # @info "sentences@XML: " XMLParser.(XMLParser.(XMLParser.(sentences)))
+    # @info "sentences@JSON: " JSONParser{Dict}.(JSONParser{Dict}.(JSONParser{Dict}.(sentences)))
     # for (t1, t2) in zip(tss, sentences)
     #     if t1 ≠ t2
     #         # dump.(ASTParser.([t1, t2]); maxdepth=typemax(Int))

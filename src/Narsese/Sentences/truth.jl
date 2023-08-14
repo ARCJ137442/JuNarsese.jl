@@ -50,7 +50,12 @@ function Truth{F_TYPE, C_TYPE}(f::Real, c::Real) where {
 end
 
 "外部构造方法：只指定一个参数类型，相当于复制两个类型"
-Truth{V_TYPE}(args...) where {V_TYPE} = Truth{V_TYPE, V_TYPE}(args...)
+@inline Truth{V_TYPE}(args...) where {V_TYPE} = Truth{V_TYPE, V_TYPE}(args...)
+
+"面向默认的方法：使用默认精度"
+@inline Truth(f::AbstractFloat, c::AbstractFloat) = Truth{DEFAULT_FLOAT_PRECISION}(
+    DEFAULT_FLOAT_PRECISION(f), DEFAULT_FLOAT_PRECISION(c)
+)
 
 # 别名：各类精度的真值 #
 const Truth16::DataType = Truth{Float16, Float16}
