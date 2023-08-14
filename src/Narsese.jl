@@ -30,7 +30,8 @@ include("Narsese/Sentences.jl")
 const TYPE_NAMES::Vector = names(Narsese)
 
 let value::Any
-    for name::Symbol in TYPE_NAMES
+    # 【20230814 16:30:21】使用@simd并行加载，但要去掉「::Symbol」
+    @simd for name in TYPE_NAMES
         value = Narsese.eval(name)
         push!(TYPE_VALUES, value)
         push!(TYPE_NAME_DICT, value => (name, string(name)))

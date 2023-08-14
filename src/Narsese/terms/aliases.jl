@@ -86,13 +86,13 @@ const STSimilarity  = StatementTypeSimilarity
 const STImplication = StatementTypeImplication{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
 const STEquivalence = StatementTypeEquivalence{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
 # 三个「带时态蕴含」
-const STImplicationRetrospective = StatementTypeImplication{Past}
-const STImplicationConcurrent    = StatementTypeImplication{Present}
-const STImplicationPredictive    = StatementTypeImplication{Future}
+const STImplicationRetrospective = StatementTypeImplication{Retrospective}
+const STImplicationConcurrent    = StatementTypeImplication{Concurrent}
+const STImplicationPredictive    = StatementTypeImplication{Predictive}
 # 三个「带时态等价」
-const STEquivalenceRetrospective = StatementTypeEquivalence{Past}
-const STEquivalenceConcurrent    = StatementTypeEquivalence{Present}
-const STEquivalencePredictive    = StatementTypeEquivalence{Future}
+const STEquivalenceRetrospective = StatementTypeEquivalence{Retrospective}
+const STEquivalenceConcurrent    = StatementTypeEquivalence{Concurrent}
+const STEquivalencePredictive    = StatementTypeEquivalence{Predictive}
 # 三个「带时态蕴含」（【20230814 15:55:24】简化别名）
 const STImplicationPast    = STImplicationRetrospective
 const STImplicationPresent = STImplicationConcurrent

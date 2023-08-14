@@ -11,6 +11,7 @@
 export AbstractTense, Tense
 export TenseEternal, TensePast, TensePresent, TenseFuture
 export Eternal, Past, Present, Future
+export Retrospective, Concurrent, Predictive # 用于「时序蕴含/等价」的别名
 
 
 "抽象时态"
@@ -23,7 +24,12 @@ abstract type TensePast    <: AbstractTense end
 abstract type TensePresent <: AbstractTense end
 abstract type TenseFuture  <: AbstractTense end
 
-"别名"
+# 用于「时序蕴含/等价」的别名
+const Retrospective::DataType = TensePast
+const Concurrent   ::DataType = TensePresent
+const Predictive   ::DataType = TenseFuture
+
+"别名" # 【20230814 16:20:01】注意：Julia以最后一个定义出的别名作为显示用类名
 const Eternal::DataType = TenseEternal
 const Past   ::DataType = TensePast
 const Present::DataType = TensePresent

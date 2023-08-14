@@ -281,7 +281,7 @@ end
 begin "打包の逻辑"
 
     "格式化：结构类型"
-    ast_form_struct(type::Type, args...)::Expr = Expr(
+    @inline ast_form_struct(type::Type, args...)::Expr = Expr(
         pack_type_symbol(type), args...
     )
 
@@ -289,7 +289,7 @@ begin "打包の逻辑"
     # ast_form_native(obj::AST_NATIVE_TYPES)::AST_NATIVE_TYPES = obj
 
     "格式化：保留类型"
-    ast_form_preserved(head::Symbol, args...)::Expr = Expr(
+    @inline ast_form_preserved(head::Symbol, args...)::Expr = Expr(
         AST_PRESERVED_HEAD, # 增加特征头
         head,
         args...

@@ -162,7 +162,7 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
             # 自动生成函数：判断是否前缀为系词
             s -> begin
                 # 遍历所有系词
-                for copula in copulas
+                @simd for copula in copulas
                     startswith(s, copula) && return copula
                 end
                 return empty(Content) # 【20230809 10:55:18】默认返回空文本（详见Util.jl扩展的方法）
@@ -231,7 +231,7 @@ begin "陈述形式"
     原子词项：前缀+内容
     例子："^操作"
     """
-    function form_atom(prefix::CONTENT, content::CONTENT)::CONTENT
+    @inline function form_atom(prefix::CONTENT, content::CONTENT)::CONTENT
         prefix * content # 自动拼接
     end
 
@@ -239,7 +239,7 @@ begin "陈述形式"
     陈述：前缀+词项+系词+词项+后缀
     例子："<A ==> B>
     """
-    function form_statement(
+    @inline function form_statement(
         prefix::CONTENT, suffix::CONTENT, # 前后缀
         first::CONTENT, copula::CONTENT, last::CONTENT, # 词项+系词+词项
         space::CONTENT
@@ -252,7 +252,7 @@ begin "陈述形式"
     例子："[A, B, C]"
     - ⚠注意：Julia类型的「不变性」注定「带类参数组」参数约束麻烦
     """
-    function form_term_set(prefix::CONTENT, suffix::CONTENT, contents::Vector, separator::String)::CONTENT
+    @inline function form_term_set(prefix::CONTENT, suffix::CONTENT, contents::Vector, separator::String)::CONTENT
         prefix * join(contents, separator) * suffix # 字符也能拼接
     end
 
@@ -262,7 +262,7 @@ begin "陈述形式"
 
     【20230811 11:46:15】此中之「connector」名自《NAL》定义7.3
     """
-    function form_compound_set(
+    @inline function form_compound_set(
         prefix::CONTENT, suffix::CONTENT, # 前后缀
         connector::CONTENT, contents::Vector, # 符号+内容
         separator::CONTENT,
@@ -272,7 +272,7 @@ begin "陈述形式"
     end
 
     "_autoIgnoreEmpty: 字串为空⇒不变，字串非空⇒加前导分隔符"
-    _aie(s::CONTENT, sept::CONTENT=" ") = (
+    @inline _aie(s::CONTENT, sept::CONTENT=" ") = (
         isempty(s) ? 
             s : 
             sept * s
@@ -284,7 +284,7 @@ begin "陈述形式"
     - 自动为「空参数」省去空格
         - 本为："$(term_str)$punctuation $tense $truth"
     """
-    function form_sentence(
+    @inline function form_sentence(
         term_str::CONTENT, punctuation::CONTENT, 
         tense::CONTENT, truth::CONTENT,
         space::CONTENT,
@@ -295,7 +295,7 @@ begin "陈述形式"
     """
     格式化真值: 左 + f + 分隔符 + c + 右
     """
-    function form_truth(
+    @inline function form_truth(
         left::CONTENT, right::CONTENT, separator::CONTENT,
         f::Real, c::Real
         )
