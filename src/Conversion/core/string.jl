@@ -801,13 +801,13 @@ begin "语句相关"
     function narsese2data(parser::StringParser, s::Stamp)
         # 获取时态
         T = get_tense(s)
-        # 非「永恒」时态⇒直接返回时态
-        T ≠ Eternal && return narsese2data(parser, T)
-        # 否则是「具体时刻」时态
-        return form_stamp(
+        # 若为「根据时刻创建的」，则依照「具体时刻时间戳」格式
+        is_fixed_occurrence_time(s) && return form_stamp(
             parser.timed_stamp_brackets...,
             s.occurrence_time # 指定是「发生时间」
         )
+        # 否则是「固定时态」
+        return narsese2data(parser, T)
     end
     
     "语句→字符串"
