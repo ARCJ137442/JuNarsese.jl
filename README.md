@@ -47,3 +47,4 @@ Pkg.add(url="https://github.com/ARCJ137442/JuNarsese.jl")
 
 - [OpenJunars](https://github.com/AIxer/OpenJunars)
 - [OpenNARS](https://github.com/opennars/opennars)
+- [PyNARS](https://github.com/bowen-xu/PyNARS)
