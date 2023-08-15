@@ -140,6 +140,11 @@ end
 StampBasic(args...) = StampBasic{Eternal}(args...)
 
 begin "方法集"
+
+    # 【20230815 16:33:51】函数「get_tense」已在「methods.jl」中定义
+    import ..Narsese: get_tense
+
+    export get_tense
     
     "获取时态"
     @inline get_tense(s::StampBasic{S}) where {S} = S

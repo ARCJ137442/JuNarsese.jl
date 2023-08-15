@@ -205,7 +205,7 @@ Base.eltype(::TASTParser)::Type = Expr
 Base.Expr(target::AST_PARSE_TARGETS)::Expr = narsese2data(ASTParser, target)
 
 "构造方法支持"
-(::Type{T})(expr::Base.Expr) where {T <: AST_PARSE_TARGETS} = data2narsese(ASTParser, Term, expr)
+((::Type{T})(expr::Base.Expr)::T) where {T <: AST_PARSE_TARGETS} = data2narsese(ASTParser, Term, expr)
 
 
 # 正式开始 #

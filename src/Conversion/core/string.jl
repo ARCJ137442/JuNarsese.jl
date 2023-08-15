@@ -214,7 +214,7 @@ Base.eltype(::StringParser)::Type = String
 begin "【特殊链接】词项/语句↔字符串"
     
     "词项集↔字符串（ASCII）"
-    Base.parse(::Type{T}, s::String) where T <: Term = data2narsese(StringParser_ascii, T, s)
+    (Base.parse(::Type{T}, s::String)::T) where T <: Term = data2narsese(StringParser_ascii, T, s)
 
     @redirect_SRS t::Term narsese2data(StringParser_ascii, t) # 若想一直用narsese2data，则其也需要注明类型变成narsese2data(String, t)
 
@@ -224,7 +224,7 @@ begin "【特殊链接】词项/语句↔字符串"
     @redirect_SRS t::Truth narsese2data(StringParser_ascii, t)
 
     "构造方法支持"
-    (::Type{T})(s::String) where {T <: STRING_PARSE_TARGETS} = data2narsese(StringParser_ascii, Term, s)
+    ((::Type{T})(s::String)::T) where {T <: STRING_PARSE_TARGETS} = data2narsese(StringParser_ascii, Term, s)
 
 end
 

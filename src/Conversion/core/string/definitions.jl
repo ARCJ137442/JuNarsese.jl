@@ -10,6 +10,7 @@ const StringParser_ascii::StringParser = StringParser{String}(
         IVar     => "\$",
         DVar     => "#",
         QVar     => "?",
+        Interval => "+", # 间隔
         Operator => "^", # 操作
     ),
     "_", "_",
@@ -40,7 +41,7 @@ const StringParser_ascii::StringParser = StringParser{String}(
         SeqConjunction  => "&/",
     ),
     Dict( # 系词
-        STInheritance       => "-->",
+        STInheritance      => "-->",
         STSimilarity       => "<->",
         STImplication      => "==>",
         STEquivalence      => "<=>",
@@ -49,19 +50,19 @@ const StringParser_ascii::StringParser = StringParser{String}(
         STProperty           => "--]",
         STInstanceProperty   => "{-]",
         # 副系词: 时序蕴含
-        STImplicationRetrospective    => raw"=\>",
-        STImplicationConcurrent => raw"=|>",
-        STImplicationPredictive  => raw"=/>",
+        STImplicationRetrospective => raw"=\>",
+        STImplicationConcurrent    => raw"=|>",
+        STImplicationPredictive    => raw"=/>",
         # 副系词: 时序等价
-        STEquivalenceRetrospective    => raw"<\>",
-        STEquivalenceConcurrent => raw"<|>",
-        STEquivalencePredictive  => raw"</>",
+        STEquivalenceRetrospective => raw"<\>",
+        STEquivalenceConcurrent    => raw"<|>",
+        STEquivalencePredictive    => raw"</>",
     ),
     Dict( # 时态
-        Eternal    => "",
-        Past       => ":\\:",
-        Present    => ":|:",
-        Future     => ":/:",
+        Eternal => "",
+        Past    => ":\\:",
+        Present => ":|:",
+        Future  => ":/:",
         # Sequential => "&/", # 这两个只是因为与之相关，所以才放这里
         # Parallel   => "&|",
     ),
@@ -92,6 +93,7 @@ const StringParser_latex::StringParser = StringParser{String}(
         IVar     => "\$",
         DVar     => "\\#",
         QVar     => "?", # 【20230811 12:54:54】！自《NAL》定义10.2得知，非独变量的LaTeX包括后缀，后续兼容成问题
+        Interval => "+", # 间隔
         Operator => "\\Uparrow", # 操作
     ),
     "\\diamond", "\\diamond",
@@ -170,6 +172,7 @@ const StringParser_han::StringParser = StringParser{String}(
         IVar     => "任一",
         DVar     => "其一",
         QVar     => "所问",
+        Interval => "间隔", # 间隔
         Operator => "操作", # 操作
     ),
     "某", "某",

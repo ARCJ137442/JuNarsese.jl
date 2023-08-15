@@ -121,7 +121,7 @@ export AbstractTemporalRelation, Sequential, Parallel
 export AbstractTerm, AbstractAtom, AbstractCompound, AbstractStatement
 export AbstractTermSet, AbstractStatementSet
 
-export Word, Variable, Operator, TermSet, TermLogicalSet, TermImage, TermProduct
+export Word, Variable, Interval, Operator, TermSet, TermLogicalSet, TermImage, TermProduct
 export Statement, AbstractStatementLogicalSet, StatementLogicalSet, StatementTemporalSet
 
 
@@ -254,6 +254,50 @@ begin "单体词项"
     end
     "支持从String构造"
     Variable{T}(name::String) where {T<:AbstractVariableType} = name |> Symbol |> Variable{T}
+
+    """
+    [NAL-7]间隔(Interval)
+
+    迁移自：PyNARS Interval.py
+    - 其中Interval类继承Term
+    - ⚠OpenNARS、OpenJunars中没有相关实现
+
+    参考：《NAL》定义11.4
+    
+    > The real-time experience of a NARS is a sequence of Narsese sentences, separated by non-negative numbers indicating the interval between the arriving time of subsequent sentences, measured by the system’s internal clock.
+    
+    中译：
+    > NARS的实时经验是一系列的Narsese句子，由非负数分隔，这些非负数表示后续句子到达时间之间的间隔，由系统的内部时钟测量。
+
+    【20230815 17:19:44】因「字符串转换器字典查找问题」与「不同精度区分必要性小」不再区分精度：统一至UInt
+    """
+    struct Interval <: AbstractAtom
+
+        "（只读as缓存）继承自原子词项"
+        name::String
+    
+        "间隔长度"
+        interval::UInt
+
+        "内部构造方法：自动获得名称并缓存"
+        Interval(interval::UInt) = check_valid_explainable(
+            new(
+                string(interval), # 缓存名称
+                interval # 存储值
+            )
+        )
+    end
+
+    "外部构造方法 兼容默认整数Integer"
+    @inline Interval(interval::Integer) = Interval(
+        UInt(interval)
+    )
+
+    "外部构造方法 兼容以自身名称「纯数字」定义的字符串"
+    @inline Interval(s::String) = Interval(parse(UInt, s))
+
+    "外部构造方法 兼容以自身名称「纯数字」定义的符号"
+    @inline Interval(s::Symbol) = Interval(string(s))
 
     """
     [NAL-8]操作词项(Action)

@@ -21,19 +21,19 @@ if !isdefined(Main, :Test)
     """ |> println
 
     # 原子词项
-    w,i,d,q,o = w"词项", i"独立变量", d"非独变量", q"查询变量", o"操作"
+    w,i,d,q,n,o = w"词项", i"独立变量", d"非独变量", q"查询变量", n"137", o"操作"
     A,B,C,D,R = "A B C D R" |> split .|> String .|> Symbol .|> Word
     # 像、陈述、乘积
     @show s1 = (/(R, A, B, ⋄, D) → C) ⇒ (*(A, B, C, D) → R)
     # 词项集、陈述逻辑集
     @show s2 = (|(A, B, C) → D) ⇒ ∨((A → D), (B → D), (C → D))
     # 快捷方式解析
-    @show s3 = ShortcutParser.(
-        """ (( q"A" * i"B" ) → o"C" ) ⇔ (d"D" ↔ w"E") """
+    @show s3 = ShortcutParser(
+        """ (( q"A" * i"B" ) → o"C" ) ⇔ (d"D" ↔ (w"E" * n"12")) """
     )
     # 词项集&词项逻辑集
     
-    @show s4 = ⩀(w, i, d, q, o) - ⊍(w, i, d, q, o)
+    @show s4 = ⩀(w, i, d, q, n, o) - ⊍(w, i, d, q, n, o)
     @show s5 = ∩(A, B, C) - ∪(A, B, C)
     # 时序合取
     @show s6 = ∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)

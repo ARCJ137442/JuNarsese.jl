@@ -71,15 +71,15 @@ const TruthBig::DataType = Truth{BigFloat, BigFloat} # 大浮点
         - 此举仍有可能不等。。。
 - fallback到「相等」
 """
-number_value_eq(a::Number, b::Number) = (a == b)
+@inline number_value_eq(a::Number, b::Number)::Bool = (a == b)
 
 "同类直接比较"
-number_value_eq(a::F, b::F) where {F <: AbstractFloat} = (
+@inline (number_value_eq(a::F, b::F)::Bool) where {F <: AbstractFloat} = (
     a == b
 )
 
 "异类转换精度"
-number_value_eq(a::F1, b::F2) where {F1 <: AbstractFloat, F2 <: AbstractFloat} = (
+@inline (number_value_eq(a::F1, b::F2)::Bool) where {F1 <: AbstractFloat, F2 <: AbstractFloat} = (
     DEFAULT_FLOAT_PRECISION(a) == DEFAULT_FLOAT_PRECISION(b)
 )
 

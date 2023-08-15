@@ -72,7 +72,17 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     # 原子词项名的合法性测试
 
     @test @expectedError Word(":A")
-    @test @expectedError IVar("<A --> B>")
+    @test @expectedError Word("<A --> B>") # 非法词项名！
+    @test @expectedError IVar("\$A")
+    @test @expectedError DVar("#A")
+    @test @expectedError QVar("?A")
+    @test @expectedError Operator("^A")
+    @test @expectedError Operator(Symbol("A-B"))
+
+    @test @expectedError Interval("A") # 间隔不能是非数字
+    @test @expectedError Interval("-123") # 间隔不能是负数
+    @test @expectedError Interval("1.5") # 间隔不能是浮点数
+    @test @expectedError Interval("+123") # 间隔不能加上前缀
 
     # 前面「严格模式」的具体作用
 
@@ -100,7 +110,39 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @test @expectedError ParConjunction(A→B, C→D, A↔D, D→o, B→C, w)
     @test @expectedError SeqConjunction(A→B, D→o, B→C, A↔D, C→D, w)
 
-    # 陈述逻辑集
+    # 是否可交换
+
+    @test !is_commutative(StatementTypeInheritance)
+    @test !is_commutative(StatementTypeImplication)
+    @test is_commutative(StatementTypeSimilarity)
+    @test is_commutative(StatementTypeEquivalence)
+
+    @test !is_commutative(TermProduct)
+    @test !is_commutative(ExtImage)
+    @test !is_commutative(IntDiff)
+    @test !is_commutative(Negation)
+    @test !is_commutative(SeqConjunction)
+    @test is_commutative(ExtSet)
+    @test is_commutative(IntIntersection)
+    @test is_commutative(ExtUnion)
+    @test is_commutative(Conjunction)
+    @test is_commutative(Disjunction)
+    @test is_commutative(ParConjunction)
+
+    @test is_commutative(A ↔ B)
+    @test is_commutative((A ↔ B) ⇔ (B ↔ A))
+    @test is_commutative(⩀(A, B, C))
+    @test !is_commutative(\(A, B, nothing, C))
+    @test !is_commutative(*(A, B, C))
+    @test !is_commutative(*(A, B, C) → R)
+
+    # 快捷构造 #
+
+    # 无「像占位符」会报错
+    @test @expectedError /(A, B, C)
+    @test @expectedError \(D, C, A)
+
+    # 陈述逻辑集 #
     @show s1 = ((A→B) ∧ ((A→B)⇒(B→C))) ⇒ (B→C)
     @test s1 == (((A→B) ∧ ((A→B)⇒(B→C))) ⇒ (B→C)) # 非唯一性
     @test ((A→B) ∨ ((A→B)∧(B→C))) == ((A→B) ∨ ((A→B)∧(B→C))) # 非唯一性: 嵌套集合的刁钻

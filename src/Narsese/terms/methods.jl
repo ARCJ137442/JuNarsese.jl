@@ -48,12 +48,12 @@ end
 begin "判断相等(Base.isequal)：基于值而非基于引用"
 
     "核心判等逻辑：使用多分派特性统一判断复合词项中的成分"
-    _collection_equal(v1::Vector, v2::Vector)::Bool = (v1 .== v2) |> all
-    _collection_equal(v1::Tuple, v2::Tuple)::Bool = (v1 .== v2) |> all
-    _collection_equal(::Vector, ::Set)::Bool = false
-    _collection_equal(::Set, ::Vector)::Bool = false
-    _collection_equal(::Vector, ::Tuple)::Bool = false
-    _collection_equal(::Set, ::Tuple)::Bool = false
+    @inline _collection_equal(v1::Vector, v2::Vector)::Bool = (v1 .== v2) |> all
+    @inline _collection_equal(v1::Tuple, v2::Tuple)::Bool = (v1 .== v2) |> all
+    @inline _collection_equal(::Vector, ::Set)::Bool = false
+    @inline _collection_equal(::Set, ::Vector)::Bool = false
+    @inline _collection_equal(::Vector, ::Tuple)::Bool = false
+    @inline _collection_equal(::Set, ::Tuple)::Bool = false
     """
     ✨对两个集合的判等逻辑
     - 📌对「嵌套集合」的判等很显吃力
@@ -81,7 +81,7 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
         ) |> all
     )
     "重定向「==」符号"
-    Base.:(==)(t1::Term, t2::Term) = Base.isequal(t1, t2)
+    @inline Base.:(==)(t1::Term, t2::Term) = Base.isequal(t1, t2)
 
     "原子词项相等"
     Base.isequal(t1::AbstractAtom, t2::AbstractAtom)::Bool = (
@@ -166,6 +166,8 @@ end
 
 # 时态
 begin "时态：用于获取(Base.collect)「时序蕴含/等价」中的「时态信息」"
+
+    export get_tense
     
     """
     获取「时序蕴含/等价」陈述中的时态
@@ -173,7 +175,7 @@ begin "时态：用于获取(Base.collect)「时序蕴含/等价」中的「时�
     - 默认值：对其它语句返回「Eternal」
     - ⚠和语句的时态可能不一致「参见OpenNARS」
     """
-    function Base.get(::Statement{ST}, ::Type{Tense}) where {ST <: AbstractStatementType}
+    @inline function get_tense(::Statement{ST})::TTense where {ST <: AbstractStatementType}
         if ST <: TemporalStatementTypes # 若其为「有时态系词」
             return ST.parameters[1] # 获取ST{::TTense}的第一个类型参数，直接作为返回值
         end
@@ -195,7 +197,7 @@ end
 # NAL信息支持
 begin "NAL信息支持"
     
-    export get_syntactic_complexity, get_syntactic_simplicity
+    export get_syntactic_complexity, get_syntactic_simplicity, is_commutative
 
     """
     [NAL-3]获取词项的「语法复杂度」
@@ -277,6 +279,48 @@ begin "NAL信息支持"
     【20230811 12:10:34】留存r以开放给后续调用
     """
     get_syntactic_simplicity(t::Term, r::Number) = 1 / get_syntactic_complexity(t)^r
+
+    """
+    「是否可交换」亦即「无序组分」
+    
+    可用于：
+    - 词项类型
+    - 陈述类型
+    - 词项→词项类型
+    - 陈述→陈述类型
+
+    📌一般是不会变的常量，适合内联
+
+    默认：有序
+    - 返回`false`
+
+    【20230815 15:59:50】参考自OpenNARS Equivalence.java
+    """
+    @inline is_commutative(::Type{<:Term})::Bool = false
+    "所有陈述类型 默认=false"
+    @inline is_commutative(::Type{<:AbstractStatementType}) = false
+
+    "外延集&内涵集 = true"
+    @inline is_commutative(::Type{<:TermSet})::Bool = true
+
+    "外延交&内涵交/外延并&内涵并 = true" # 注意：单行函数+where+返回类型，会产生「f(x)::(T where T)🆚(f(x)::T) where T」歧义（一般认为是前者），详见GitHub issue#21847
+    @inline (is_commutative(::Type{TermLSet{EI, LO}})::Bool) where {EI, LO <: Union{And, Or}} = true
+
+    "合取&析取 = true" # 解决方案：括弧。issue链接：https://github.com/JuliaLang/julia/issues/21847
+    @inline (is_commutative(::Type{StatementLSet{LO}})::Bool) where {LO <: Union{And, Or}} = true
+
+    "平行合取 = true"
+    @inline is_commutative(::Type{ParConjunction})::Bool = true
+
+    "相似&等价 = true"
+    @inline is_commutative(::Type{STSimilarity})::Bool = true
+    @inline is_commutative(::Type{<:StatementTypeEquivalence})::Bool = true # 注意时态
+
+    "词项→重定向到其类型" # 使用参数类型取代typeof
+    @inline (is_commutative(::T)::Bool) where {T <: Term} = is_commutative(T)
+
+    "陈述→重定向到其陈述类型" # 使用参数类型取代typeof
+    @inline (is_commutative(::Statement{T})::Bool) where {T <: AbstractStatementType} = is_commutative(T)
 
 end
 

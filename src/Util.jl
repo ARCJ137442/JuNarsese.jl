@@ -98,14 +98,17 @@ raw"""
 - ⚠【20230809 10:44:39】注意：实际上Char无「空字符」一说，
     - 为兼容起见，使用「\u200c」零宽无连接符作占位符
 - 返回空字串，「空字符」（\u200c）、「空正则」
+
+【20230815 16:19:31】现在加上括号，便可类型注释✅
+- 参考链接：https://github.com/JuliaLang/julia/issues/21847#issuecomment-301263779
 """
-Base.empty(::Union{T, Type{T}}) where {T <: AbstractString} = 
+(Base.empty(::Union{T, Type{T}})::AbstractString) where {T <: AbstractString} = 
     ""
-Base.empty(::Union{T, Type{T}}) where {T <: AbstractChar} = 
+(Base.empty(::Union{T, Type{T}})::AbstractChar) where {T <: AbstractChar} = 
     '\u200c'
-Base.empty(::Union{T, Type{T}}) where {T <: Regex} = 
+(Base.empty(::Union{T, Type{T}})::Regex) where {T <: Regex} = 
     r""
-Base.empty(::Union{T, Type{T}}) where {T <: Symbol} = 
+(Base.empty(::Union{T, Type{T}})::Symbol) where {T <: Symbol} = 
     Symbol()
 
 "空符号"
