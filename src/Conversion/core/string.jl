@@ -91,13 +91,21 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
     startswith_copula::Function
 
     """
-    时态 => 时态表示（文本）
+    时态 => 时态表示（中缀）
+    - 例如：Future => "/"
     """
     tense_dict::Dict{Type, Content}
     "（自动生成）反向字典"
     tense2type::Dict{Content, Type}
     "（自动生成）所有时态"
     tenses::Vector{Content}
+
+    """
+    带时刻时间戳の括弧
+    - 例如：`:!123:` => (":!", ":")
+    - 右括弧可以没有
+    """
+    timed_stamp_brackets::Tuple{Content, Content}
 
     """
     标点 → 标点文本
@@ -134,6 +142,7 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
         compound_symbols::Dict,
         copula_dict::Dict,
         tense_dict::Dict,
+        timed_stamp_brackets::Tuple{Content, Content},
         punctuation_dict::Dict,
         punctuation2sentence::Dict,
         truth_brackets::Tuple{Content, Content},
@@ -176,6 +185,7 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
                 @reverse_dict_content tense_dict
             ),
             values(tense_dict) |> collect,
+            timed_stamp_brackets,
             punctuation_dict,
             Dict( # 自动反转字典: 标点 => 类型
                 @reverse_dict_content punctuation_dict
@@ -305,6 +315,16 @@ begin "陈述形式"
         f::Real, c::Real
         )
         left * "$f$separator$c" * right
+        
+    end
+
+    """
+    格式化「带时刻时间戳」: 左 + 时刻 + 右
+    """
+    @inline function form_stamp(
+        left::CONTENT, right::CONTENT, time::Integer
+        )
+        left * "$time" * right
         
     end
 
@@ -776,6 +796,19 @@ begin "语句相关"
         )
         get(parser.tense_dict, T, default)
     end
+
+    "时间戳→字符串: 针对「带时刻时间戳」定制"
+    function narsese2data(parser::StringParser, s::Stamp)
+        # 获取时态
+        T = get_tense(s)
+        # 非「永恒」时态⇒直接返回时态
+        T ≠ Eternal && return narsese2data(parser, T)
+        # 否则是「具体时刻」时态
+        return form_stamp(
+            parser.timed_stamp_brackets...,
+            s.occurrence_time # 指定是「发生时间」
+        )
+    end
     
     "语句→字符串"
     function narsese2data(parser::StringParser, s::Sentence)
@@ -783,7 +816,7 @@ begin "语句相关"
         form_sentence(
             narsese2data(parser, get_term(s)),
             narsese2data(parser, get_punctuation(s)),
-            narsese2data(parser, get_tense(s)),
+            narsese2data(parser, get_stamp(s)),
             isnothing(truth) ? "" : narsese2data(parser, truth),
             parser.space
         )
@@ -897,7 +930,7 @@ begin "语句相关"
         truth::Truth, index = _match_truth(parser, str, F, C; default_truth)
         str = str[begin:index] # 反复剪裁
 
-        tense::TTense, index = _match_tense(parser, str)
+        stamp::Stamp, index = _match_stamp(parser, str)
         str = str[begin:index] # 反复剪裁
 
         punctuation::TPunctuation, index = _match_punctuation(parser, str, default_punctuation)
@@ -911,7 +944,7 @@ begin "语句相关"
         # 否则构造成语句(使用可选参数形式)
         return punctuation2sentence[punctuation](
             term; 
-            stamp = StampBasic{tense}(), # 兼容Lark中的语法。。。
+            stamp,
             truth
         )
     end
@@ -993,16 +1026,43 @@ begin "语句相关"
     例：
     - `<A-->B>.:|:` => (, end-11)
     """
-    function _match_tense(parser::StringParser, s::String)::Tuple
-        # 自动匹配
+    function _match_stamp(parser::StringParser, s::String)::Tuple
+        # 自动匹配已存储的「时态」
         tense_string::String = match_first(
             tense_str -> !isempty(tense_str) && endswith(s, tense_str), # 避免空字符串提前结束匹配
             parser.tenses,
             ""
         )
-        # 解析返回
+        # 【20230815 18:44:11】空字串现在有两种情况：确实没有与「:!XXX:」「t=XXX」「时刻=XXX」
+        if isempty(tense_string) # 判断是否为「带时刻时间戳」
+            left, right = parser.timed_stamp_brackets
+            if endswith(s, right)
+                l_range::UNothing{AbstractRange} = findlast(left, s)
+                if !isnothing(l_range)
+                    num_str::String = s[
+                        nextind( # 后挪
+                            s, last(
+                            l_range # 左边的范围
+                        )
+                        ):prevind( # 前挪
+                            s, lastindex(s), length(right)
+                        )
+                    ]
+                    # 产生带时刻时间戳
+                    return (
+                        StampBasic{Eternal}(
+                            occurrence_time = parse(STAMP_TIME_TYPE, num_str)
+                        ),
+                        prevind(s, first(l_range)) # 最后一个索引再往前一些
+                    )
+                end
+            end
+            # 若此中不返回，则返回「永恒」时间戳
+        end
+        # 已检测到：解析返回
+        tense::TTense = data2narsese(parser, Tense, tense_string, Eternal)
         return (
-            data2narsese(parser, Tense, tense_string, Eternal),
+            StampBasic{tense}(), # 默认构建的时间戳
             prevind( # 跳转到「字符串末尾-时态字符串长度」的地方
                 s, lastindex(s), # 【20230806 23:05:48】不能用length：实际长度≠第一个索引
                 length(tense_string)

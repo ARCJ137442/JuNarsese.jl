@@ -7,6 +7,7 @@
 =#
 
 # 导出
+export STAMP_TIME_TYPE, TIME_ETERNAL
 export AbstractStamp, Stamp
 export StampBasic
 
@@ -47,7 +48,7 @@ abstract type AbstractStamp end
 const Stamp = AbstractStamp # 别名
 
 "记录「数值时间」的类型"
-TIME_TYPE::DataType = Int # 整数(具体类型)
+const STAMP_TIME_TYPE::DataType = Int # 整数(具体类型)
 
 """
 源：OpenNARS
@@ -55,7 +56,7 @@ TIME_TYPE::DataType = Int # 整数(具体类型)
 - 只有在「判断/问题」时能「永恒」
 - 而在「目标/请求」时必须「当下」
 """
-TIME_ETERNAL::TIME_TYPE = typemin(TIME_TYPE)
+TIME_ETERNAL::STAMP_TIME_TYPE = typemin(STAMP_TIME_TYPE)
 
 
 """
@@ -73,61 +74,44 @@ TIME_ETERNAL::TIME_TYPE = typemin(TIME_TYPE)
 """
 struct StampBasic{tense <: AbstractTense} <: AbstractStamp
     # 证据基础
-    evidential_base::Vector{TIME_TYPE}
+    evidential_base::Vector{STAMP_TIME_TYPE}
 
     # 三个时间
-    creation_time  ::TIME_TYPE
-    put_in_time    ::TIME_TYPE # 这两个在OpenJunars中未出现
-    occurrence_time::TIME_TYPE # 这两个在OpenJunars中未出现
+    creation_time  ::STAMP_TIME_TYPE
+    put_in_time    ::STAMP_TIME_TYPE # 这两个在OpenJunars中未出现
+    occurrence_time::STAMP_TIME_TYPE # 这两个在OpenJunars中未出现
 
     """
     基础构造方法
     - 默认值: 三个时间全部取零
     - ⚠为了对接「表达式协议」，需要暴露其中的全部信息
         - 参见：Conversion/core/ast.jl
+    - 【20230815 23:15:48】无附加参数的情况交给关键字参数的方法
     """
     function StampBasic{T}(
-        evidential_base::Vector = TIME_TYPE[], # 【20230805 23:52:28】限制类型太严格，会导致用Vector{Any}承装的TIME_TYPEs报错
-        creation_time::TIME_TYPE = 0,
-        put_in_time::TIME_TYPE = 0,
-        occurrence_time::TIME_TYPE = 0,
+        evidential_base::Vector, # 【20230805 23:52:28】限制类型太严格，会导致用Vector{Any}承装的TIME_TYPEs报错
+        creation_time::STAMP_TIME_TYPE = 0,
+        put_in_time::STAMP_TIME_TYPE = 0,
+        occurrence_time::STAMP_TIME_TYPE = 0,
         ) where {T <: AbstractTense}
-        new(
+        new{T}(
             evidential_base,
             creation_time,
             put_in_time,
             occurrence_time,
         )
     end
-end
-
-"""
-备选项：参考自PyNARS的「时间戳」对象
-- 来源：PyNARS/Narsese/Sentence.py
-"""
-
-struct StampPythonic <: AbstractStamp
-    # 证据基础
-    evidential_base::Vector{TIME_TYPE}
-
-    # 三个时间
-    creation_time  ::TIME_TYPE
-    put_in_time    ::TIME_TYPE # 这两个在OpenJunars中未出现
-    occurrence_time::TIME_TYPE # 这两个在OpenJunars中未出现
 
     """
-    基础构造方法
-    - 默认值: 三个时间全部取零
-    - ⚠为了对接「表达式协议」，需要暴露其中的全部信息
-        - 参见：Conversion/core/ast.jl
+    基于可选关键字参数的构造方法
     """
-    function StampPythonic(
-        evidential_base::Vector = TIME_TYPE[], # 【20230805 23:52:28】限制类型太严格，会导致用Vector{Any}承装的TIME_TYPEs报错
-        creation_time::TIME_TYPE = 0,
-        put_in_time::TIME_TYPE = 0,
-        occurrence_time::TIME_TYPE = 0,
-        )
-        new(
+    function StampBasic{T}(;
+        evidential_base::Vector = STAMP_TIME_TYPE[], # 【20230805 23:52:28】限制类型太严格，会导致用Vector{Any}承装的TIME_TYPEs报错
+        creation_time::STAMP_TIME_TYPE = 0,
+        put_in_time::STAMP_TIME_TYPE = 0,
+        occurrence_time::STAMP_TIME_TYPE = 0,
+        ) where {T <: AbstractTense}
+        new{T}(
             evidential_base,
             creation_time,
             put_in_time,
@@ -139,6 +123,58 @@ end
 "类型参数の默认值：无时态⇒「永恒」时态"
 StampBasic(args...) = StampBasic{Eternal}(args...)
 
+"""
+备选项：参考自PyNARS的「时间戳」对象
+- 来源：PyNARS/Narsese/Sentence.py
+"""
+struct StampPythonic <: AbstractStamp
+    # 证据基础
+    evidential_base::Vector{STAMP_TIME_TYPE}
+
+    # 三个时间
+    creation_time  ::STAMP_TIME_TYPE
+    put_in_time    ::STAMP_TIME_TYPE # 这两个在PyNARS中出现了：参见Sentence.py/class Stamp/__init__
+    occurrence_time::STAMP_TIME_TYPE # 这两个在PyNARS中出现了：参见Sentence.py/class Stamp/__init__
+
+    """
+    基础构造方法
+    - 默认值: 三个时间全部取零
+    - ⚠为了对接「表达式协议」，需要暴露其中的全部信息
+        - 参见：Conversion/core/ast.jl
+    - 【20230815 23:15:48】无附加参数的情况交给关键字参数的方法
+    """
+    function StampPythonic(
+        evidential_base::Vector, # 【20230805 23:52:28】限制类型太严格，会导致用Vector{Any}承装的TIME_TYPEs报错
+        creation_time::STAMP_TIME_TYPE = 0,
+        put_in_time::STAMP_TIME_TYPE = 0,
+        occurrence_time::STAMP_TIME_TYPE = 0,
+        )
+        new(
+            evidential_base,
+            creation_time,
+            put_in_time,
+            occurrence_time,
+        )
+    end
+
+    """
+    基于可选关键字参数的构造方法
+    """
+    function StampPythonic(;
+        evidential_base::Vector = STAMP_TIME_TYPE[], # 【20230805 23:52:28】限制类型太严格，会导致用Vector{Any}承装的TIME_TYPEs报错
+        creation_time::STAMP_TIME_TYPE = 0,
+        put_in_time::STAMP_TIME_TYPE = 0,
+        occurrence_time::STAMP_TIME_TYPE = 0,
+        )
+        new(
+            evidential_base,
+            creation_time,
+            put_in_time,
+            occurrence_time,
+        )
+    end
+end
+
 begin "方法集"
 
     # 【20230815 16:33:51】函数「get_tense」已在「methods.jl」中定义
@@ -146,10 +182,12 @@ begin "方法集"
 
     export get_tense
     
-    "获取时态"
+    """
+    获取时态
+    """
     @inline get_tense(s::StampBasic{S}) where {S} = S
     "Python化的「相对时态」：与「发生时间」对比"
-    @inline get_tense(s::StampPythonic, reference_time::TIME_TYPE)::TTense = (
+    @inline get_tense(s::StampPythonic, reference_time::STAMP_TIME_TYPE)::TTense = (
         reference_time == s.occurrence_time ? 
             TensePresent : ( # 越大发生时间越晚
                 reference_time > s.occurrence_time ? 
@@ -161,7 +199,18 @@ begin "方法集"
     """
     判等の法：相等@各个属性
     """
-    Base.:(==)(s1::StampBasic, s2::StampBasic)::Bool = (
+    @inline Base.:(==)(s1::StampBasic, s2::StampBasic)::Bool = (
+        typeof(s1)          == typeof(s2) && # 时态相等
+        s1.evidential_base  == s2.evidential_base &&
+        s1.creation_time    == s2.creation_time &&
+        s1.put_in_time      == s2.put_in_time &&
+        s1.occurrence_time  == s2.occurrence_time
+    )
+
+    """
+    判等の法：相等@各个属性
+    """
+    @inline Base.:(==)(s1::StampPythonic, s2::StampPythonic)::Bool = (
         s1.evidential_base  == s2.evidential_base &&
         s1.creation_time    == s2.creation_time &&
         s1.put_in_time      == s2.put_in_time &&

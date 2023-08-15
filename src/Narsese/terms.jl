@@ -288,9 +288,9 @@ begin "单体词项"
         )
     end
 
-    "外部构造方法 兼容默认整数Integer"
-    @inline Interval(interval::Integer) = Interval(
-        UInt(interval)
+    "外部构造方法 兼容所有实数（浮点数亦兼容）"
+    @inline Interval(interval::Real) = Interval(
+        convert(UInt, interval)
     )
 
     "外部构造方法 兼容以自身名称「纯数字」定义的字符串"

@@ -66,6 +66,7 @@ const StringParser_ascii::StringParser = StringParser{String}(
         # Sequential => "&/", # 这两个只是因为与之相关，所以才放这里
         # Parallel   => "&|",
     ),
+    (":!", ":"), # 带时刻时间戳
     Dict( # 标点
         Judgement => ".",
         Question  => "?",
@@ -76,8 +77,8 @@ const StringParser_ascii::StringParser = StringParser{String}(
     # 真值: 括号&分隔符
     ("%", "%"),
     ";",
-    # 预处理：去空格
-    (s::String) -> replace(s, " " => "")
+    # 预处理：去除空白符
+    (s::String) -> replace(s, r"[ \r\n\t]" => "")
 )
 
 """
@@ -147,6 +148,7 @@ const StringParser_latex::StringParser = StringParser{String}(
         Present      => raw"|\!\!\!\!\Rightarrow",
         Future       => raw"/\!\!\!\!\Rightarrow",
     ),
+    ("t=", ""), # 📌TODO：LaTeX的语法未知
     Dict( # 标点
         Judgement => ".",
         Question  => "?",
@@ -157,8 +159,8 @@ const StringParser_latex::StringParser = StringParser{String}(
     # 真值: 括号&分隔符
     ("\\langle", "\\rangle"),
     ",",
-    # 预处理：去空格
-    (s::String) -> replace(s, " " => "")
+    # 预处理：去除空白符
+    (s::String) -> replace(s, r"[ \r\n\t]" => "")
 )
 
 """
@@ -226,6 +228,7 @@ const StringParser_han::StringParser = StringParser{String}(
         Present      => "现在",
         Future       => "将来",
     ),
+    ("时刻=", ""), # 带时刻时间戳
     Dict( # 标点
         Judgement => "。",
         Question  => "？",
@@ -236,8 +239,8 @@ const StringParser_han::StringParser = StringParser{String}(
     # 真值: 括号&分隔符
     ("真值=", "信"), # 此处不能留空！！！
     "真",
-    # 预处理：去空格
-    (s::String) -> replace(s, " " => "")
+    # 预处理：去除空白符
+    (s::String) -> replace(s, r"[ \r\n\t]" => "")
 )
 
 begin "字符串宏解析支持"

@@ -74,7 +74,7 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
     end
 
     "兜底判等逻辑"
-    Base.isequal(t1::Term, t2::Term) = (
+    @inline Base.isequal(t1::Term, t2::Term) = (
         typeof(t1) == typeof(t2) && ( # 同类型
             isequal(getproperty(t1, propertyname), getproperty(t2, propertyname)) # 所有属性相等
             for propertyname in t1 |> propertynames # 使用t1的，在同类型的前提下
@@ -84,9 +84,14 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
     @inline Base.:(==)(t1::Term, t2::Term) = Base.isequal(t1, t2)
 
     "原子词项相等"
-    Base.isequal(t1::AbstractAtom, t2::AbstractAtom)::Bool = (
+    @inline Base.isequal(t1::AbstractAtom, t2::AbstractAtom)::Bool = (
         typeof(t1) == typeof(t2) && # 类型相等
         t1.name == t2.name # 名称相等
+    )
+    
+    "（特殊）间隔相等"
+    @inline Base.isequal(i1::Interval, i2::Interval)::Bool = (
+        i1.interval == i2.interval
     )
 
     """
@@ -164,6 +169,17 @@ begin "收集(Base.collect)其中包含的所有（原子）词项，并返回�
 
 end
 
+# 运算重载
+begin "运算重载：四则运算等"
+    
+    "同类原子词项拼接 = 文字拼接（使用Juliaの加号，因与「乘积」快捷构造冲突）（间隔除外）"
+    (Base.:(+)(a1::T, a2::T)::T) where {T <: Atom} = T(string(a1.name) * string(a2.name))
+
+    "间隔の加法（参照自PyNARS Interval.py/__add__）"
+    Base.:(+)(i1::Interval, i2::Interval)::Interval = Interval(i1.interval + i2.interval)
+
+end
+
 # 时态
 begin "时态：用于获取(Base.collect)「时序蕴含/等价」中的「时态信息」"
 
@@ -188,9 +204,12 @@ begin "增加一些Narsese对象与Julia常用原生对象的互转方式"
     
     # 陈述 ↔ Pair
     "Pair接受陈述"
-    Base.Pair(s::Statement) = Base.Pair(s.ϕ1, s.ϕ2)
+    Base.Pair(s::Statement)::Base.Pair = Base.Pair(s.ϕ1, s.ϕ2)
     "【20230812 22:21:48】现恢复与Pair的相互转换"
-    (::Type{s})(p::Base.Pair) where {s <: Statement} = s(p.first, p.second)
+    ((::Type{s})(p::Base.Pair)::s) where {s <: Statement} = s(p.first, p.second)
+    
+    "间隔→无符号整数"
+    Base.UInt(i::Interval)::UInt = i.interval
 
 end
 

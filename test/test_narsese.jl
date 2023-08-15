@@ -67,6 +67,11 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
 
     @test EquivalenceRetrospective(A→B, B→A) == EquivalencePredictive(B→A, A→B)
 
+    # methods.jl #
+    @test A + B == Word(:AB)
+    @test @expectedError w + i + d + q + n + o # 不同类型不允许相加
+    @test Interval(123) + Interval(234) == Interval(357) # 间隔相加
+
     # 合法性测试 & 严格模式 #
 
     # 原子词项名的合法性测试
