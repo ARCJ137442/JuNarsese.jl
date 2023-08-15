@@ -125,11 +125,28 @@ end
 StampBasic(args...) = StampBasic{Eternal}(args...)
 
 """
-兼容所有整数的外部构造方法
+兼容所有整数的外部关键字构造方法
 """
 function StampBasic{T}(;
     evidential_base::Vector, # 【20230805 23:52:28】限制类型太严格，会导致用Vector{Any}承装的TIME_TYPEs报错
     creation_time::Integer = TIME_ETERNAL,
+    put_in_time::Integer = TIME_ETERNAL,
+    occurrence_time::Integer = TIME_ETERNAL,
+    ) where T
+    StampBasic{T}(
+        evidential_base,
+        convert(STAMP_TIME_TYPE, creation_time),
+        convert(STAMP_TIME_TYPE, put_in_time),
+        convert(STAMP_TIME_TYPE, occurrence_time),
+    )
+end
+
+"""
+兼容所有整数的外部顺序构造方法
+"""
+function StampBasic{T}(
+    evidential_base::Vector, # 【20230805 23:52:28】限制类型太严格，会导致用Vector{Any}承装的TIME_TYPEs报错
+    creation_time::Integer, # 单参数留给内部接收
     put_in_time::Integer = TIME_ETERNAL,
     occurrence_time::Integer = TIME_ETERNAL,
     ) where T
