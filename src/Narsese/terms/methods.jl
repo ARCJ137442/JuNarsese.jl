@@ -297,7 +297,7 @@ begin "NAL信息支持"
 
     【20230811 12:10:34】留存r以开放给后续调用
     """
-    get_syntactic_simplicity(t::Term, r::Number) = 1 / get_syntactic_complexity(t)^r
+    @inline get_syntactic_simplicity(t::Term, r::Number) = 1 / get_syntactic_complexity(t)^r
 
     """
     「是否可交换」亦即「无序组分」

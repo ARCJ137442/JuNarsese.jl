@@ -170,6 +170,7 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     ) # 复杂度
     @test get_syntactic_simplicity(s1, 0.5) ≈ 1/sqrt(15) # 方根简单度
     @test get_syntactic_simplicity(s1, 1) ≈ 1//15 # 方根简单度
+    @info "各语句的语法复杂度" get_syntactic_complexity.(test_set.sentences)
 
     @show s2 = (
         ((i"甲"→w"人")⇒(i"甲"→w"会死")) ∧

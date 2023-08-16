@@ -176,6 +176,9 @@ end
 
 begin "方法集"
 
+    # 导入
+    import ..Terms: get_syntactic_complexity, get_syntactic_simplicity # 添加方法
+
     # 导出
     export get_term, get_stamp, get_tense, get_punctuation, get_truth
     
@@ -205,5 +208,12 @@ begin "方法集"
         get_truth(s1) == get_truth(s2) && # 可能无真值
         s1.stamp == s2.stamp 
     )
+
+    """
+    语句的「语法复杂度」「语法简易度」 => 内含词项的对应属性
+    - 重定向
+    """
+    @inline get_syntactic_complexity(s::AbstractSentence) = get_syntactic_complexity(s.term)
+    @inline get_syntactic_simplicity(s::AbstractSentence, r::Number) = get_syntactic_simplicity(s.term, r)
 
 end
