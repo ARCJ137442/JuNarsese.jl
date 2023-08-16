@@ -38,8 +38,8 @@ Pkg.add(url="https://github.com/ARCJ137442/JuNarsese.jl")
 
 ## 未来展望
 
+- 数据结构性能优化
 - 基于JuNarsese实现NAL推理规则的表征
-- 使用EBNF文法重写解析模块
 - 为Narsese模块提供可扩展API
 - 应用于其它个人项目
 
