@@ -216,7 +216,7 @@ begin "单体词项"
     支持从String构造
     - 目的：处理从（AST）解析中返回的字符串参数
     """
-    Word(name::String) = name |> Symbol |> Word
+    Word(name::Union{AbstractString, AbstractChar}) = name |> Symbol |> Word
 
     """
     [NAL-6]变量词项（用类型参数包括三种类型）
@@ -253,7 +253,7 @@ begin "单体词项"
         ) # 增加合法性检查
     end
     "支持从String构造"
-    Variable{T}(name::String) where {T<:AbstractVariableType} = name |> Symbol |> Variable{T}
+    Variable{T}(name::Union{AbstractString, AbstractChar}) where {T<:AbstractVariableType} = name |> Symbol |> Variable{T}
 
     """
     [NAL-7]间隔(Interval)
@@ -270,11 +270,12 @@ begin "单体词项"
     > NARS的实时经验是一系列的Narsese句子，由非负数分隔，这些非负数表示后续句子到达时间之间的间隔，由系统的内部时钟测量。
 
     【20230815 17:19:44】因「字符串转换器字典查找问题」与「不同精度区分必要性小」不再区分精度：统一至UInt
+    【20230817 15:03:35】作为NAL-7中的「事件」对象，「该对象为原子词项」只是在「组成结构」上的区分，其仍然可被认作是「事件」
     """
     struct Interval <: AbstractAtom
 
         "（只读as缓存）继承自原子词项"
-        name::String
+        name::Symbol # 【20230817 15:02:57】现在与其它原子词项统一使用Symbol
     
         "间隔长度"
         interval::UInt
@@ -282,7 +283,7 @@ begin "单体词项"
         "内部构造方法：自动获得名称并缓存"
         Interval(interval::UInt) = check_valid_explainable(
             new(
-                string(interval), # 缓存名称
+                Symbol(interval), # 缓存名称
                 interval # 存储值
             )
         )
@@ -325,7 +326,7 @@ begin "单体词项"
         ) # 增加合法性检查
     end
     "支持从String构造"
-    Operator(name::String) = name |> Symbol |> Operator
+    Operator(name::Union{AbstractString, AbstractChar}) = name |> Symbol |> Operator
 
     """
     [NAL-2]词项集 {} []
