@@ -28,7 +28,7 @@ begin "单体词项"
     )
 
     # 循环添加相应宏
-    for (head::String, type::Type) in HEAD_TYPE_DICT
+    for (head::AbstractString, type::Type) in HEAD_TYPE_DICT
         macro_name::Symbol = Symbol(head, :_str)
         quote
             """

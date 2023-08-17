@@ -295,7 +295,7 @@ begin "单体词项"
     )
 
     "外部构造方法 兼容以自身名称「纯数字」定义的字符串"
-    @inline Interval(s::String) = Interval(parse(UInt, s))
+    @inline Interval(s::Union{AbstractString, AbstractChar}) = Interval(parse(UInt, s))
 
     "外部构造方法 兼容以自身名称「纯数字」定义的符号"
     @inline Interval(s::Symbol) = Interval(string(s))

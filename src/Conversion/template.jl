@@ -107,7 +107,7 @@ function data2narsese end
     - 方便指定解析的上下文
     - 例：`Narsese.eval`用于解析词项/语句类型
 """
-parse_type(type_name::String, eval_function::Function)::Type = eval_function(
+parse_type(type_name::AbstractString, eval_function::Function)::Type = eval_function(
     Meta.parse(type_name) |> assert_type_expr # 【20230810 20:33:56】安全锁定
 )
 

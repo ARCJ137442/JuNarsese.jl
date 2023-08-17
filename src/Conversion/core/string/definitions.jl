@@ -78,7 +78,7 @@ const StringParser_ascii::StringParser = StringParser{String}(
     ("%", "%"),
     ";",
     # 预处理：去除空白符
-    (s::String) -> replace(s, r"[ \r\n\t]" => "")
+    (s::AbstractString) -> replace(s, r"[ \r\n\t]" => "")
 )
 
 """
@@ -160,7 +160,7 @@ const StringParser_latex::StringParser = StringParser{String}(
     ("\\langle", "\\rangle"),
     ",",
     # 预处理：去除空白符
-    (s::String) -> replace(s, r"[ \r\n\t]" => "")
+    (s::AbstractString) -> replace(s, r"[ \r\n\t]" => "")
 )
 
 """
@@ -240,7 +240,7 @@ const StringParser_han::StringParser = StringParser{String}(
     ("真值=", "信"), # 此处不能留空！！！
     "真",
     # 预处理：去除空白符
-    (s::String) -> replace(s, r"[ \r\n\t]" => "")
+    (s::AbstractString) -> replace(s, r"[ \r\n\t]" => "")
 )
 
 begin "字符串宏解析支持"

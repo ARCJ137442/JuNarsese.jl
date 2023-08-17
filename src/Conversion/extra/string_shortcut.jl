@@ -32,7 +32,7 @@ end
 总「解析」方法
 - ！问题：遇到没有语法对应的「词项」无法处理
 """
-function data2narsese(::TSCParser, ::Conversion.TYPE_TERMS, s::String)
+function data2narsese(::TSCParser, ::Conversion.TYPE_TERMS, s::AbstractString)
     try # 尝试解析
         expr::Expr = s |> Meta.parse
         # TODO: 替换其中的符号，使原子词项正常显示
@@ -48,6 +48,6 @@ end
 - 【20230810 21:21:01】仅为了兼容「直接调用解析器」的用法
     - 因其使用了`Any`参数
 """
-data2narsese(::TSCParser, ::Type{Any}, s::String) = data2narsese(
+data2narsese(::TSCParser, ::Type{Any}, s::AbstractString) = data2narsese(
     ShortcutParser, Term, s
 )
