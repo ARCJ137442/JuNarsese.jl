@@ -9,6 +9,9 @@ if !isdefined(Main, :JuNarsese)
     # 启用「严格模式」
     include("use_strict.jl")
 end
+begin "报错debug专用"
+    # @show CommonCompound{CompoundTypeTermLogicalSet{Intension, Or}}()
+end
 if !isdefined(Main, :Test)
     using Test
     """

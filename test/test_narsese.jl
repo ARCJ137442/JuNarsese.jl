@@ -109,7 +109,7 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @test @expectedError Implication(p, A→B)
     @test @expectedError Equivalence(p, p)
     
-    # 陈述逻辑集、陈述时序集都不支持「非陈述词项」（此为数据结构内嵌）
+    # 陈述逻辑集、陈述时序集都不支持「非陈述词项」
     @test @expectedError Conjunction(A→B, B→C, A↔D, C→D, D→o, p)
     @test @expectedError Disjunction(A→B, C→D, D→o, B→C, A↔D, d)
     @test @expectedError ParConjunction(A→B, C→D, A↔D, D→o, B→C, w)
