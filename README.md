@@ -2,7 +2,7 @@
 
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
 
-该项目使用[语义化版本](https://semver.org/)进行版本管理。
+该项目使用[语义化版本 2.0.0](https://semver.org/)进行版本号管理。
 
 Narsese(纳思语，NARS的知识表示语言)的[Julia](https://github.com/JuliaLang/julia)实现
 
