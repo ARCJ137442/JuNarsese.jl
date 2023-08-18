@@ -117,12 +117,11 @@ export AbstractStatementType, StatementTypeInheritance, StatementTypeSimilarity,
 export AbstractLogicOperation, And, Or, Not
 export AbstractEI, Extension, Intension
 export AbstractTemporalRelation, Sequential, Parallel
+export CompoundTypeTermSet, CompoundTypeTermLogicalSet, CompoundTypeTermProduct, CompoundTypeTermImage, CompoundTypeStatementLogicalSet, CompoundTypeStatementTemporalSet
 
-export AbstractTerm, AbstractAtom, AbstractCompound, AbstractStatement
-export AbstractTermSet, AbstractStatementSet
+export AbstractTerm, AbstractAtom, AbstractCompound
 
-export Word, Variable, Interval, Operator, TermSet, TermLogicalSet, TermImage, TermProduct
-export Statement, AbstractStatementLogicalSet, StatementLogicalSet, StatementTemporalSet
+export Word, Variable, Interval, Operator, CommonCompound, TermImage, Statement
 
 
 
@@ -157,6 +156,22 @@ abstract type AbstractTemporalRelation end
 abstract type Sequential <: AbstractTemporalRelation end
 abstract type Parallel <: AbstractTemporalRelation end
 
+# 复合词项类型
+
+abstract type AbstractCompoundType end
+"[NAL-2]词项集"
+abstract type CompoundTypeTermSet{EI <: AbstractEI} <: AbstractCompoundType end
+"[NAL-2]词项の复合：集合操作⇒复合集"
+abstract type CompoundTypeTermLogicalSet{EIType <: AbstractEI, LogicOperation <: AbstractLogicOperation} <: AbstractCompoundType end
+"[NAL-4]乘积"
+abstract type CompoundTypeTermProduct <: AbstractCompoundType end
+"[NAL-4]像"
+abstract type CompoundTypeTermImage{EIType <: AbstractEI} <: AbstractCompoundType end
+"[NAL-5]陈述逻辑集: {与/或/非}"
+abstract type CompoundTypeStatementLogicalSet{LogicOperation <: AbstractLogicOperation} <: AbstractCompoundType end
+"[NAL-7]陈述时序集 <: 陈述逻辑集{与}"
+abstract type CompoundTypeStatementTemporalSet{TemporalRelation <: AbstractTemporalRelation} <: CompoundTypeStatementLogicalSet{And} end
+
 # 正式对象 #
 
 "一切词项的总基础" # OpenJunars所谓「FOTerm」实际上就是此处的「AbstractTerm」，只因OpenJunars把「变量类型」也定义成了词项
@@ -167,21 +182,10 @@ abstract type AbstractTerm end
 abstract type AbstractAtom <: AbstractTerm end
 
 "[NAL-2]复合词项の基石"
-abstract type AbstractCompound <: AbstractTerm end
+abstract type AbstractCompound{type <: AbstractCompoundType} <: AbstractTerm end
 
-"[NAL-2]词项の复合：集合操作⇒复合集"
-abstract type AbstractTermSet <: AbstractCompound end
-
-"[NAL-5]抽象陈述：陈述→词项"
-abstract type AbstractStatement <: AbstractCompound end
-
-"[NAL-5]复合陈述"
-abstract type AbstractStatementSet <: AbstractStatement end
-
-"[NAL-5]抽象陈述逻辑集: {与/或/非}"
-abstract type AbstractStatementLogicalSet{LogicOperation <: AbstractLogicOperation} <: AbstractStatementSet end
-
-
+"[NAL-1]陈述词项の基石"
+abstract type AbstractStatement <: AbstractTerm end
 
 # 具体结构定义
 
@@ -328,116 +332,221 @@ begin "单体词项"
     "支持从String构造"
     Operator(name::Union{AbstractString, AbstractChar}) = name |> Symbol |> Operator
 
+    const TYPE_COMPOUND_TERMS::Type = Union{
+        Tuple{Vararg{<:AbstractTerm}},
+        Set{<:AbstractTerm},
+    }
+
     """
+    通用复合词项
+
+    包括：
+    - 词项集
+        - 外延集
+        - 内涵集
+    - 词项逻辑集
+        - 外延交/内涵交
+        - 外延并/内涵并（自动重定向）
+        - 外延差/内涵差
+    - 陈述集
+        - 陈述逻辑集
+            - 合取
+            - 析取
+            - 否定
+            - 陈述时序集
+    
+    不包括：
+    - 外延像/内涵像（需要使用额外的「像占位符索引」）
+        - 📄参考：`OpenNARS/ImageExt.java relationIndex`
+    - 陈述
+    
+    <h1>    NAL参考    </h1>
+
     [NAL-2]词项集 {} []
 
-    参考：《NAL》定义6.3、6.5
-    > If T is a term, the extensional set with T as the only component, {T}, is defined by (∀x)((x → {T}) ⟺ (x ↔ {T})).
-    > If T is a term, the intensional set with T as the only component, [T], is defined by (∀x)(([T] → x) ⟺ ([T] ↔ x)).
+        参考：《NAL》定义6.3、6.5
+        > If T is a term, the extensional set with T as the only component, {T}, is defined by (∀x)((x → {T}) ⟺ (x ↔ {T})).
+        > If T is a term, the intensional set with T as the only component, [T], is defined by (∀x)(([T] → x) ⟺ ([T] ↔ x)).
 
-    中译：
-    > 如果T是一个词项，则以T为唯一组分的外延集 {T} 定义为 (∀x)((x → {T}) ⟺ (x ↔ {T}))。
-    > 如果T是一个词项，则以T为唯一组分的内涵集 [T] 定义为 (∀x)(([T] → x) ⟺ ([T] ↔ x))。
+        中译：
+        > 如果T是一个词项，则以T为唯一组分的外延集 {T} 定义为 (∀x)((x → {T}) ⟺ (x ↔ {T}))。
+        > 如果T是一个词项，则以T为唯一组分的内涵集 [T] 定义为 (∀x)(([T] → x) ⟺ ([T] ↔ x))。
+    
+    [NAL-3]词项逻辑集 {外延/内涵, 交/并/差} # 此处「&」「|」是对应的「外延交&」「外延并|」
+        - And: 交集 ∩& ∩|
+        - Or : 并集 ∪& ∪|
+            - 注意：此处不会使用，会自动转换（见📝「为何不使用外延/内涵 并？」）
+        - Not: 差集 - ~
+            - 有序(其余皆无序)
+    
+        参考：《NAL》定义7.6~9
+        > Given terms T1 and T2, their extensional intersection (T1 ∩ T2)
+        >   is a compound term defined by (∀x)((x → (T1 ∩ T2)) ⟺ ((x → T1) ∧ (x → T2))).
+        > Given terms T1 and T2, their intensional intersection (T1∪T2)
+        >   is a compound term defined by (∀x)(((T1 ∪ T2) → x) ⟺ ((T1 → x) ∧ (T2 → x))).
+        > If T1 and T2 are different terms, their extensional difference (T1 - T2)
+        >   is a compound term defined by (∀x)((x → (T1 - T2)) ⟺((x → T1) ∧ ¬(x → T2))).
+        > If T1 and T2 are different terms, their intensional difference (T1⊖T2)
+        >   is a compound term defined by (∀x)(((T1⊖T2) → x) ⟺ ((T1 → x) ∧ ¬(T2 → x))).
+    
+    
+        中译：
+        > 给定词项T1与T2，它们的外延交(T1∩T2)是一个复合词项，定义为 (∀x)((x → (T1 ∩ T2)) ⟺ ((x → T1) ∧ (x → T2)))。
+        > 给定词项T1与T2，它们的内涵交(T1∪T2)是一个复合词项，定义为 (∀x)(((T1 ∪ T2) → x) ⟺ ((T1 → x) ∧ (T2 → x)))。
+        > 如果T1和T2是不同的词项，它们的外延差(T1-T2)是一个复合词项，定义为 (∀x)((x → (T1 - T2)) ⟺((x → T1) ∧ ¬(x → T2)))。
+        > 如果T1和T2是不同的词项，它们的内涵差(T1 * T2)是一个复合词项，定义为 (∀x)(((T1⊖T2) → x) ⟺ ((T1 → x) ∧ ¬(T2 → x)))。
+        
+    [NAL-4]乘积 (*, ...)
+        - 有序
+        - 无内涵外延之分
+        - 用于关系词项「(*, 水, 盐) --> 前者可被后者溶解」
+
+        参考：《NAL》定义8.1
+        > The product connector ‘×’ takes two or more terms as components,
+        >   and forms a compound term that satisfies ((× S₁ ··· Sₙ) → (× P₁ ··· Pₙ)) ⟺ ((S₁ → P₁) ∧ ··· ∧ (Sₙ → Pₙ)).
+
+        中译：
+        > 乘积连接符「×」采用两个或多个词项作为组分，形成一个复合词项，
+        >   满足 ((× S₁ ··· Sₙ) → (× P₁ ··· Pₙ)) ⟺ ((S₁ → P₁) ∧ ··· ∧ (Sₙ → Pₙ))。
+    
+    [NAL-5]陈述逻辑集：{与/或/非}
+        - And: 陈述与 ∧ && Conjunction
+        - Or : 陈述或 ∨ || Disjunction
+        - Not: 陈述非 ¬ --
+    
+        注意：都是「对称」的⇒集合(无序)
+    
+        参考：《NAL》定义9.6
+    
+        > When S1 and S2 are different statements,
+        >   their conjunction, (S1 ∧ S2), is a compound statement defined by
+        >     (∀x)((x ⇒ (S1 ∧ S2)) ⟺ ((x ⇒ S1) ∧ (x ⇒ S2))).
+        >   Their disjunction, (S1 ∨ S2), is a compound statement defined by
+        >     (∀x)(((S1 ∨ S2) ⇒ x) ⟺ ((S1 ⇒ x) ∧ (S2 ⇒ x))).
+    
+        中译：
+        > 当S1和S2是不同的陈述时，
+        >   它们的合取(S1∧S2)是一个复合陈述，定义为
+        >     (∀x)((x ⇒ (S1 ∧ S2)) ⟺ ((x ⇒ S1) ∧ (x ⇒ S2))).
+        >   它们的析取(S1∨S2)是一个复合陈述，定义为
+        >     (∀x)(((S1 ∨ S2) ⇒ x) ⟺ ((S1 ⇒ x) ∧ (S2 ⇒ x))).
+    
+        【20230817 15:44:10】细节：OpenJunars外其它NARS实现中，对复合词项的对待方法不同——是否要再度合并？
+        - 在PyNARS中，陈述逻辑集、陈述时序集对元素类型无所限制，可以混用
+        - 在OpenNARS中，所有复合词项统一使用`CompoundTerm`实现，并将连接词用单一的字符串存储
+    
+    [NAL-7]陈述时序集：{序列/平行} <: 抽象陈述逻辑集{合取}
+        - 与 `&/`: 序列合取(有序)
+        - 或 `&|`: 平行合取(无序)
+    
+        📌技术点: 此中的数据`terms`为一个指向「向量/集合」的引用
+        - 即便其类型确定，它仍然是一个「指针」，不会造成效率干扰
+    
+        参考：《NAL》定义11.5
+        > The conjunction connector (‘∧’) has two temporal variants: 「sequential conjunction」 (‘,’) and “parallel conjunction」 (‘;’).
+        > 「(E1, E2)” corresponds to the compound event consisting of E1 followed by E2, and “(E1; E2)” corresponds to the compound event consisting of E1 accompanied by E2.
+    
+        中译：
+        > 合取连接符 (‘∧’) 有两种时序变体变体:「序列合取」 (‘,’) 和「平行合取」 (‘;’)。
+        > 「(E1, E2)」 对应由E1后接E2，「(E1; E2)」 对应由E1伴随E2组成的复合事件。
     """
-    struct TermSet{EIType <: AbstractEI} <: AbstractTermSet
-        terms::Set{<:AbstractTerm}
+    struct CommonCompound{type <: AbstractCompoundType} <: AbstractCompound{type}
+    
+        """
+        有序不可变元组/集合
+        - 承继旧`terms`字段
+            - 保证词项构造之后不会改变
+        - 一切语法上的限制，都交给「合法性检查」函数
+            - 例如：陈述逻辑集只能装陈述
+            - 例如：
+        """
+        terms::TYPE_COMPOUND_TERMS
 
-        "加入合法性检查"
-        TermSet{EIType}(terms::Set{T}) where {
-            T <: AbstractTerm, EIType <: AbstractEI
-        } = check_valid_explainable(
-            new{EIType}(terms)
-        ) # 增加合法性检查
-    end
-
-    "任意长参数"
-    function TermSet{EIType}(terms::Vararg{AbstractTerm}) where {EIType <: AbstractEI}
-        TermSet{EIType}(terms |> Set{AbstractTerm})
-    end
-
-    """
-    [NAL-3]词项逻辑集 {外延/内涵, 交/并/差}
-    - And: 交集 ∩& ∩|
-    - Or : 并集 ∪& ∪|
-        - 注意：此处不会使用，会自动转换（见📝「为何不使用外延/内涵 并？」）
-    - Not: 差集 - ~
-        - 有序(其余皆无序)
-
-    参考：《NAL》定义7.6~9
-    > Given terms T1 and T2, their extensional intersection (T1 ∩ T2)
-    >   is a compound term defined by (∀x)((x → (T1 ∩ T2)) ⟺ ((x → T1) ∧ (x → T2))).
-    > Given terms T1 and T2, their intensional intersection (T1∪T2)
-    >   is a compound term defined by (∀x)(((T1 ∪ T2) → x) ⟺ ((T1 → x) ∧ (T2 → x))).
-    > If T1 and T2 are different terms, their extensional difference (T1 - T2)
-    >   is a compound term defined by (∀x)((x → (T1 - T2)) ⟺((x → T1) ∧ ¬(x → T2))).
-    > If T1 and T2 are different terms, their intensional difference (T1⊖T2)
-    >   is a compound term defined by (∀x)(((T1⊖T2) → x) ⟺ ((T1 → x) ∧ ¬(T2 → x))).
-
-
-    中译：
-    > 给定词项T1与T2，它们的外延交(T1∩T2)是一个复合词项，定义为 (∀x)((x → (T1 ∩ T2)) ⟺ ((x → T1) ∧ (x → T2)))。
-    > 给定词项T1与T2，它们的内涵交(T1∪T2)是一个复合词项，定义为 (∀x)(((T1 ∪ T2) → x) ⟺ ((T1 → x) ∧ (T2 → x)))。
-    > 如果T1和T2是不同的词项，它们的外延差(T1-T2)是一个复合词项，定义为 (∀x)((x → (T1 - T2)) ⟺((x → T1) ∧ ¬(x → T2)))。
-    > 如果T1和T2是不同的词项，它们的内涵差(T1 * T2)是一个复合词项，定义为 (∀x)(((T1⊖T2) → x) ⟺ ((T1 → x) ∧ ¬(T2 → x)))。
-    """ # 此处「&」「|」是对应的「外延交&」「外延并|」
-    struct TermLogicalSet{EIType <: AbstractEI, LogicOperation <: AbstractLogicOperation} <: AbstractTermSet
-        terms::Union{Tuple{Vararg{AbstractTerm}}, Set{AbstractTerm}}
-
-        "(无序)交集 Intersection{外延/内涵} ∩& ∩|"
-        function TermLogicalSet{EIType, And}(terms::Vararg{AbstractTerm}) where EIType # 此EIType构造时还会被检查类型
-            check_valid_explainable(
-                new{EIType, And}( # 把元组转换成对应数据结构
-                    terms |> Set{AbstractTerm}
-                )
-            ) # 增加合法性检查
+        """
+        统一的内部构造方法
+        - 统一具备合法性检查
+        - 自动判断「是否无序」并以此决策「使用无序集合还是使用有序元组」
+        """
+        function CommonCompound{type}(terms::T) where {type <: AbstractCompoundType, T <: Union{Set, Tuple}}
+            terms_type::Type = container_type(type)
+            constructor::Type = constructor_type(type) # 【20230818 0:30:25】注意：new不能当参数传递
+            # 增加合法性检查
+            return check_valid_explainable(
+                constructor <: AbstractCompoundType ?
+                    new{constructor}(terms_type(terms)) :
+                    constructor(terms_type(terms))
+            )
         end
 
-        "(无序，重定向)并集 Union{外延/内涵} ∪& ∪|" # 【20230724 14:12:33】暂且自动转换成交集（返回值类型参数转换不影响）（参考《NAL》定理7.4）
-        TermLogicalSet{Extension, Or}(terms...) = TermLogicalSet{Intension, And}(terms...) # 外延并=内涵交
-        TermLogicalSet{Intension, Or}(terms...) = TermLogicalSet{Extension, And}(terms...) # 内涵并=外延交
-
+        #= 各个「具体类型」的内部构造方法 =#
+        
+        # 词项逻辑集
+        
         "(有序)差集 Difference{外延/内涵} - ~" # 注意：这是二元的 参数命名参考自OpenJunars
-        function TermLogicalSet{EIType, Not}(ϕ₁::AbstractTerm, ϕ₂::AbstractTerm) where EIType # 此EIType构造时还会被检查类型
+        function CommonCompound{CompoundTypeTermLogicalSet{EIType, Not}}(ϕ₁::AbstractTerm, ϕ₂::AbstractTerm) where EIType # 此EIType构造时还会被检查类型
             check_valid_explainable(
-                new{EIType, Not}(
+                new{CompoundTypeTermLogicalSet{EIType, Not}}(
                     (ϕ₁, ϕ₂) # 【20230814 13:21:55】直接构造元组
                 )
             ) # 增加合法性检查
         end
-
-    end
-
-    """
-    [NAL-4]乘积 (*, ...)
-    - 有序
-    - 无内涵外延之分
-    - 用于关系词项「(*, 水, 盐) --> 前者可被后者溶解」
-
-    参考：《NAL》定义8.1
-    > The product connector ‘×’ takes two or more terms as components,
-    >   and forms a compound term that satisfies ((× S₁ ··· Sₙ) → (× P₁ ··· Pₙ)) ⟺ ((S₁ → P₁) ∧ ··· ∧ (Sₙ → Pₙ)).
-
-    中译：
-    > 乘积连接符「×」采用两个或多个词项作为组分，形成一个复合词项，
-    >   满足 ((× S₁ ··· Sₙ) → (× P₁ ··· Pₙ)) ⟺ ((S₁ → P₁) ∧ ··· ∧ (Sₙ → Pₙ))。
-    """
-    struct TermProduct <: AbstractTermSet
-        terms::Tuple{Vararg{AbstractTerm}}
-
-        "多参数构造：直接使用元组"
-        TermProduct(terms::Tuple{Vararg{AbstractTerm}}) = check_valid_explainable(
-            new(terms)
-        ) # 增加合法性检查
-    end
-
-    "多参数构造：Vararg⇒元组"
-    TermProduct(terms::Vararg{<:AbstractTerm}) = TermProduct(terms)
-
-    "多参数构造：直接使用向量"
-    TermProduct(terms::Vector{<:AbstractTerm}) = TermProduct(
-        terms |> Tuple
-    )
         
+        "陈述非 Negation"
+        function CommonCompound{CompoundTypeStatementLogicalSet{Not}}(ϕ::AbstractTerm)
+            check_valid_explainable(
+                new{CompoundTypeStatementLogicalSet{Not}}((ϕ,) |> Set{AbstractTerm}) # 只有一个
+            ) # 增加合法性检查
+        end # 内涵并=外延交
+
+    end
+
+    """
+    依照「是否可交换」决定terms的类型
+    """
+    @inline function container_type(::Type{T})::Type where {T <: AbstractCompoundType}
+        return is_commutative(T) ?
+            Set{AbstractTerm} : # 无序→集合
+            Tuple{Vararg{AbstractTerm}} # 有序→元组
+    end
+
+    """
+    统一的「类型重定向」函数：从
+    - 避免「方法歧义冲突」`XXX is ambiguous.`
+    - 开放给其它自定义复合词项类型
+
+    @返回值：构造方法
+    @默认逻辑：返回type自身，指导使用默认构造方法
+    - 若为「复合词项类型」则指导构造方法重定向至`new{type}`
+    """
+    @inline constructor_type(type::Type)::Type = type
+    @inline (constructor_type(::Type{CompoundTypeTermImage{EI}})::Type) where {EI <: AbstractEI} = @show TermImage{EI}
+
+    "(无序，重定向)并集 Union{外延/内涵} ∪& ∪|" # 【20230724 14:12:33】暂且自动转换成交集（返回值类型参数转换不影响）（参考《NAL》定理7.4）
+    @inline function constructor_type(::Type{T}) where T <: CompoundTypeTermLogicalSet{Extension, Or}
+        CompoundTypeTermLogicalSet{Intension, And}
+    end # 外延并=内涵交 【20230818 0:13:02】不知为何，不写成`where`就会报错「syntax: invalid variable expression in "where" around 」
+    @inline function constructor_type(::Type{T}) where T <: CompoundTypeTermLogicalSet{Intension, Or}
+        CompoundTypeTermLogicalSet{Extension, And}
+    end
+    
+    "外部构造方法：统一的「任意长参数」"
+    function CommonCompound{type}(terms::Vararg{AbstractTerm}) where {type <: AbstractCompoundType}
+        CommonCompound{type}(
+            container_type(type)(
+                terms
+            )
+        )
+    end
+
+    "外部构造方法：重载「向量」"
+    function CommonCompound{type}(array::AbstractArray) where {type}
+        CommonCompound{type}(
+            container_type(type)(
+                array
+            )
+        )
+    end
+
     raw"""
     [NAL-4]像{外延/内涵} (/, a, b, _, c) (\, a, b, _, c)
     - 有序
@@ -458,7 +567,7 @@ begin "单体词项"
     >     (R → (× T1 T2)) ⟺ ((\ R ⋄ T2) → T1) ⟺ ((\ R T1 ⋄) → T2)
 
     """
-    struct TermImage{EIType <: AbstractEI} <: AbstractTermSet
+    struct TermImage{EIType <: AbstractEI} <: AbstractCompound{CompoundTypeTermImage{EIType}}
         terms::Tuple{Vararg{AbstractTerm}}
         relation_index::Unsigned # 「_」的位置(一个占位符，保证词项中只有一个「_」)
 
@@ -605,97 +714,6 @@ begin "陈述词项"
             ) # 增加合法性检查
         end
     end
-
-    """
-    [NAL-5]陈述逻辑集：{与/或/非}
-    - And: 陈述与 ∧ && Conjunction
-    - Or : 陈述或 ∨ || Disjunction
-    - Not: 陈述非 ¬ --
-
-    注意：都是「对称」的⇒集合(无序)
-
-    参考：《NAL》定义9.6
-
-    > When S1 and S2 are different statements,
-    >   their conjunction, (S1 ∧ S2), is a compound statement defined by
-    >     (∀x)((x ⇒ (S1 ∧ S2)) ⟺ ((x ⇒ S1) ∧ (x ⇒ S2))).
-    >   Their disjunction, (S1 ∨ S2), is a compound statement defined by
-    >     (∀x)(((S1 ∨ S2) ⇒ x) ⟺ ((S1 ⇒ x) ∧ (S2 ⇒ x))).
-
-    中译：
-    > 当S1和S2是不同的陈述时，
-    >   它们的合取(S1∧S2)是一个复合陈述，定义为
-    >     (∀x)((x ⇒ (S1 ∧ S2)) ⟺ ((x ⇒ S1) ∧ (x ⇒ S2))).
-    >   它们的析取(S1∨S2)是一个复合陈述，定义为
-    >     (∀x)(((S1 ∨ S2) ⇒ x) ⟺ ((S1 ⇒ x) ∧ (S2 ⇒ x))).
-    """ # 与「TermSet」不同的是：只使用最多两个词项（陈述）
-    struct StatementLogicalSet{LogicOperation <: AbstractLogicOperation} <: AbstractStatementLogicalSet{LogicOperation}
-
-        terms::Set{<:AbstractStatement}
-
-        "陈述与 Conjunction / 陈述或 Disjunction"
-        function StatementLogicalSet{T}(
-            terms::Vararg{AbstractStatement}, # 实质上是个元组
-            ) where {T <: Union{And, Or}} # 与或都行
-            check_valid_explainable(
-                new{T}(terms |> Set) # 收集元组成集合
-            ) # 增加合法性检查
-        end
-
-        "陈述非 Negation"
-        function StatementLogicalSet{Not}(ϕ::AbstractStatement)
-            check_valid_explainable(
-                new{Not}((ϕ,) |> Set{AbstractStatement}) # 只有一个
-            ) # 增加合法性检查
-        end
-
-    end
-
-    """
-    [NAL-7]陈述时序集：{序列/平行} <: 抽象陈述逻辑集{合取}
-    - 与 `&/`: 序列合取(有序)
-    - 或 `&|`: 平行合取(无序)
-
-    📌技术点: 此中的数据`terms`为一个指向「向量/集合」的引用
-    - 即便其类型确定，它仍然是一个「指针」，不会造成效率干扰
-
-    参考：《NAL》定义11.5
-    > The conjunction connector (‘∧’) has two temporal variants: 「sequential conjunction」 (‘,’) and “parallel conjunction」 (‘;’).
-    > 「(E1, E2)” corresponds to the compound event consisting of E1 followed by E2, and “(E1; E2)” corresponds to the compound event consisting of E1 accompanied by E2.
-
-    中译：
-    > 合取连接符 (‘∧’) 有两种时序变体变体:「序列合取」 (‘,’) 和「平行合取」 (‘;’)。
-    > 「(E1, E2)」 对应由E1后接E2，「(E1; E2)」 对应由E1伴随E2组成的复合事件。
-    """ # 与「TermSet」不同的是：只使用最多两个词项（陈述）
-    struct StatementTemporalSet{TemporalRelation <: AbstractTemporalRelation} <: AbstractStatementLogicalSet{And}
-
-        # 【20230814 13:19:47】现在重新使用不可变的元组（使用`@code_llvm`比较）
-        terms::Union{
-            Set{AbstractStatement}, # 无序使用这个
-            Tuple{Vararg{AbstractStatement}} # 有序使用这个
-        }
-
-        "序列合取 Sequential Conjunction"
-        StatementTemporalSet{Sequential}(terms::Tuple{Vararg{AbstractStatement}}) = check_valid_explainable(
-            new{Sequential}(terms) # 直接转换元组
-        ) # 增加合法性检查
-
-        "平行合取 Parallel Conjunction"
-        StatementTemporalSet{Parallel}(terms::Set{AbstractStatement}) = check_valid_explainable(
-            new{Parallel}(Set{AbstractStatement}(terms)) # 收集元组成集合(标注好类型)
-        ) # 增加合法性检查
-
-    end
-
-    "外部构造方法：支持任意参数 @ 序列合取 Sequential Conjunction"
-    StatementTemporalSet{Sequential}(terms::Vararg{AbstractStatement}) = check_valid_explainable(
-        StatementTemporalSet{Sequential}(terms) # 直接转换元组
-    ) # 增加合法性检查
-
-    "外部构造方法：支持任意参数 @ 平行合取 Parallel Conjunction"
-    StatementTemporalSet{Parallel}(terms::Vararg{AbstractStatement}) = check_valid_explainable(
-        StatementTemporalSet{Parallel}(terms |> Set{AbstractStatement}) # 收集元组成集合(标注好类型)
-    ) # 增加合法性检查
 
 end
 

@@ -9,12 +9,11 @@
 
 # 导出
 export Term, ATerm, Atom, AAtom, Compound, ACompound
-export AStatement, ATSet, ATermSet, ASSet, AStatementSet
 export Var, Op
+export TermSet, TermLogicalSet, TermProduct, StatementLogicalSet, StatementTemporalSet
 export TSet
 export TLSet, TermLSet, TLogicSet
 export TImage, TProduct
-export ASLSet, AStatementLSet, ASLogicSet
 export SLSet, StatementLSet, SLogicSet
 
 export AVType, AVariableType
@@ -27,6 +26,7 @@ export IVar, DVar, QVar
 export STInheritance, STSimilarity, STImplication, STEquivalence,
       Inheritance,   Similarity,   Implication,   Equivalence
 export TemporalStatementTypes
+export AStatement, AbstractStatement
 
 export STImplicationRetrospective, STImplicationConcurrent, STImplicationPredictive
 export   ImplicationRetrospective,   ImplicationConcurrent,   ImplicationPredictive
@@ -36,6 +36,8 @@ export STImplicationRetrospective, STImplicationConcurrent, STImplicationPredict
 export   ImplicationRetrospective,   ImplicationConcurrent,   ImplicationPredictive
 export STEquivalenceRetrospective, STEquivalenceConcurrent, STEquivalencePredictive
 export   EquivalenceRetrospective,   EquivalenceConcurrent,   EquivalencePredictive
+
+export CTTermSet, CTTermLogicalSet, CTTermProduct, CTTermImage, CTStatementLogicalSet, CTStatementTemporalSet
 
 export Negation, Conjunction, Disjunction
 export ExtSet, ExtensionSet, 
@@ -59,24 +61,39 @@ const VTQuery = VariableTypeQuery # 【20230730 22:54:28】删去非VT别名，�
 
 const ALOperation = ALogicOperation = AbstractLogicOperation
 
-# 这仨可以省去Abstract前缀
-const Term     = ATerm     = AbstractTerm
+# 省去Abstract前缀
+const Term     = ATerm     = AbstractTerm # 省去Abstract前缀
+
+# 原子词项
 const Atom     = AAtom     = AbstractAtom
-const Compound = ACompound = AbstractCompound
-
-const AStatement = AbstractStatement
-const ATSet      = ATermSet      = AbstractTermSet
-const ASSet      = AStatementSet = AbstractStatementSet
-
-# 省字母
 const Var = Variable
 const Op  = Operator
+
+# 复合词项结构
+const ACompound = AbstractCompound
+const Compound = CCompound = CommonCompound
+# 复合词项类型
+const CTTermSet              = CompoundTypeTermSet
+const CTTermLogicalSet       = CompoundTypeTermLogicalSet
+const CTTermProduct          = CompoundTypeTermProduct
+const CTTermImage            = CompoundTypeTermImage
+const CTStatementLogicalSet  = CompoundTypeStatementLogicalSet
+const CTStatementTemporalSet = CompoundTypeStatementTemporalSet
+
+const AStatement = AbstractStatement
+
+# 复合词项：先定义泛型，再定义别名
+const TermSet{EI}                     = Compound{CTTermSet{EI}} where EI <: AbstractEI
+const TermLogicalSet{EI, LO}              = Compound{CTTermLogicalSet{EI, LO}} where {EI <: AbstractEI, LO <: AbstractLogicOperation}
+# const TermImage                   = Compound{CTTermImage} # 默认就是「像」，无需重定向
+const TermProduct                 = Compound{CTTermProduct}
+const StatementLogicalSet{LO}         = Compound{CTStatementLogicalSet{LO}} where {LO <: AbstractLogicOperation}
+const StatementTemporalSet{TR}        = Compound{CTStatementTemporalSet{TR}} where {TR <: AbstractTemporalRelation}
 
 const TSet     = TermSet
 const TLSet    = TermLSet    = TLogicSet    = TermLogicalSet
 const TImage   = TermImage
 const TProduct = TermProduct
-const ASLSet   = AStatementLSet = ASLogicSet   = AbstractStatementLogicalSet
 const SLSet    = StatementLSet  = SLogicSet    = StatementLogicalSet
 const STSet    = StatementTSet  = STemporalSet = StatementTemporalSet
 
@@ -156,9 +173,19 @@ const StatementBasedSTs = Union{ # 不予导出，理由同上
     StatementTypeImplication, # 注意：ST开头的是「永恒」时态变种
     StatementTypeEquivalence, # 注意：ST开头的是「永恒」时态变种
 }
-
 "（内置）一等公民词项" # 不予导出，理由同上
-const FOTerm = FirstOrderTerm = Union{Atom, AbstractTermSet} # 原子词项&词项集
+const FOTerm = FirstOrderTerm = Union{Atom, ACompound} # 原子词项&词项集
+"（内置）基于陈述的词项集（复合词项类型）"
+const StatementBasedCTs = Union{ # 不予导出，理由同上
+    CTStatementLogicalSet,
+    CTStatementTemporalSet,
+}
+"（内置）「基于陈述」所言之「陈述」：陈述+陈述逻辑集"
+const StatementLike = Union{ # 不予导出，理由同上
+    AbstractStatement, 
+    StatementLogicalSet, 
+    StatementTemporalSet,
+}
 
 # 集合类的词项: 形如`(操作符, 词项...)`与其它「有`terms`字段，且有多个元素的集合」
 const TermLogicalSetLike  = Union{TermLSet, StatementLSet{And}, StatementLSet{Or}, StatementTSet} # 「逻辑非」不含在内

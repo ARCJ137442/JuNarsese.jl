@@ -47,13 +47,17 @@ end
 # 判断相等 #
 begin "判断相等(Base.isequal)：基于值而非基于引用"
 
+    "默认判等逻辑：全为false"
+    @inline _collection_equal(::Any, ::Any)::Bool = false
     "核心判等逻辑：使用多分派特性统一判断复合词项中的成分"
-    @inline _collection_equal(v1::Vector, v2::Vector)::Bool = (v1 .== v2) |> all
-    @inline _collection_equal(v1::Tuple, v2::Tuple)::Bool = (v1 .== v2) |> all
-    @inline _collection_equal(::Vector, ::Set)::Bool = false
-    @inline _collection_equal(::Set, ::Vector)::Bool = false
-    @inline _collection_equal(::Vector, ::Tuple)::Bool = false
-    @inline _collection_equal(::Set, ::Tuple)::Bool = false
+    @inline _collection_equal(v1::Vector, v2::Vector)::Bool = (
+        length(v1) == length(v2) &&
+        (v1 .== v2) |> all
+    )
+    @inline _collection_equal(v1::Tuple, v2::Tuple)::Bool = (
+        length(v1) == length(v2) && 
+        (v1 .== v2) |> all
+    )
     """
     ✨对两个集合的判等逻辑
     - 📌对「嵌套集合」的判等很显吃力
@@ -95,16 +99,27 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
     )
 
     """
-    抽象词项集相等 = 类型&各组分 相等
-    - 词项集
-    - 词项逻辑集
-    - 乘积
+    （默认）复合词项相等：其元素的逐个比对
+    - ⚠默认是有序的
     """
-    function Base.isequal(t1::AbstractTermSet, t2::AbstractTermSet)::Bool
+    function Base.isequal(t1::AbstractCompound, t2::AbstractCompound)::Bool
         # @show typeof(t1) typeof(t2)
         # @show (t1.terms .== t2.terms)
         typeof(t1) == typeof(t2) && # 类型相等
         _collection_equal(t1.terms, t2.terms) # 自行判断相等
+    end
+
+    """
+    通用复合词项`CommonCompound`
+    - 根据「是否可交换/无序」判断内部元素相等
+    """
+    function Base.isequal(t1::CommonCompound, t2::CommonCompound)::Bool
+        # @show t1 t2 typeof(t1) typeof(t2)
+        # @show t1.terms t2.terms _collection_equal(t1.terms, t2.terms)
+        return (
+            typeof(t1) == typeof(t2) && # 类型相等
+            _collection_equal(t1.terms, t2.terms) # 根据容器类型自行判断相等
+        )
     end
 
     """
@@ -125,14 +140,6 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
         s1.ϕ1 == s2.ϕ1 &&
         s1.ϕ2 == s2.ϕ2
     end
-
-    """
-    抽象陈述集相等：类型&各陈述 相等
-    """
-    function Base.isequal(s1::AStatementSet, s2::AStatementSet)::Bool
-        typeof(s1) == typeof(s2) && # 类型相等
-        _collection_equal(s1.terms, s2.terms) # 比对词项集合
-    end
 end
 
 # 收集(`Base.collect`): 收集其中包含的所有（原子）词项 #
@@ -152,7 +159,7 @@ begin "收集(Base.collect)其中包含的所有（原子）词项，并返回�
     
     ⚠不会拷贝
     """
-    Base.collect(s::Union{TermSet,AbstractStatementSet}) = [
+    Base.collect(s::AbstractCompound) = [
         (
             (s.terms .|> collect)...
         )... # 📌二次展开：📌二次展开：第一次展开成「向量の向量」，第二次展开成「词项の向量」
@@ -267,7 +274,7 @@ begin "NAL信息支持"
 
     协议：所有复合词项都支持`terms`属性
     """
-    get_syntactic_complexity(c::Compound) = 1 + sum(
+    get_syntactic_complexity(c::ACompound) = 1 + sum(
         get_syntactic_complexity, # 每一个的复杂度
         c.terms # 遍历每一个组分
     )
@@ -280,7 +287,7 @@ begin "NAL信息支持"
 
     协议：所有「陈述」都有`ϕ1`与`ϕ2`属性
     """
-    get_syntactic_complexity(s::Statement) = 1 + get_syntactic_complexity(s.ϕ1) + get_syntactic_complexity(s.ϕ2)
+    get_syntactic_complexity(s::AStatement) = 1 + get_syntactic_complexity(s.ϕ1) + get_syntactic_complexity(s.ϕ2)
 
     """
     [NAL-3]获取词项的「语法简易度」
@@ -341,6 +348,23 @@ begin "NAL信息支持"
     "陈述→重定向到其陈述类型" # 使用参数类型取代typeof
     @inline (is_commutative(::Statement{T})::Bool) where {T <: AbstractStatementType} = is_commutative(T)
 
+    "复合词项→重定向到「符合词项类型」"
+    @inline (is_commutative(::CommonCompound{T})::Bool) where {T <: AbstractCompoundType} = is_commutative(T)
+
+    "各个「复合词项类型」的可交换性：默认为false"
+    @inline is_commutative(::Type{<:AbstractCompoundType})::Bool = false
+
+    "外延集&内涵集 = true"
+    @inline is_commutative(::Type{<:CTTermSet})::Bool = true
+    "外延交&内涵交/外延并&内涵并 = true"
+    @inline (is_commutative(::Type{<:CTTermLogicalSet{EI, LO}})::Bool) where {EI <: AbstractEI, LO <: Union{And, Or}} = true
+    "合取&析取 = true" # 解决方案：括弧。issue链接：https://github.com/JuliaLang/julia/issues/21847
+    @inline (is_commutative(::Type{CTStatementLogicalSet{LO}})::Bool) where {LO <: Union{And, Or}} = true
+    "平行合取 = true"
+    @inline is_commutative(::Type{CTStatementTemporalSet{Sequential}})::Bool = false
+    "平行合取 = true"
+    @inline is_commutative(::Type{CTStatementTemporalSet{Parallel}})::Bool = true
+    
 end
 
 begin "检查合法性（API接口，用于后续NAL识别）"

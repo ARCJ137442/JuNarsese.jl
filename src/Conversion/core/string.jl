@@ -233,8 +233,8 @@ begin "【特殊链接】词项/语句↔字符串"
     # @redirect_SRS s::Stamp narsese2data(StringParser_ascii, s) # 把时间戳当做「默认对象」
     @redirect_SRS t::Truth narsese2data(StringParser_ascii, t)
 
-    "构造方法支持"
-    ((::Type{T})(s::String)::T) where {T <: STRING_PARSE_TARGETS} = data2narsese(StringParser_ascii, Term, s)
+    "构造方法支持" # 【20230817 20:07:14】不要对Term的所有子类型做自动转换
+    ((::Type{Term})(s::String)::Term) = data2narsese(StringParser_ascii, Term, s)
 
 end
 

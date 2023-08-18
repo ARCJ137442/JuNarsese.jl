@@ -2,7 +2,6 @@
 使用Unicode运算符/宏，辅助构建Narsese
 =#
 
-# export @w_str # 无需导出了：避免可能的歧义
 export ⩀, ⊍
 export ⋄
 export →, ⇒, ↔, ⇔
@@ -154,36 +153,36 @@ begin "复合词项"
     """
     →(t1::Term, t2::Term) = Inheritance(t1, t2)
     ↔(t1::Term, t2::Term) = Similarity(t1, t2)
-    # 基于陈述而非全体词项
-    ⇒(t1::AbstractStatement, t2::AbstractStatement) = Implication(t1, t2)
-    ⇔(t1::AbstractStatement, t2::AbstractStatement) = Equivalence(t1, t2)
+    # 基于陈述而非全体词项 【20230817 20:38:23】交给构造时检验合法性
+    ⇒(t1::Term, t2::Term) = Implication(t1, t2)
+    ⇔(t1::Term, t2::Term) = Equivalence(t1, t2)
 
     """
     陈述逻辑「非」
     """
-    ¬(t::AbstractStatement) = Negation(t)
+    ¬(t::Term) = Negation(t)
 
     """
     陈述逻辑「与」
     """
-    ∧(terms::Vararg{AbstractStatement}) = Conjunction(terms...)
+    ∧(terms::Vararg{Term}) = Conjunction(terms...)
 
     """
     陈述逻辑「或」
     """
-    ∨(terms::Vararg{AbstractStatement}) = Disjunction(terms...)
+    ∨(terms::Vararg{Term}) = Disjunction(terms...)
 
     """
     陈述时序「平行」（原创）
     - LaTeX: `\\wedgemidvert`
     """
-    ⩚(terms::Vararg{AbstractStatement}) = ParConjunction(terms...)
+    ⩚(terms::Vararg{Term}) = ParConjunction(terms...)
 
     """
     陈述时序「序列」（原创）
     - LaTeX: `\\midbarwedge`
     """
-    ⩜(terms::Vararg{AbstractStatement}) = SeqConjunction(terms...)
+    ⩜(terms::Vararg{Term}) = SeqConjunction(terms...)
 
 
 end
