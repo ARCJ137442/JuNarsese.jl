@@ -2,6 +2,7 @@
     "workbench.colorTheme": "Julia (Monokai Vibrant)",
     "files.autoSave": "onWindowChange",
     "conventionalCommits.scopes": [
-        "数据结构"
+        "数据结构",
+        "词项"
     ]
 }

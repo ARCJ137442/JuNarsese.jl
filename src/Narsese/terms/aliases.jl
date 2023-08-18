@@ -8,7 +8,8 @@
 =#
 
 # 导出
-export Term, ATerm, Atom, AAtom, Compound, ACompound
+export Term, ATerm, Atom, AAtom, ACompound
+export Compound, CCompound
 export Var, Op
 export TermSet, TermLogicalSet, TermProduct, StatementLogicalSet, StatementTemporalSet
 export TSet
@@ -84,14 +85,14 @@ const AStatement = AbstractStatement
 
 # 复合词项：先定义泛型，再定义别名
 const TermSet{EI}                     = Compound{CTTermSet{EI}} where EI <: AbstractEI
-const TermLogicalSet{EI, LO}              = Compound{CTTermLogicalSet{EI, LO}} where {EI <: AbstractEI, LO <: AbstractLogicOperation}
-# const TermImage                   = Compound{CTTermImage} # 默认就是「像」，无需重定向
-const TermProduct                 = Compound{CTTermProduct}
+const TermLogicalSet{EI, LO}          = Compound{CTTermLogicalSet{EI, LO}} where {EI <: AbstractEI, LO <: AbstractLogicOperation}
+# const TermImage                     = Compound{CTTermImage} # 默认就是「像」，无需重定向
+const TermProduct                     = Compound{CTTermProduct}
 const StatementLogicalSet{LO}         = Compound{CTStatementLogicalSet{LO}} where {LO <: AbstractLogicOperation}
 const StatementTemporalSet{TR}        = Compound{CTStatementTemporalSet{TR}} where {TR <: AbstractTemporalRelation}
 
 const TSet     = TermSet
-const TLSet    = TermLSet    = TLogicSet    = TermLogicalSet
+const TLSet    = TermLSet       = TLogicSet    = TermLogicalSet
 const TImage   = TermImage
 const TProduct = TermProduct
 const SLSet    = StatementLSet  = SLogicSet    = StatementLogicalSet
@@ -100,8 +101,8 @@ const STSet    = StatementTSet  = STemporalSet = StatementTemporalSet
 # 陈述类型
 const STInheritance  = StatementTypeInheritance
 const STSimilarity  = StatementTypeSimilarity
-const STImplication = StatementTypeImplication{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
-const STEquivalence = StatementTypeEquivalence{Eternal} # 【20230804 14:48:54】此处变成了特值「Eternal」
+const STImplication = StatementTypeImplication{Eternal} # 【20230804 14:48:54】⚠此处变成了特值「Eternal」
+const STEquivalence = StatementTypeEquivalence{Eternal} # 【20230804 14:48:54】⚠此处变成了特值「Eternal」
 # 三个「带时态蕴含」
 const STImplicationRetrospective = StatementTypeImplication{Retrospective}
 const STImplicationConcurrent    = StatementTypeImplication{Concurrent}
