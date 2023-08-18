@@ -1,5 +1,9 @@
 # JuNarsese
 
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
+
+该项目使用[语义化版本](https://semver.org/)进行版本管理。
+
 Narsese(纳思语，NARS的知识表示语言)的[Julia](https://github.com/JuliaLang/julia)实现
 
 - 为其它使用Narsese的库提供数据结构表征、存取、互转支持
@@ -22,8 +26,10 @@ JuNarsese包含两个主要模块：
 ## 安裝
 
 作为一个**Julia包**，您只需：
+
 1. 在安装`Pkg`包管理器的情况下，
 2. 在REPL(`julia.exe`)运行如下代码：
+
 ```julia
 using Pkg
 Pkg.add(url="https://github.com/ARCJ137442/JuNarsese.jl")
@@ -38,10 +44,9 @@ Pkg.add(url="https://github.com/ARCJ137442/JuNarsese.jl")
 
 ## 未来展望
 
+- 项目开发规范接入
 - 数据结构性能优化
-- 基于JuNarsese实现NAL推理规则的表征
 - 为Narsese模块提供可扩展API
-- 应用于其它个人项目
 
 ## 参考
 
