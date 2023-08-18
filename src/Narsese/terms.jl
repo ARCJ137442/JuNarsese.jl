@@ -121,7 +121,8 @@ export CompoundTypeTermSet, CompoundTypeTermLogicalSet, CompoundTypeTermProduct,
 
 export AbstractTerm, AbstractAtom, AbstractCompound
 
-export Word, Variable, Interval, Operator, CommonCompound, TermImage, Statement
+export Word, PlaceHolder, Variable, Interval, Operator, CommonCompound, TermImage, Statement
+export placeholder, isplaceholder
 
 
 
@@ -216,12 +217,48 @@ begin "单体词项"
             new(name)
         ) # 增加合法性检查_explainable
     end
+
     """
     支持从String构造
     - 目的：处理从（AST）解析中返回的字符串参数
     """
     Word(name::Union{AbstractString, AbstractChar}) = name |> Symbol |> Word
 
+    raw"""
+    [NAL-4]像占位符
+    - 现在作为一个独立的类，而非使用Nothing类型
+    - 单例模式，只有一个`PlaceHolder()`对象
+    - 按照原子词项的原则处理
+    - 可以被视作「Narsese中的Nothing」
+    - ⚠《NAL》定义中「像占位符不可出现在第一个位置，其为关系词项所保留」的特性，留给构造时合法性检查
+    - 实现参考：OpenJunars `terms.jl`；其它NARS实现的处理方式：
+        - OpenNARS：设置一个字符串常量为`_`，并在解析「像」时直接识别，作为「占位符位置」存入`ImageXXt`类型中
+            - 参见：OpenNARS 3.1.2 `Symbols.java` `StringParser.java`
+        - ONA：直接在解析时解析成「占位符位置」``
+            - 参见：ONA 0.9.2 `Narsese.c`
+        - PyNARS：设置一个名为`_`的词语，在解析时直接识别，作为「占位符位置」存入`XXtensionalImage`类型中
+            - 参见：PyNARS `Term.py` `Compound.py`
+
+    参考：《NAL》定义8.4
+    > where ‘⋄’ is a special symbol indicating the location of T1 or T2 in the product, 
+    > and in the component list it can appear in any place, except the first (which is reserved for the relational term). 
+    > When it appears at the second place, the image can also be written in infix format as (R / T2) or (R \ T2).
+
+    中译：
+    > 其中『⋄』是表示T1或T2在乘积中的位置的特殊符号;
+    > 在组分列表中，它可以出现在任何位置，除了第一个位置（它是为关系词项保留的）。
+    > 当它出现在第二位时，像也可以用中缀格式写成 (R / T2) 或 (R \ T2)。
+    """
+    struct PlaceHolder <: AbstractAtom end
+    "像占位符单例模式下的唯一实例"
+    const placeholder::PlaceHolder = PlaceHolder()
+    "检测是否为像占位符: 类似`isnothing`"
+    isplaceholder(x) = x === PlaceHolder
+    isplaceholder(::PlaceHolder) = true
+
+    "兼容`.name`属性：对像占位符的任何属性访问都将返回空字符串"
+    Base.getproperty(::PlaceHolder, ::Symbol)::String = ""
+    
     """
     [NAL-6]变量词项（用类型参数包括三种类型）
 
@@ -601,10 +638,26 @@ begin "单体词项"
         TermImage{EIType}(terms, relation_index |> unsigned)
     end
 
-    "转换兼容支持：多参数构造(兼容「词项序列」，以Nothing替代词项)"
+    "转换兼容支持：多参数构造(兼容「词项序列」，使用新的「像占位符」单例类型)"
+    function TermImage{EIType}(terms::Vararg{AbstractTerm}) where EIType
+        placeholder_index::Union{Integer, Nothing} = findfirst(isplaceholder, terms)
+        isnothing(placeholder_index) && error("在参数「$terms」中未找到像占位符位置！")
+        TermImage{EIType}(
+            filter(!isplaceholder, terms), # 过滤出所有非占位符词项
+            unsigned(placeholder_index),
+        )
+    end
+
+    """
+    转换兼容支持：多参数构造(兼容「词项序列」，以Nothing替代词项)
+
+    【20230818 15:38:09】现在使用新的「像占位符」类型，原有使用Nothing的方法即将弃用
+    - 📄出于兼容性考虑，此方法仍然保留
+    - ⚠计划在下一个主版本号中移除
+    """
     function TermImage{EIType}(uni_terms::Vararg{Union{AbstractTerm, Nothing}}) where EIType
         TermImage{EIType}(
-            filter(term -> !isnothing(term), uni_terms), # 过滤出所有非空词项
+            filter(!isnothing, uni_terms), # 过滤出所有非空词项
             findfirst(isnothing, uni_terms) |> unsigned, # 使用「匹配函数」找到首个「占位符」位置
         )
     end

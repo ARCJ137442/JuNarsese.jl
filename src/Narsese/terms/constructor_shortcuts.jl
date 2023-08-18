@@ -96,42 +96,19 @@ begin "复合词项"
     Base.:(-)(t1::Term, t2::Term) = ExtDiff(t1, t2) # 默认是外延交(后续就直接递推)
     Base.:(~)(t1::Term, t2::Term) = IntDiff(t1, t2) # 默认是外延交(后续就直接递推)
 
-    raw"""
-    像(外/内\)，再加「占位符」
-    - 根据词项序列构造像
+    "外延像：使用多元函数构造"
+    Base.:(/)(terms...) = TermImage{Extension}(terms...)
 
-    示例：`a / b ⋄ c` ⇔ (/, a, b, _, c)
-    ```
-    """
-    function _construct_image(::Type{EI}, terms::Tuple)::TermImage where EI <: AbstractEI
-        # 获取索引
-        for (i, t) in enumerate(terms)
-            if (t == ⋄) || isnothing(t) || ismissing(t) # 判断「占位符」的条件 📌注意用括号避免运算符歧义「syntax: "⋄" is not a unary operator」
-                return TermImage{EI}( # 一次性生成，然后break
-                    Tuple{Vararg{Term}}( # 📌不能使用Tuple{AbstractTerm}，这样会删掉后续的元素
-                        term
-                        for term in terms
-                        if term isa Term # 过滤
-                    ),
-                    i,
-                )
-            end
-        end
-        # 没找到「像占位符」的位置？报错！
-        error("未在词项「$terms」中找到像占位符位置！")
-    end
-
-    "使用多元函数构造"
-    Base.:(/)(terms...) = _construct_image(Extension, terms)
-
-    "一样的构造符"
-    Base.:(\)(terms...) = _construct_image(Intension, terms)
+    "内涵像：类似的构造方式"
+    Base.:(\)(terms...) = TermImage{Intension}(terms...)
 
     """
     【20230724 22:03:40】注意：「⋄」不是Base包里面的
     - 【20230730 0:39:07】只需要声明下已定义即可
+    - 【20230818 16:41:56】现在「⋄」等价于「像占位符」，不再是「任意值」了
+        - 仍然向下兼容
     """
-    function ⋄ end
+    const ⋄ = placeholder # 不能标注类型，因为其原本为「运算符」`Base.isoperator(:⋄) == true`
 
     """
     乘积(*)

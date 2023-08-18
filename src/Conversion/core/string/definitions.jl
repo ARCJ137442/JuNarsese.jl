@@ -12,6 +12,7 @@ const StringParser_ascii::StringParser = StringParser{String}(
         QVar     => "?",
         Interval => "+", # 间隔
         Operator => "^", # 操作
+        PlaceHolder => "_", # 像占位符
     ),
     "_", "_",
     ",",

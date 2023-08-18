@@ -185,6 +185,7 @@ const StatementLike = Union{ # 不予导出，理由同上
     AbstractStatement, 
     StatementLogicalSet, 
     StatementTemporalSet,
+    Interval, # 「间隔」表示在「时序推理」中的「时间间隔」
 }
 
 # 集合类的词项: 形如`(操作符, 词项...)`与其它「有`terms`字段，且有多个元素的集合」
