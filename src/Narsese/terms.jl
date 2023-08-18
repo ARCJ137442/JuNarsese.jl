@@ -258,6 +258,8 @@ begin "单体词项"
 
     "兼容`.name`属性：对像占位符的任何属性访问都将返回空字符串"
     Base.getproperty(::PlaceHolder, ::Symbol)::String = ""
+    "兼容构造方法`constructor(string|expr|...)`: 直接返回`placeholder`"
+    PlaceHolder(::Any) = placeholder
     
     """
     [NAL-6]变量词项（用类型参数包括三种类型）
@@ -629,12 +631,12 @@ begin "单体词项"
     end
 
     "类型适配：对有符号整数的映射"
-    function TermImage{EIType}(terms::Tuple{Vararg{AbstractTerm}}, relation_index::Integer) where {EIType}
+    @inline function TermImage{EIType}(terms::Tuple{Vararg{AbstractTerm}}, relation_index::Integer) where {EIType}
         TermImage{EIType}(terms, unsigned(relation_index))
     end
 
     "转换兼容支持：多参数构造(倒过来，占位符位置放在最前面)"
-    function TermImage{EIType}(relation_index::Integer, terms::Vararg{AbstractTerm}) where EIType
+    @inline function TermImage{EIType}(relation_index::Integer, terms::Vararg{AbstractTerm}) where EIType
         TermImage{EIType}(terms, relation_index |> unsigned)
     end
 
@@ -646,6 +648,11 @@ begin "单体词项"
             filter(!isplaceholder, terms), # 过滤出所有非占位符词项
             unsigned(placeholder_index),
         )
+    end
+
+    "转换兼容支持：从词项数组构造"
+    @inline function TermImage{EIType}(array::AbstractArray) where EIType
+        TermImage{EIType}(array...)
     end
 
     """

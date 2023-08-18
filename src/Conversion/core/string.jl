@@ -36,11 +36,6 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
     "反转的字典"
     prefixes2atom::Dict{Content, Type}
 
-    "显示「像占位符」的符号"
-    placeholder_t2d::Content
-    "识别「像占位符」的符号"
-    placeholder_d2t::Content
-
     "用于「文本→词项」的逗号（识别用）"
     comma_d2t::Content
     """
@@ -135,7 +130,6 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
     function StringParser{Content}(
         name::String,
         atom_prefixes::Dict,
-        placeholder_t2d::Content, placeholder_d2t::Content,
         comma_d2t::Content, 
         space::Content,
         compound_brackets::Dict,
@@ -156,7 +150,6 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
             Dict( # 自动反转字典
                 @reverse_dict_content atom_prefixes
             ),
-            placeholder_t2d, placeholder_d2t,
             comma_d2t, 
             comma_d2t * space, # 自动拼接空格
             space, 
@@ -594,7 +587,7 @@ begin "复合词项↔字符串"
         end
         # 解析剩余词项
         components::Vector{UNothing{Term}} = UNothing{Term}[
-            term_str == parser.placeholder_d2t ?
+            startswith(term_str, parser.atom_prefixes[PlaceHolder]) ?
                 nothing : # 使用nothing兼容「像占位符」
                 data2narsese(parser, Term, term_str)
             for term_str in term_strings
@@ -769,7 +762,7 @@ begin "复合词项↔字符串"
         parser.compound_symbols[typeof(t)],
         insert!( # 使用「插入元素」的处理办法，因为数组是新建的
             [narsese2data(parser, term) for term in t.terms], # 自动转换字符串
-            t.relation_index, parser.placeholder_t2d # 在对应索引处插入元素，并返回
+            t.relation_index, parser.atom_prefixes[PlaceHolder] # 在对应索引处插入元素，并返回
         ),
         parser.comma_t2d
     )

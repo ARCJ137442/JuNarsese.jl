@@ -6,15 +6,14 @@
 const StringParser_ascii::StringParser = StringParser{String}(
     "StringParser_ascii",
     Dict( # 原子前缀
-        Word     => "", # 置空
-        IVar     => "\$",
-        DVar     => "#",
-        QVar     => "?",
-        Interval => "+", # 间隔
-        Operator => "^", # 操作
+        Word        => "", # 置空
+        IVar        => "\$",
+        DVar        => "#",
+        QVar        => "?",
+        Interval    => "+", # 间隔
+        Operator    => "^", # 操作
         PlaceHolder => "_", # 像占位符
     ),
-    "_", "_",
     ",",
     " ", # 空格符（一般是无关紧要的分隔成分）
     Dict( # 集合括弧
@@ -91,14 +90,14 @@ LaTeX扩展
 const StringParser_latex::StringParser = StringParser{String}(
     "StringParser_latex",
     Dict( # 原子前缀
-        Word     => "", # 置空
-        IVar     => "\$",
-        DVar     => "\\#",
-        QVar     => "?", # 【20230811 12:54:54】！自《NAL》定义10.2得知，非独变量的LaTeX包括后缀，后续兼容成问题
-        Interval => "+", # 间隔
-        Operator => "\\Uparrow", # 操作
+        Word        => "", # 置空
+        IVar        => "\$",
+        DVar        => "\\#",
+        QVar        => "?", # 【20230811 12:54:54】！自《NAL》定义10.2得知，非独变量的LaTeX包括后缀，后续兼容成问题
+        Interval    => "+", # 间隔
+        Operator    => "\\Uparrow", # 操作
+        PlaceHolder => "\\diamond", # 像占位符
     ),
-    "\\diamond", "\\diamond",
     " ", # 【20230803 14:14:50】LaTeX格式中没有逗号，使用\u202f的空格「 」以分割
     " ", # 空格符（一般是无关紧要的分隔成分）
     Dict( # 集合括弧
@@ -171,14 +170,14 @@ const StringParser_latex::StringParser = StringParser{String}(
 const StringParser_han::StringParser = StringParser{String}(
     "StringParser_han",
     Dict( # 原子前缀
-        Word     => "", # 置空
-        IVar     => "任一",
-        DVar     => "其一",
-        QVar     => "所问",
-        Interval => "间隔", # 间隔
-        Operator => "操作", # 操作
+        Word        => "", # 置空
+        IVar        => "任一",
+        DVar        => "其一",
+        QVar        => "所问",
+        Interval    => "间隔", # 间隔
+        Operator    => "操作", # 操作
+        PlaceHolder => "某", # 像占位符
     ),
-    "某", "某",
     "，", # 词项集/复合词项中的分隔符（可以用顿号，但徒增复杂度）
     "", # 空格符（一般是无关紧要的分隔成分）
     Dict( # 集合括弧
