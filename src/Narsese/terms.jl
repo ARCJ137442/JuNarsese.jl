@@ -117,7 +117,7 @@ export AbstractStatementType, StatementTypeInheritance, StatementTypeSimilarity,
 export AbstractLogicOperation, And, Or, Not
 export AbstractEI, Extension, Intension
 export AbstractTemporalRelation, Sequential, Parallel
-export CompoundTypeTermSet, CompoundTypeTermLogicalSet, CompoundTypeTermProduct, CompoundTypeTermImage, CompoundTypeStatementLogicalSet, CompoundTypeStatementTemporalSet
+export AbstractCompoundType, CompoundTypeTermSet, CompoundTypeTermLogicalSet, CompoundTypeTermProduct, CompoundTypeTermImage, CompoundTypeStatementLogicalSet, CompoundTypeStatementTemporalSet
 
 export AbstractTerm, AbstractAtom, AbstractCompound
 

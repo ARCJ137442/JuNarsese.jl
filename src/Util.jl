@@ -6,7 +6,7 @@ module Util
 export UNothing
 export @reverse_dict_content, @redirect_SRS, @expectedError
 export match_first, allproperties, allproperties_generator
-export get_pure_type_name, get_pure_type_symbol, verify_type_expr, assert_type_expr
+export get_pure_type_string, get_pure_type_symbol, verify_type_expr, assert_type_expr
 export SYMBOL_NULL
 export @generate_ifelseif, @rand
 
@@ -128,18 +128,18 @@ PURE_TYPE_NAME_REGEX::Pair{Regex, String} = r"([^.{}, ]+\.)+" => ""
 
 ⚠注意：此方法也不会被「类别名」影响，例如Vector就是返回Array
 """
-get_pure_type_name(T::Type)::String = replace(
+get_pure_type_string(T::Type)::String = replace(
     string(T), 
     PURE_TYPE_NAME_REGEX
 )
 "重定向：自动typeof"
-get_pure_type_name(T::Any)::String = get_pure_type_name(typeof(T))
+get_pure_type_string(T::Any)::String = get_pure_type_string(typeof(T))
 
 """
 获取「纯粹的类名」（Symbol版）
 """
 get_pure_type_symbol(T::Any)::Symbol = Symbol(
-    get_pure_type_name(T)
+    get_pure_type_string(T)
 )
 
 """

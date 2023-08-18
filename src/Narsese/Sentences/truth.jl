@@ -7,6 +7,7 @@
 
 export Truth
 export Truth16, Truth32, Truth64, TruthBig
+export default_precision_truth
 
 # 结构 #
 
@@ -56,6 +57,9 @@ end
 @inline Truth(f::AbstractFloat, c::AbstractFloat) = Truth{DEFAULT_FLOAT_PRECISION}(
     DEFAULT_FLOAT_PRECISION(f), DEFAULT_FLOAT_PRECISION(c)
 )
+
+"提供默认精度，并统一提供默认值"
+default_precision_truth(f::AbstractFloat = 1.0, c::AbstractFloat = 0.5) = Truth(f, c)
 
 # 别名：各类精度的真值 #
 const Truth16::DataType = Truth{Float16, Float16}

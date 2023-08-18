@@ -97,51 +97,106 @@ function narsese2data end
 """
 function data2narsese end
 
-"""
-通用类名解析函数
-- 字符串→类名
+begin "类名封装/解析 模块：将类型封装成字符串/符号"
 
-参数集
-- type_name: 类の名
-- eval_function: 用于执行eval的函数
-    - 方便指定解析的上下文
-    - 例：`Narsese.eval`用于解析词项/语句类型
-"""
-parse_type(type_name::AbstractString, eval_function::Function)::Type = eval_function(
-    Meta.parse(type_name) |> assert_type_expr # 【20230810 20:33:56】安全锁定
-)
+    begin "构建类名索引集：类→类名"
 
-"""
-适用于符号的解析函数
-- 支持解析「泛型类符号」
-    - 如`Symbol("Tuple{Int}")`
-    - 直接eval不能解析此类Symbol
-"""
-parse_type(type_name::Symbol, eval_function::Function)::Type = eval_function(
-    Meta.parse(
-        string(type_name)
-    ) |> assert_type_expr # 【20230810 20:33:56】安全锁定
-)
+        # 导出
+        export has_type_name, get_type_name, get_type_name_symbol, get_type_name_string
 
-"""
-通用类名封装函数
-- 类名→同名字符串
+        # 声明待填充常量
 
-【20230808 13:31:11】暂为API提供用
-【20230808 17:26:50】Julia的`string``Symbol`返回的是完整类名，而nameof不保留别名&泛型，故自行构造字典
-【20230810 0:57:19】现在使用正则替换掉类名的「模块路径前缀」，并提升到Util库中
-"""
-pack_type_string(T::Any)::String = get_pure_type_name(T)
+        """
+        类名索引集
+        - 目标：最大化利用别名，对每个类生成名称简短、查看方便的类名（字符串/符号）
+            - 例：`CommonCompound{CompoundTypeTermImage{Extension}} => (:ExtImage, "ExtImage")`
 
-"""
-通用类名封装函数@符号
-- 相当于Symbol(pack_type_string(type))
+        【20230808 17:34:37】为实现「类名稳定」，生成一个「类型⇒名字索引集」
+        - 避免额外的「Narsese.[...]」
+        - 【20230818 23:26:01】TODO：避免「带类参别名」无效
+        """
+        const TYPE_NAME_DICT::Dict{Any, Tuple{Symbol, String}} = Dict()
+        "类の集合"
+        const TYPE_VALUES::Set = Set()
 
-【20230808 13:31:11】暂为API提供用
-【20230808 17:26:50】Julia的`string``Symbol`返回的是完整类名，而nameof不保留别名&泛型，故自行构造字典
-【20230810 0:58:06】现在直接重定向至String，以复用String的方法
-"""
-pack_type_symbol(T::Any)::Symbol = get_pure_type_symbol(T)
+        "类名集"
+        const TYPE_NAMES::Vector = names(Narsese)
+
+        let value::Any
+            # 【20230814 16:30:21】使用@simd并行加载，但要去掉「::Symbol」
+            @simd for name in TYPE_NAMES
+                value = Narsese.eval(name) # 类/
+                # 若已有类型，则这个「类名」应比原类名更短
+                if !haskey(TYPE_NAME_DICT, value) || (
+                    length(string(name)) < length(string(TYPE_NAME_DICT[value][2]))
+                    )
+                    push!(TYPE_VALUES, value)
+                    push!(TYPE_NAME_DICT, value => (name, string(name)))
+                end
+            end
+        end
+
+        "稳定地获取类名（包括别名、参数类型）"
+        has_type_name(type::Type) = haskey(TYPE_NAME_DICT, type)
+        get_type_name(type::Type, default::Any=nothing) = get(TYPE_NAME_DICT, type, default)
+        get_type_name_symbol(type::Type, default::Symbol=Symbol())::Symbol = get(TYPE_NAME_DICT, type, (default,))[1]
+        get_type_name_string(type::Type, default::String="")::String = get(TYPE_NAME_DICT, type, (default,))[2]
+
+    end
+
+    """
+    通用类名解析函数
+    - 字符串→类名
+
+    参数集
+    - type_name: 类の名
+    - eval_function: 用于执行eval的函数
+        - 方便指定解析的上下文
+        - 例：`Narsese.eval`用于解析词项/语句类型
+    """
+    parse_type(type_name::AbstractString, eval_function::Function)::Type = eval_function(
+        Meta.parse(type_name) |> assert_type_expr # 【20230810 20:33:56】安全锁定
+    )
+
+    """
+    适用于符号的解析函数
+    - 支持解析「泛型类符号」
+        - 如`Symbol("Tuple{Int}")`
+        - 直接eval不能解析此类Symbol
+    """
+    parse_type(type_name::Symbol, eval_function::Function)::Type = eval_function(
+        Meta.parse(
+            string(type_name)
+        ) |> assert_type_expr # 【20230810 20:33:56】安全锁定
+    )
+
+    """
+    通用类名封装函数
+    - 类名→同名字符串
+
+    【20230808 13:31:11】暂为API提供用
+    【20230808 17:26:50】Julia的`string``Symbol`返回的是完整类名，而nameof不保留别名&泛型，故自行构造字典
+    【20230810 0:57:19】现在使用正则替换掉类名的「模块路径前缀」，并提升到Util库中
+    【20230818 23:47:24】现在有Narsese别名就用Narsese别名，没有就调用自己的「纯净类名」方法
+    【20230819 0:17:28】现在提供对任意对象的`typeof`重定向
+    """
+    pack_type_string(T::Type)::String = has_type_name(T) ? get_type_name_string(T) : get_pure_type_string(T)
+    pack_type_string(obj::Any)::String = pack_type_string(typeof(obj))
+
+    """
+    通用类名封装函数@符号
+    - 相当于Symbol(pack_type_string(type))
+
+    【20230808 13:31:11】暂为API提供用
+    【20230808 17:26:50】Julia的`string``Symbol`返回的是完整类名，而nameof不保留别名&泛型，故自行构造字典
+    【20230810 0:58:06】现在直接重定向至String，以复用String的方法
+    【20230818 23:47:24】现在有Narsese别名就用Narsese别名，没有就调用自己的「纯净类名」方法
+    【20230819 0:17:28】现在提供对任意对象的`typeof`重定向
+    """
+    pack_type_symbol(T::Type)::Symbol = has_type_name(T) ? get_type_name_symbol(T) : get_pure_type_symbol(T)
+    pack_type_symbol(obj::Any)::Symbol = pack_type_symbol(typeof(obj))
+
+end
 
 
 """
