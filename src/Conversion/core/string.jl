@@ -167,8 +167,8 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
             copulas,
             # 自动生成函数：判断是否前缀为系词
             s -> begin
-                # 遍历所有系词
-                @simd for copula in copulas
+                # 按顺序遍历所有系词（注意：不能@simd！
+                for copula in copulas
                     startswith(s, copula) && return copula
                 end
                 return empty(Content) # 【20230809 10:55:18】默认返回空文本（详见Util.jl扩展的方法）

@@ -125,7 +125,7 @@ const StringParser_latex::StringParser = StringParser{String}(
         SeqConjunction  => ",",
     ),
     Dict( # 系词
-        STInheritance       => "\\rightarrow",
+        STInheritance      => "\\rightarrow",
         STSimilarity       => "\\leftrightarrow",
         STImplication      => "\\Rightarrow",
         STEquivalence      => "\\LeftRightArrow",
@@ -205,7 +205,7 @@ const StringParser_han::StringParser = StringParser{String}(
         SeqConjunction  => "接连",
     ),
     Dict( # 系词 【20230809 11:42:04】注意！因字串判断机制为「前缀判断」，因此这里不能存在「一个词是另一个词的前缀」的情况
-        STInheritance       => "是",
+        STInheritance      => "是",
         STSimilarity       => "似",
         STImplication      => "得",
         STEquivalence      => "同",
