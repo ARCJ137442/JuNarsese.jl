@@ -1,0 +1,6 @@
+# 测试文件
+\[test\]*
+
+# VSCode项目
+/.dist
+/.vscode
