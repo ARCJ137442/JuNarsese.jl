@@ -78,7 +78,7 @@ const StringParser_ascii::StringParser = StringParser{String}(
     ("%", "%"),
     ";",
     # 预处理：去除空白符
-    (s::AbstractString) -> replace(s, r"[ \r\n\t]" => "")
+    (s::AbstractString) -> filter(!isspace, s)
 )
 
 """
@@ -98,8 +98,8 @@ const StringParser_latex::StringParser = StringParser{String}(
         Operator    => "\\Uparrow", # 操作
         PlaceHolder => "\\diamond", # 像占位符
     ),
-    " ", # 【20230803 14:14:50】LaTeX格式中没有逗号，使用\u202f的空格「 」以分割
-    " ", # 空格符（一般是无关紧要的分隔成分）
+    " ", # 【20230819 21:59:24】现在使用「多空白符合并」的方式，故不再强制与空格区分
+    "", # 空字串（本身就是空格，无需再切分）
     Dict( # 集合括弧
         ExtSet    => ("\\left\\{", "\\right\\}"), # 外延集
         IntSet    => ("\\left[", "\\right]"), # 内涵集
@@ -159,8 +159,8 @@ const StringParser_latex::StringParser = StringParser{String}(
     # 真值: 括号&分隔符
     ("\\langle", "\\rangle"),
     ",",
-    # 预处理：去除空白符
-    (s::AbstractString) -> replace(s, r"[ \r\n\t]" => "")
+    # 预处理：把多个空白符统一转换成单个空格
+    (s::AbstractString) -> replace(s, r"\s+" => ' ')
 )
 
 """
@@ -240,7 +240,7 @@ const StringParser_han::StringParser = StringParser{String}(
     ("真值=", "信"), # 此处不能留空！！！
     "真",
     # 预处理：去除空白符
-    (s::AbstractString) -> replace(s, r"[ \r\n\t]" => "")
+    (s::AbstractString) -> filter(!isspace, s)
 )
 
 begin "字符串宏解析支持"
