@@ -117,7 +117,7 @@ begin "类名封装/解析 模块：将类型封装成字符串/符号"
         """
         const TYPE_NAME_DICT::Dict{Any, Tuple{Symbol, String}} = Dict()
         "类の集合"
-        const TYPE_VALUES::Set = Set()
+        const TYPE_VALUES::Vector = []
 
         "类名集"
         const TYPE_NAMES::Vector = names(Narsese)
@@ -127,7 +127,7 @@ begin "类名封装/解析 模块：将类型封装成字符串/符号"
             @simd for name in TYPE_NAMES
                 value = Narsese.eval(name) # 类/
                 # 若已有类型，则这个「类名」应比原类名更短
-                if !haskey(TYPE_NAME_DICT, value) || (
+                if !(value in TYPE_VALUES) || (
                     length(string(name)) < length(string(TYPE_NAME_DICT[value][2]))
                     )
                     push!(TYPE_VALUES, value)

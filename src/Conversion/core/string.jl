@@ -634,7 +634,7 @@ begin "复合词项↔字符串"
     function data2narsese(parser::StringParser, ::Type{TermSet{EI}}, s::String, ::Bool)::TermSet{EI} where {EI <: AbstractEI}
         term_strings::Vector{String} = _parse_term_series(parser, s) # 使用新的「词项序列解析法」
         TermSet{EI}(
-            Set(
+            (
                 data2narsese(parser, Term, term_str)
                 for term_str in term_strings
             )

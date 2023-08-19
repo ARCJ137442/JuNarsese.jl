@@ -44,185 +44,11 @@ end
 
 # end
 
-# 判断相等 #
-begin "判断相等(Base.isequal)：基于值而非基于引用"
-
-    "默认判等逻辑：全为false"
-    @inline _collection_equal(::Any, ::Any)::Bool = false
-    "核心判等逻辑：使用多分派特性统一判断复合词项中的成分"
-    @inline _collection_equal(v1::Vector, v2::Vector)::Bool = (
-        length(v1) == length(v2) &&
-        (v1 .== v2) |> all
-    )
-    @inline _collection_equal(v1::Tuple, v2::Tuple)::Bool = (
-        length(v1) == length(v2) && 
-        (v1 .== v2) |> all
-    )
-    """
-    ✨对两个集合的判等逻辑
-    - 📌对「嵌套集合」的判等很显吃力
-        - 【20230803 16:43:32】在元素为非基础类型时，可能会因「隐含顺序」误判不等
-        - 【20230803 17:41:31】现使用「∀x∈S1，∃y∈S2，使得x=y」的方式兜底
-    - 参考资料
-        - https://discourse.julialang.org/t/struct-equality-seems-weird-inside-sets/51283
-        - https://discourse.julialang.org/t/why-isnt-isequal-x-y-hash-x-hash-y/8300
-    """
-    function _collection_equal(s1::Set, s2::Set)::Bool
-        return s1 == s2 || issetequal(s1, s2) || ( # 若自带方法无法处理，则使用数理逻辑方法
-            length(s1) == length(s2) && # 长度相等
-            all(
-                any(t1 == t2 for t2 in s2) # 递归判断所有元素(还有「排除法」的优化空间)
-                for t1 in s1
-            )
-        )
-    end
-
-    "兜底判等逻辑"
-    @inline Base.isequal(t1::Term, t2::Term) = (
-        typeof(t1) == typeof(t2) && ( # 同类型
-            isequal(getproperty(t1, propertyname), getproperty(t2, propertyname)) # 所有属性相等
-            for propertyname in t1 |> propertynames # 使用t1的，在同类型的前提下
-        ) |> all
-    )
-    "重定向「==」符号"
-    @inline Base.:(==)(t1::Term, t2::Term) = Base.isequal(t1, t2)
-
-    "原子词项相等"
-    @inline Base.isequal(t1::AbstractAtom, t2::AbstractAtom)::Bool = (
-        typeof(t1) == typeof(t2) && # 类型相等
-        t1.name == t2.name # 名称相等
-    )
-    
-    "（特殊）间隔相等"
-    @inline Base.isequal(i1::Interval, i2::Interval)::Bool = (
-        i1.interval == i2.interval
-    )
-
-    """
-    （默认）复合词项相等：其元素的逐个比对
-    - ⚠默认是有序的
-    """
-    function Base.isequal(t1::AbstractCompound, t2::AbstractCompound)::Bool
-        # @show typeof(t1) typeof(t2)
-        # @show (t1.terms .== t2.terms)
-        typeof(t1) == typeof(t2) && # 类型相等
-        _collection_equal(t1.terms, t2.terms) # 自行判断相等
-    end
-
-    """
-    通用复合词项`CommonCompound`
-    - 根据「是否可交换/无序」判断内部元素相等
-    """
-    function Base.isequal(t1::CommonCompound, t2::CommonCompound)::Bool
-        return (
-            typeof(t1) == typeof(t2) && # 类型相等
-            _collection_equal(t1.terms, t2.terms) # 根据容器类型自行判断相等
-        )
-    end
-
-    """
-    特殊重载：像相等
-    - 类型相等
-    - 占位符位置相等
-    - 所有元素相等
-    """
-    function Base.isequal(t1::TermImage{EIT1}, t2::TermImage{EIT2})::Bool where {EIT1, EIT2}
-        EIT1 == EIT2 && # 类型相等（外延像/内涵像）
-        t1.relation_index == t2.relation_index &&  # 占位符位置相等
-        _collection_equal(t1.terms, t2.terms) # 所有元素相等
-    end
-
-    "陈述相等"
-    function Base.isequal(s1::Statement{P1}, s2::Statement{P2})::Bool where {P1, P2}
-        P1 == P2 && (# 类型相等
-            s1.ϕ1 == s2.ϕ1 && s1.ϕ2 == s2.ϕ2 || # 对应相等就最好，不行的话检查是否无序
-            is_commutative(s1) && is_commutative(s2) && s1.ϕ1 == s2.ϕ2 && s1.ϕ2 == s2.ϕ1
-        )
-    end
-end
-
-# 收集(`Base.collect`): 收集其中包含的所有（原子）词项 #
-begin "收集(Base.collect)其中包含的所有（原子）词项，并返回向量"
-
-    "原子词项のcollect：只有它自己"
-    Base.collect(aa::AbstractAtom) = Term[aa]
-
-    """
-    抽象词项集/抽象陈述集のcollect：获取terms参数
-    - 词项集
-    - 词项逻辑集
-    - 像
-    - 乘积
-    - 陈述逻辑集
-    - 陈述时序集
-    
-    ⚠不会拷贝
-    """
-    Base.collect(s::AbstractCompound) = [
-        (
-            (s.terms .|> collect)...
-        )... # 📌二次展开：📌二次展开：第一次展开成「向量の向量」，第二次展开成「词项の向量」
-    ]
-
-    """
-    陈述のcollect：获取两项中的所有词项
-    - 不会拷贝
-    """
-    Base.collect(s::Statement) = Term[
-        collect(s.ϕ1)..., 
-        collect(s.ϕ2)...,
-    ]
-
-end
-
-# 运算重载
-begin "运算重载：四则运算等"
-    
-    "同类原子词项拼接 = 文字拼接（使用Juliaの加号，因与「乘积」快捷构造冲突）（间隔除外）"
-    (Base.:(+)(a1::T, a2::T)::T) where {T <: Atom} = T(string(a1.name) * string(a2.name))
-
-    "间隔の加法（参照自PyNARS Interval.py/__add__）"
-    Base.:(+)(i1::Interval, i2::Interval)::Interval = Interval(i1.interval + i2.interval)
-
-end
-
-# 时态
-begin "时态：用于获取(Base.collect)「时序蕴含/等价」中的「时态信息」"
-
-    export get_tense
-    
-    """
-    获取「时序蕴含/等价」陈述中的时态
-    - 格式：`get(陈述, Tense)`
-    - 默认值：对其它语句返回「Eternal」
-    - ⚠和语句的时态可能不一致「参见OpenNARS」
-    """
-    @inline function get_tense(::Statement{ST})::TTense where {ST <: AbstractStatementType}
-        if ST <: TemporalStatementTypes # 若其为「有时态系词」
-            return ST.parameters[1] # 获取ST{::TTense}的第一个类型参数，直接作为返回值
-        end
-        return Eternal
-    end
-end
-
-# 对象互转
-begin "增加一些Narsese对象与Julia常用原生对象的互转方式"
-    
-    # 陈述 ↔ Pair
-    "Pair接受陈述"
-    Base.Pair(s::Statement)::Base.Pair = Base.Pair(s.ϕ1, s.ϕ2)
-    "【20230812 22:21:48】现恢复与Pair的相互转换"
-    ((::Type{s})(p::Base.Pair)::s) where {s <: Statement} = s(p.first, p.second)
-    
-    "间隔→无符号整数"
-    Base.UInt(i::Interval)::UInt = i.interval
-
-end
-
 # NAL信息支持
 begin "NAL信息支持"
     
-    export get_syntactic_complexity, get_syntactic_simplicity, is_commutative
+    export get_syntactic_complexity, get_syntactic_simplicity
+    export is_commutative, is_repeatable
 
     """
     [NAL-3]获取词项的「语法复杂度」
@@ -308,13 +134,16 @@ begin "NAL信息支持"
     """
     「是否可交换」亦即「无序组分」
     
-    可用于：
+    方法范围：
     - 词项类型
     - 陈述类型
     - 词项→词项类型
     - 陈述→陈述类型
 
-    📌一般是不会变的常量，适合内联
+    应用于：
+    - 词项判等 `isequal`
+
+    📌返回值一般是不会变的常量，适合内联
 
     默认：有序
     - 返回`false`
@@ -322,47 +151,71 @@ begin "NAL信息支持"
     【20230815 15:59:50】参考自OpenNARS Equivalence.java
     """
     @inline is_commutative(::Type{<:Term})::Bool = false
-    "所有陈述类型 默认=false"
+    "所有陈述类型 默认 = false"
     @inline is_commutative(::Type{<:AbstractStatementType}) = false
+    "各个「复合词项类型」的可交换性：默认 = false"
+    @inline is_commutative(::Type{<:AbstractCompoundType})::Bool = false
 
-    "外延集&内涵集 = true"
-    @inline is_commutative(::Type{<:TermSet})::Bool = true
-
-    "外延交&内涵交/外延并&内涵并 = true" # 注意：单行函数+where+返回类型，会产生「f(x)::(T where T)🆚(f(x)::T) where T」歧义（一般认为是前者），详见GitHub issue#21847
-    @inline (is_commutative(::Type{TermLSet{EI, LO}})::Bool) where {EI, LO <: Union{And, Or}} = true
-
-    "合取&析取 = true" # 解决方案：括弧。issue链接：https://github.com/JuliaLang/julia/issues/21847
-    @inline (is_commutative(::Type{StatementLSet{LO}})::Bool) where {LO <: Union{And, Or}} = true
-
-    "平行合取 = true"
-    @inline is_commutative(::Type{ParConjunction})::Bool = true
+    "词项→重定向到其Type类型" # 使用参数类型取代typeof
+    @inline (is_commutative(::T)::Bool) where {T <: Term} = is_commutative(T)
+    "Type@陈述→重定向到其陈述类型" # 使用参数类型取代typeof
+    @inline (is_commutative(::Type{<:Statement{T}})::Bool) where {T <: AbstractStatementType} = is_commutative(T)
+    "Type@复合词项→重定向到「符合词项类型」"
+    @inline (is_commutative(::Type{<:AbstractCompound{T}})::Bool) where {T <: AbstractCompoundType} = is_commutative(T)
 
     "相似&等价 = true"
     @inline is_commutative(::Type{STSimilarity})::Bool = true
     @inline is_commutative(::Type{<:StatementTypeEquivalence})::Bool = true # 注意时态
 
-    "词项→重定向到其类型" # 使用参数类型取代typeof
-    @inline (is_commutative(::T)::Bool) where {T <: Term} = is_commutative(T)
-
-    "陈述→重定向到其陈述类型" # 使用参数类型取代typeof
-    @inline (is_commutative(::Statement{T})::Bool) where {T <: AbstractStatementType} = is_commutative(T)
-
-    "复合词项→重定向到「符合词项类型」"
-    @inline (is_commutative(::CommonCompound{T})::Bool) where {T <: AbstractCompoundType} = is_commutative(T)
-
-    "各个「复合词项类型」的可交换性：默认为false"
-    @inline is_commutative(::Type{<:AbstractCompoundType})::Bool = false
-
     "外延集&内涵集 = true"
     @inline is_commutative(::Type{<:CTTermSet})::Bool = true
-    "外延交&内涵交/外延并&内涵并 = true"
+    "外延交&内涵交/外延并&内涵并 = true" # 解决方案：括弧。issue链接：https://github.com/JuliaLang/julia/issues/21847
     @inline (is_commutative(::Type{<:CTTermLogicalSet{EI, LO}})::Bool) where {EI <: AbstractEI, LO <: Union{And, Or}} = true
-    "合取&析取 = true" # 解决方案：括弧。issue链接：https://github.com/JuliaLang/julia/issues/21847
-    @inline (is_commutative(::Type{CTStatementLogicalSet{LO}})::Bool) where {LO <: Union{And, Or}} = true
+    "陈述逻辑集 = true" # 对只有一个组分的「否定」而言，使用「一元元组」更有利于性能
+    @inline is_commutative(::Type{<:CTStatementLogicalSet})::Bool = true
+    "时序合取 = false"
+    @inline is_commutative(::Type{<:CTStatementTemporalSet{Sequential}})::Bool = false
     "平行合取 = true"
-    @inline is_commutative(::Type{CTStatementTemporalSet{Sequential}})::Bool = false
-    "平行合取 = true"
-    @inline is_commutative(::Type{CTStatementTemporalSet{Parallel}})::Bool = true
+    @inline is_commutative(::Type{<:CTStatementTemporalSet{Parallel}})::Bool = true
+
+    """
+    「是否可重复」
+    - 是否允许复合词项的组分中有重复（在`Base.isequal`意义下）的词项
+    
+    方法范围：
+    - 词项类型
+    - 词项→词项类型
+
+    应用于：
+    - 词项构建（在构造方法中自动删除重复的元素）
+    - （TODO）合法性检查
+
+    📌一般是不会变的常量，适合内联
+
+    默认：可重复
+    - 返回`true`
+
+    【20230819 15:33:28】一般情况下，「可交换」通常意味着「不可重复」，反之亦然
+    """
+    @inline is_repeatable(::Type{<:Term})::Bool = true
+    "各个「复合词项类型」的可重复性：默认为true"
+    @inline is_repeatable(::Type{<:AbstractCompoundType})::Bool = true
+
+    "词项→重定向到其类型" # 使用参数类型取代typeof
+    @inline (is_repeatable(::T)::Bool) where {T <: Term} = is_repeatable(T)
+    "Type@复合词项→重定向到「符合词项类型」"
+    @inline (is_repeatable(::Type{<:CommonCompound{T}})::Bool) where {T <: AbstractCompoundType} = is_repeatable(T)
+
+    "外延集&内涵集 = false"
+    @inline is_repeatable(::Type{<:CTTermSet})::Bool = false
+    "外延交&内涵交/外延并&内涵并 = false" # 解决方案：括弧。issue链接：https://github.com/JuliaLang/julia/issues/21847
+    @inline (is_repeatable(::Type{<:CTTermLogicalSet{EI, LO}})::Bool) where {EI <: AbstractEI, LO <: Union{And, Or}} = false
+    "陈述逻辑集 = false" # 对只有一个组分的「否定」而言，使用「一元元组」更有利于性能
+    @inline is_repeatable(::Type{<:CTStatementLogicalSet})::Bool = false
+    "时序合取 = true"
+    @inline is_repeatable(::Type{<:CTStatementTemporalSet{Sequential}})::Bool = true
+    "平行合取 = false"
+    @inline is_repeatable(::Type{<:CTStatementTemporalSet{Parallel}})::Bool = false
     
 end
 
@@ -409,6 +262,7 @@ begin "检查合法性（API接口，用于后续NAL识别）"
         外部非解释　　　　 ⇐　外部可解释（最慢）
     
     【20230814 13:08:45】📝代码量少、调用频繁⇒适合@inline内联
+    【20230819 14:57:58】TODO：利用「返回nothing/返回报错信息（字符串）」减少重复工作量
     """
     @inline check_valid(::Term)::Bool = true # 默认为真（最基础地只需修改这个）
     @inline check_valid_external(t::Term)::Bool = check_valid(t) # 默认重定向
@@ -417,7 +271,7 @@ begin "检查合法性（API接口，用于后续NAL识别）"
     
     begin "示例集"
 
-        "原子：识别词项名是否为纯数字/字母/中文：不能有其它特殊符号出现"
+        "原子：识别词项名是否为纯文字(Word)：不能有其它特殊符号出现"
         @inline check_valid(a::Atom) = isnothing(
             findfirst(r"[^\w]", string(a.name)) # 【20230814 13:07:16】根据`@code_native`的输出行数，比occursin高效
         )
@@ -428,4 +282,172 @@ begin "检查合法性（API接口，用于后续NAL识别）"
             error("非法词项名「$(a.name)」！")
         
     end
+end
+
+# 判断相等 #
+begin "判断相等(Base.isequal)：基于值而非基于引用"
+
+    "兜底判等逻辑" # 没有不行：类型不同的词项无法进行比较
+    @inline function Base.isequal(t1::Term, t2::Term)
+        typeof(t1) == typeof(t2) && ( # 同类型
+            isequal(getproperty(t1, propertyname), getproperty(t2, propertyname)) # 所有属性相等
+            for propertyname in t1 |> propertynames # 使用t1的，在同类型的前提下
+        ) |> all
+    end
+
+    "原子词项相等"
+    @inline Base.isequal(t1::AbstractAtom, t2::AbstractAtom)::Bool = (
+        typeof(t1) == typeof(t2) && # 类型相等
+        t1.name == t2.name # 名称相等
+    )
+    
+    "（特殊）间隔相等"
+    @inline Base.isequal(i1::Interval, i2::Interval)::Bool = (
+        i1.interval == i2.interval
+    )
+
+    
+    """
+    根据「可交换性/无序性」判断元组内元素是否相等
+    - 可交换性：默认不可交换
+    """
+    @inline function _check_tuple_equal(
+        t1::Tuple, t2::Tuple, 
+        is_commutative::Bool = false, 
+        eq_func = Base.isequal,
+        )::Bool
+        length(t1) == length(t2) || return false # 元素数相等
+        # 开始根据「可交换性」判断相等（可重复/不重复交给构造时构建）
+        i::Int, l::Int = 1, length(t1)
+        while i ≤ l # 使用「while+递增索引」跳出作用域
+            eq_func((@inbounds t1[i]), (@inbounds t2[i])) || break # 不相等⇒退出循环
+            i += 1 # 索引递增
+        end
+        # 全部依次相等(已超过末尾) 或 未到达末尾(有组分不相等)但可交换，否则返回false
+        (i>l || is_commutative) || return false
+        # 从第一个不等的地方开始，使用「无序比较」的方式比对检查 O(n²)
+        # 例子：A ^C D B
+        # 　　　A ^B C D
+        for j in i:l # 从i开始：避免(A,^B)与(B,^A)的谬误
+            any(
+                eq_func((@inbounds t1[i]), (@inbounds t2[k]))
+                for k in i:l # 这里的i是个常量
+            ) || return false # 找不到一个匹配的⇒false（不可能在「第一个不等的地方」之前，两个无序集不可能再相等）
+        end
+        # 检查成功，返回true
+        return true
+    end
+
+    """
+    （默认）复合词项相等：其元素的逐个比对
+    - 包括通用复合词项`CommonCompound`
+    - 根据「是否可交换/无序」判断内部元素相等
+    """
+    function Base.isequal(t1::AbstractCompound{T1}, t2::AbstractCompound{T2})::Bool where {T1, T2}
+        T1 == T2 && # 复合词项类型相等
+        _check_tuple_equal(t1.terms, t2.terms, is_commutative(T1))
+    end
+
+    """
+    特殊重载：像相等
+    - 类型相等
+    - 占位符位置相等
+    - 所有元素相等
+    """
+    function Base.isequal(t1::TermImage{EIT1}, t2::TermImage{EIT2})::Bool where {EIT1, EIT2}
+        EIT1 == EIT2 && # 类型相等（外延像/内涵像）
+        t1.relation_index == t2.relation_index &&  # 占位符位置相等
+        _check_tuple_equal(t1.terms, t2.terms, is_commutative(TermImage)) # 组分相等
+    end
+
+    "陈述相等"
+    function Base.isequal(s1::Statement{P1}, s2::Statement{P2})::Bool where {P1, P2}
+        P1 == P2 && (# 类型相等
+            s1.ϕ1 == s2.ϕ1 && s1.ϕ2 == s2.ϕ2 || # 对应相等就最好，不行的话检查是否无序
+            is_commutative(s1) && is_commutative(s2) && 
+                s1.ϕ1 == s2.ϕ2 && s1.ϕ2 == s2.ϕ1 # 尝试下反过来
+        )
+    end
+    
+    "重定向「==」符号"
+    Base.:(==)(t1::Term, t2::Term) = Base.isequal(t1, t2)
+
+end
+
+# 收集(`Base.collect`): 收集其中包含的所有（原子）词项 #
+begin "收集(Base.collect)其中包含的所有（原子）词项，并返回向量"
+
+    "原子词项のcollect：只有它自己"
+    Base.collect(aa::AbstractAtom) = Term[aa]
+
+    """
+    抽象词项集/抽象陈述集のcollect：获取terms参数
+    - 词项集
+    - 词项逻辑集
+    - 像
+    - 乘积
+    - 陈述逻辑集
+    - 陈述时序集
+    
+    ⚠不会拷贝
+    """
+    Base.collect(s::AbstractCompound) = [
+        (
+            (s.terms .|> collect)...
+        )... # 📌二次展开：📌二次展开：第一次展开成「向量の向量」，第二次展开成「词项の向量」
+    ]
+
+    """
+    陈述のcollect：获取两项中的所有词项
+    - 不会拷贝
+    """
+    Base.collect(s::Statement) = Term[
+        collect(s.ϕ1)..., 
+        collect(s.ϕ2)...,
+    ]
+
+end
+
+# 运算重载
+begin "运算重载：四则运算等"
+    
+    "同类原子词项拼接 = 文字拼接（使用Juliaの加号，因与「乘积」快捷构造冲突）（间隔除外）"
+    (Base.:(+)(a1::T, a2::T)::T) where {T <: Atom} = T(string(a1.name) * string(a2.name))
+
+    "间隔の加法（参照自PyNARS Interval.py/__add__）"
+    Base.:(+)(i1::Interval, i2::Interval)::Interval = Interval(i1.interval + i2.interval)
+
+end
+
+# 时态
+begin "时态：用于获取(Base.collect)「时序蕴含/等价」中的「时态信息」"
+
+    export get_tense
+    
+    """
+    获取「时序蕴含/等价」陈述中的时态
+    - 格式：`get(陈述, Tense)`
+    - 默认值：对其它语句返回「Eternal」
+    - ⚠和语句的时态可能不一致「参见OpenNARS」
+    """
+    @inline function get_tense(::Statement{ST})::TTense where {ST <: AbstractStatementType}
+        if ST <: TemporalStatementTypes # 若其为「有时态系词」
+            return ST.parameters[1] # 获取ST{::TTense}的第一个类型参数，直接作为返回值
+        end
+        return Eternal
+    end
+end
+
+# 对象互转
+begin "增加一些Narsese对象与Julia常用原生对象的互转方式"
+    
+    # 陈述 ↔ Pair
+    "Pair接受陈述"
+    Base.Pair(s::Statement)::Base.Pair = Base.Pair(s.ϕ1, s.ϕ2)
+    "【20230812 22:21:48】现恢复与Pair的相互转换"
+    ((::Type{s})(p::Base.Pair)::s) where {s <: Statement} = s(p.first, p.second)
+    
+    "间隔→无符号整数"
+    Base.UInt(i::Interval)::UInt = i.interval
+
 end

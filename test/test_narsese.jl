@@ -187,8 +187,8 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
     @test !is_commutative(TermProduct)
     @test !is_commutative(ExtImage)
     @test !is_commutative(IntDiff)
-    @test !is_commutative(Negation)
     @test !is_commutative(SeqConjunction)
+    # 不应该对「否定」判断「可交换性」：其本身无意义
     @test is_commutative(ExtSet)
     @test is_commutative(IntIntersection)
     @test is_commutative(ExtUnion)
@@ -202,6 +202,24 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
     @test !is_commutative(\(A, B, nothing, C))
     @test !is_commutative(*(A, B, C))
     @test !is_commutative(*(A, B, C) → R)
+
+    # 是否可重复：默认是`!(是否可交换)`，但**不用于判断陈述**
+
+    @test is_repeatable(TermProduct)
+    @test is_repeatable(ExtImage)
+    @test is_repeatable(IntDiff)
+    @test is_repeatable(SeqConjunction)
+    # 不应该对「否定」判断「可交换性」：其本身无意义
+    @test !is_repeatable(ExtSet)
+    @test !is_repeatable(IntIntersection)
+    @test !is_repeatable(ExtUnion)
+    @test !is_repeatable(Conjunction)
+    @test !is_repeatable(Disjunction)
+    @test !is_repeatable(ParConjunction)
+
+    @test !is_repeatable(⩀(A, B, C))
+    @test is_repeatable(\(A, B, nothing, C))
+    @test is_repeatable(*(A, B, C))
 
     # 快捷构造 #
 

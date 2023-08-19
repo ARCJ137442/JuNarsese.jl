@@ -371,11 +371,6 @@ begin "单体词项"
     "支持从String构造"
     Operator(name::Union{AbstractString, AbstractChar}) = name |> Symbol |> Operator
 
-    const TYPE_COMPOUND_TERMS::Type = Union{
-        Tuple{Vararg{<:AbstractTerm}},
-        Set{<:AbstractTerm},
-    }
-
     """
     通用复合词项
 
@@ -499,21 +494,24 @@ begin "单体词项"
             - 例如：陈述逻辑集只能装陈述
             - 例如：
         """
-        terms::TYPE_COMPOUND_TERMS
+        terms::Tuple{Vararg{<:AbstractTerm}}
 
         """
         统一的内部构造方法
         - 统一具备合法性检查
-        - 自动判断「是否无序」并以此决策「使用无序集合还是使用有序元组」
+        - 根据外部函数「构造器类型」获取构造器（支持重定向）
+        - 根据「是否可重复」筛选掉重复项
         """
-        function CommonCompound{type}(terms::T) where {type <: AbstractCompoundType, T <: Union{Set, Tuple}}
-            terms_type::Type = container_type(type)
+        function CommonCompound{type}(terms::Tuple{Vararg{AbstractTerm}}) where {type <: AbstractCompoundType}
+            # 根据「是否可重复」筛选掉重复项
+            terms_tuple::Tuple = is_repeatable(type) ? terms : 
+                Tuple{Vararg{AbstractTerm}}(unique(isequal, terms)) # 在`isequal`的含义上，筛选其中的「唯一词项」
             constructor::Type = constructor_type(type) # 【20230818 0:30:25】注意：new不能当参数传递
             # 增加合法性检查
             return check_valid_explainable(
                 constructor <: AbstractCompoundType ?
-                    new{constructor}(terms_type(terms)) :
-                    constructor(terms_type(terms))
+                    new{constructor}(terms_tuple) :
+                    constructor(terms_tuple)
             )
         end
 
@@ -533,19 +531,10 @@ begin "单体词项"
         "陈述非 Negation"
         function CommonCompound{CompoundTypeStatementLogicalSet{Not}}(ϕ::AbstractTerm)
             check_valid_explainable(
-                new{CompoundTypeStatementLogicalSet{Not}}((ϕ,) |> Set{AbstractTerm}) # 只有一个
+                new{CompoundTypeStatementLogicalSet{Not}}((ϕ,)) # 只有一个
             ) # 增加合法性检查
         end # 内涵并=外延交
 
-    end
-
-    """
-    依照「是否可交换」决定terms的类型
-    """
-    @inline function container_type(::Type{T})::Type where {T <: AbstractCompoundType}
-        return is_commutative(T) ?
-            Set{AbstractTerm} : # 无序→集合
-            Tuple{Vararg{AbstractTerm}} # 有序→元组
     end
 
     """
@@ -569,21 +558,20 @@ begin "单体词项"
     end
     
     "外部构造方法：统一的「任意长参数」"
-    function CommonCompound{type}(terms::Vararg{AbstractTerm}) where {type <: AbstractCompoundType}
-        CommonCompound{type}(
-            container_type(type)(
-                terms
-            )
-        )
+    @inline function CommonCompound{type}(terms::Vararg{AbstractTerm}) where {type <: AbstractCompoundType}
+        CommonCompound{type}(terms) # 直接传递封装好的Tuple
     end
 
-    "外部构造方法：重载「向量」"
-    function CommonCompound{type}(array::AbstractArray) where {type}
-        CommonCompound{type}(
-            container_type(type)(
-                array
-            )
-        )
+    "除元组以外的支持的迭代器类型"
+    const SUPPORTED_ALIAS_ITERATORS::Type = Union{
+        Base.Generator,
+        AbstractArray,
+        Set,
+    }
+
+    "外部构造方法：重载各类迭代器"
+    @inline function CommonCompound{type}(itr::SUPPORTED_ALIAS_ITERATORS) where {type}
+        CommonCompound{type}(itr |> Tuple{Vararg{AbstractTerm}})
     end
 
     raw"""
