@@ -25,23 +25,25 @@ if !isdefined(Main, :Test)
 
     # 原子词项
     w,i,d,q,n,o = w"词项", i"独立变量", d"非独变量", q"查询变量", n"137", o"操作"
-    A,B,C,D,R = "A B C D R" |> split .|> String .|> Symbol .|> Word
-    # 像、陈述、乘积
-    @show s1 = (/(R, A, B, ⋄, D) → C) ⇒ (*(A, B, C, D) → R)
-    # 词项集、陈述逻辑集
-    @show s2 = (|(A, B, C) → D) ⇒ ∨((A → D), (B → D), (C → D))
+    A,B,C,D,E,R = "A B C D E R" |> split .|> Word
+    # 词项集
+    @show t1 = ⩀(w, i, d, q, n, o) - ⊍(w, i, d, q, n, o)
+    # 词项逻辑集
+    @show t2 = ∩(A, B, C) - ∪(A, B, C)
+    # 像
+    @show t3 = /(R, A, B, ⋄, \(R, A, B, ⋄, D))
+    # 陈述、乘积
+    @show s1 = *(A, B, C, D) → R
+    # 陈述逻辑集
+    @show s2 = ∧(⊍(A, B, C) → D, ⊍(A, B, C) → E) ⇒ ∨((A → D), (B → D), (C → D))
     # 快捷方式解析
     @show s3 = ShortcutParser(
         """ (( q"A" * i"B" ) → o"C" ) ⇔ (d"D" ↔ (w"E" * n"12")) """
     )
-    # 词项集&词项逻辑集
-    
-    @show s4 = ⩀(w, i, d, q, n, o) - ⊍(w, i, d, q, n, o)
-    @show s5 = ∩(A, B, C) - ∪(A, B, C)
     # 时序合取
-    @show s6 = ∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)
+    @show s4 = ∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)) ⇒ (A→D)
     # 副系词|时序蕴含/等价
-    s7 = ParConjunction([
+    s5 = ParConjunction([
         nse"<A {-- B>"
         nse"<A --] B>"
         nse"<A {-] B>"
@@ -54,22 +56,22 @@ if !isdefined(Main, :Test)
         nse"<<A --> B> <|> <B --> C>>" # 【20230812 18:27:20】现在必须要陈述才能输入进去
         nse"<<A --> B> <\> <B --> C>>" # 【20230812 18:27:20】现在必须要陈述才能输入进去
     ]...)
-    @show s7
+    @show s5
     # 极端嵌套情况
-    s8 = (*(
+    s6 = (*(
         ⩚(
             ⩜(A→B, B→C, C→D), 
             ∨(ExtSet(A, B, C)→D, w→o), 
             ⩚(A→B, B→C, C→D)
         ), 
-        ∧(s1, s2), 
-        \(A, ⋄, s3, s5) → /(s1, ⋄, B, s4),
-        s2 ⇒ s3,
-        ¬(⩀(w, i, d, q, o) → IntSet(s6, ∩(A, B, C)))
-    ) → s4) ⇔ (s6 ⇒ s7)
-    @show s8
+        ∧(s5, s1), 
+        \(A, ⋄, s3, t3) → /(t1, ⋄, B, t2),
+        s1 ⇒ s3,
+        ¬(⩀(w, i, d, q, o) → IntSet(s4, ∩(A, B, C)))
+    ) → t2) ⇔ (s4 ⇒ s2)
+    @show s6
 
-    terms = [w, i, d, q, o, s1, s2, s3, s4, s5, s6, s7, s8]
+    terms = [w, i, d, q, o, t1, s1, s2, s3, t2, t3, s4, s5, s6]
     @info "terms: " terms
 
     # 构建
@@ -92,7 +94,7 @@ if !isdefined(Main, :Test)
         nse"「（与，「任一人是【会死的】」，「『苏格拉底』是人」）得「『苏格拉底』是【会死的】」」。"han
         nse"「（接连，「时间是黑夜」，「程序员有写代码」，「（外像，程序员，撞上，某）是bug」）将得「程序员是【熬夜的】」」。"han
         nse"「（同时，「系统有开放性」，「系统有自主性」，「系统有实时性」）将得「系统是AGI」」？"han
-        SentenceJudgement(s8)
+        SentenceJudgement(s6)
     ]
     @info "sentences: " sentences
     # 下面这些注释是利用系统报错精确获得堆栈信息/调试支持的

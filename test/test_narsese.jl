@@ -1,6 +1,6 @@
 include("commons.jl") # 已在此中导入JuNarsese、Test
 
-A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
+A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
 @assert (∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D))) == (∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)))
 
 @testset "Narsese" begin
@@ -56,6 +56,64 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @show p = TermProduct(A,B,C)
     @test p == *(A, B, C) == (A*B*C) ≠ (B*A*C) # 有序性 老式构造方法仍可使用
 
+    # 测试Narsese特性之「有序可重复|无序不重复」 #
+
+    # 外延集/内涵集(无序不重复)
+    @test ExtSet(A,B,C,D,E) == ExtSet(C,E,A,B,D) # 无序
+    @test IntSet(A,B,C,D,E) == IntSet(C,E,A,B,D) # 无序
+
+    @test ExtSet(A,B,C,E,E) == ExtSet(C,E,B,A) # 不重复
+    @test IntSet(E,A,B,C,E) == IntSet(C,E,B,A) # 不重复
+
+    # 词项逻辑集 外延交/内涵交(无序不重复)+外延差/内涵差(有序可重复)
+    @test ExtIntersection(A,B,C,D,E) == ExtIntersection(C,E,A,B,D) # 无序
+    @test IntIntersection(A,B,C,D,E) == IntIntersection(C,E,A,B,D) # 无序
+
+    @test ExtIntersection(A,B,C,E,E) == ExtIntersection(C,E,B,A) # 不重复
+    @test IntIntersection(E,A,B,C,E) == IntIntersection(C,E,B,A) # 不重复
+
+    @test ExtDiff(A,B) ≠ ExtDiff(B,A) # 有序性
+    @test IntDiff(A,B) ≠ IntDiff(B,A) # 有序性
+
+    @test ExtDiff(B,B) == ExtDiff(B,B) # 可重复
+    @test IntDiff(B,B) == IntDiff(B,B) # 可重复
+
+    # 乘积(有序可重复)
+    @test TermProduct(A,B,C) ≠ TermProduct(A,C,B) ≠ TermProduct(B,A,C) ≠ TermProduct(B,C,A) # 有序性
+    @test TermProduct(A,A,B,B) ≠ TermProduct(A,B) # 可重复
+
+    # 像(有序可重复)
+    @test ExtImage(A, B, placeholder, C) ≠ ExtImage(A, placeholder, B, C) ≠ ExtImage(A, C, placeholder, B) # 有序性
+    @test IntImage(A, B, placeholder, C) ≠ IntImage(A, placeholder, B, C) ≠ IntImage(A, C, placeholder, B) # 有序性
+    
+    @test ExtImage(A, A, placeholder, B, B) ≠ ExtImage(A, placeholder, B, B) ≠ ExtImage(A, placeholder, B) # 可重复
+    @test IntImage(A, A, placeholder, B, B) ≠ IntImage(A, placeholder, B, B) ≠ IntImage(A, placeholder, B) # 可重复
+
+    # 陈述(继承&蕴含:有序 相似&等价:无序) 📌严格模式不可重复：禁止重言式
+    iab,iba = Inheritance(A, B), Inheritance(B, A)
+    iac,ica = Inheritance(A, C), Inheritance(C, A)
+
+    @test iab ≠ iba # 有序性
+    @test Implication(iab, iba) ≠ Implication(iba, iab) # 有序性
+    
+    @test Similarity(A, B) == Similarity(B, A) # 无序性
+    @test Equivalence(iab, iba) == Equivalence(iba, iab) # 无序性
+
+    # 陈述逻辑集(无序不重复)
+    @test Conjunction(iab, iba) == Conjunction(iba, iab) # 无序性
+    @test Disjunction(iab, iba) == Disjunction(iba, iab) # 无序性
+    @test Negation(iab) == Negation(iab) # 特殊
+
+    @test Conjunction(iab, iba, iab, iba) == Conjunction(iab, iba) # 不重复
+    @test Disjunction(iab, iba, iab, iba) == Disjunction(iab, iba) # 不重复
+
+    # 时序合取(有序可重复) 平行合取(无序不重复)
+    @test SeqConjunction(iab, iba, iac, ica) ≠ SeqConjunction(iba, iab, iac, ica) ≠ SeqConjunction(iab, iac, iba, ica) # 有序性
+    @test SeqConjunction(iab, iab, iac, iac) ≠ SeqConjunction(iab, iac, iac) ≠ SeqConjunction(iab, iab, iac) ≠ SeqConjunction(iab, iac) # 可重复
+    
+    @test ParConjunction(iab, iba, iac, ica) == ParConjunction(iab, iba, iac, ica) == ParConjunction(iba, iab, iac, ica) # 无序性
+    @test ParConjunction(iab, iab, iac, iac) == ParConjunction(iab, iac, iac) == ParConjunction(iab, iab, iac) == ParConjunction(iab, iac) # 可重复
+
     # 测试Narsese特性之「同义重定向」 #
 
     # 外延/内涵 并 ⇒ 内涵/外延 交
@@ -109,6 +167,10 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @test @expectedError Implication(p, A→B)
     @test @expectedError Equivalence(p, p)
     
+    @test @expectedError (A ↔ B) ⇔ (B ↔ A) # 隐含的重言式
+    
+    @test @expectedError ((A ↔ B) ⇔ (B ↔ A)) ⇔ ((B ↔ A) ⇔ (A ↔ B)) # 隐含的重言式
+    
     # 陈述逻辑集、陈述时序集都不支持「非陈述词项」
     @test @expectedError Conjunction(A→B, B→C, A↔D, C→D, D→o, p)
     @test @expectedError Disjunction(A→B, C→D, D→o, B→C, A↔D, d)
@@ -135,7 +197,7 @@ A,B,C,D = "A B C D" |> split .|> String .|> Symbol .|> Word
     @test is_commutative(ParConjunction)
 
     @test is_commutative(A ↔ B)
-    @test is_commutative((A ↔ B) ⇔ (B ↔ A))
+    @test is_commutative((A → B) ⇔ (B ↔ A))
     @test is_commutative(⩀(A, B, C))
     @test !is_commutative(\(A, B, nothing, C))
     @test !is_commutative(*(A, B, C))
