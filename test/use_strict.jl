@@ -29,14 +29,24 @@ end
 end
 
 
-"陈述逻辑集、陈述时序集：不支持「非陈述词项」"
-@inline function JuNarsese.check_valid(t::CommonCompound{<:StatementBasedCTs})
-    # 遍历
-    all(term isa StatementLike for term in t.terms)
+"陈述逻辑集、陈述时序集：词项数>1 && 不支持「非陈述词项」"
+@inline function JuNarsese.check_valid(t::ACompound{<:StatementBasedCTs})
+    length(t.terms) > 1 && all(term isa StatementLike for term in t.terms)
 end
-"陈述逻辑集、陈述时序集：不支持「非陈述词项」"
-@inline function JuNarsese.check_valid_explainable(t::CommonCompound{type}) where {type <: StatementBasedCTs}
-    # 遍历
+"陈述逻辑集、陈述时序集：词项数>1 && 不支持「非陈述词项」"
+@inline function JuNarsese.check_valid_explainable(t::ACompound{<:StatementBasedCTs})
+    @assert length(t.terms) > 1 "复合词项「$t」的词项数过少！"
     @assert all(term isa StatementLike for term in t.terms) "检测到元素集「$(t.terms)」中存在非陈述词项！"
+    t
+end
+
+
+"否定：不支持「非陈述词项」"
+@inline function JuNarsese.check_valid(t::ACompound{<:CTStatementLogicalSet{Not}})
+    t.terms[1] isa StatementLike
+end
+"否定：不支持「非陈述词项」"
+@inline function JuNarsese.check_valid_explainable(t::ACompound{<:CTStatementLogicalSet{Not}})
+    @assert t.terms[1] isa StatementLike "检测到非陈述词项「$(t.terms[1])」！"
     t
 end
