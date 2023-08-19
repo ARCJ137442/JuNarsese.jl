@@ -145,8 +145,19 @@ begin "类名封装/解析 模块：将类型封装成字符串/符号"
     end
 
     """
+    （面向外置解析器）「字符串→类型」之前的预处理
+    - 专门针对解析出来的字符串是「JuNarsese.Narsese.Sentences.SentenceJudgement」的情况
+    """
+    _type_name_preprocess(string::AbstractString)::SubString = split(string, '.')[end]
+
+    """
     通用类名解析函数
-    - 字符串→类名
+    - 核心功能：字符串→类名
+    - 支持解析「泛型类符号」
+        - 如`Symbol("Tuple{Int}")`
+        - 直接eval不能解析此类Symbol
+    - 【20230819 23:01:21】支持解析「模块.模块.符号」
+        - 通过字符串预处理的方式
 
     参数集
     - type_name: 类の名
@@ -154,20 +165,22 @@ begin "类名封装/解析 模块：将类型封装成字符串/符号"
         - 方便指定解析的上下文
         - 例：`Narsese.eval`用于解析词项/语句类型
     """
-    parse_type(type_name::AbstractString, eval_function::Function)::Type = eval_function(
-        Meta.parse(type_name) |> assert_type_expr # 【20230810 20:33:56】安全锁定
-    )
+    @inline parse_type(type_name::AbstractString, eval_function::Function)::Type = eval_function(
+        assert_type_expr(
+            Meta.parse(
+                _type_name_preprocess(type_name)
+            )
+        ) # 【20230810 20:33:56】安全锁定
+    ) # 【20230810 20:33:56】安全锁定
 
     """
     适用于符号的解析函数
-    - 支持解析「泛型类符号」
-        - 如`Symbol("Tuple{Int}")`
-        - 直接eval不能解析此类Symbol
+    - 核心功能：符号→类名
+    - 【20230819 23:03:43】重定向至字符串解析函数
     """
-    parse_type(type_name::Symbol, eval_function::Function)::Type = eval_function(
-        Meta.parse(
-            string(type_name)
-        ) |> assert_type_expr # 【20230810 20:33:56】安全锁定
+    @inline parse_type(type_name::Symbol, eval_function::Function)::Type = parse_type(
+        string(type_name),
+        eval_function
     )
 
     """
@@ -193,8 +206,8 @@ begin "类名封装/解析 模块：将类型封装成字符串/符号"
     【20230818 23:47:24】现在有Narsese别名就用Narsese别名，没有就调用自己的「纯净类名」方法
     【20230819 0:17:28】现在提供对任意对象的`typeof`重定向
     """
-    pack_type_symbol(T::Type)::Symbol = has_type_name(T) ? get_type_name_symbol(T) : get_pure_type_symbol(T)
-    pack_type_symbol(obj::Any)::Symbol = pack_type_symbol(typeof(obj))
+    @inline pack_type_symbol(T::Type)::Symbol = has_type_name(T) ? get_type_name_symbol(T) : get_pure_type_symbol(T)
+    @inline pack_type_symbol(obj::Any)::Symbol = pack_type_symbol(typeof(obj))
 
 end
 
@@ -210,7 +223,7 @@ end
 function (parser::Type{TParser})(
     target, # 目标对象（可能是「数据」也可能是「目标」）
     TargetType::Type = Any, # 只有「数据→目标」时使用（默认为「Term」即「解析成任意目标」）
-) where {TParser <: AbstractParser}
+    ) where {TParser <: AbstractParser}
     if target isa eltype(parser)
         return data2narsese(parser, TargetType, target)
     else
