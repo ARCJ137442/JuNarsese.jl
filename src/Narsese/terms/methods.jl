@@ -114,8 +114,6 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
     - 根据「是否可交换/无序」判断内部元素相等
     """
     function Base.isequal(t1::CommonCompound, t2::CommonCompound)::Bool
-        # @show t1 t2 typeof(t1) typeof(t2)
-        # @show t1.terms t2.terms _collection_equal(t1.terms, t2.terms)
         return (
             typeof(t1) == typeof(t2) && # 类型相等
             _collection_equal(t1.terms, t2.terms) # 根据容器类型自行判断相等
@@ -135,10 +133,11 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
     end
 
     "陈述相等"
-    function Base.isequal(s1::Statement{T1}, s2::Statement{T2})::Bool where {T1, T2}
-        T1 == T2 && # 类型相等
-        s1.ϕ1 == s2.ϕ1 &&
-        s1.ϕ2 == s2.ϕ2
+    function Base.isequal(s1::Statement{P1}, s2::Statement{P2})::Bool where {P1, P2}
+        P1 == P2 && (# 类型相等
+            s1.ϕ1 == s2.ϕ1 && s1.ϕ2 == s2.ϕ2 || # 对应相等就最好，不行的话检查是否无序
+            is_commutative(s1) && is_commutative(s2) && s1.ϕ1 == s2.ϕ2 && s1.ϕ2 == s2.ϕ1
+        )
     end
 end
 
