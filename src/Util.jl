@@ -282,7 +282,41 @@ end
 避免「在随机选择之前，预先计算出所有的备选结果」
 """
 macro rand(exprs...)
-    rand_macro(exprs...) |> esc
+    esc(rand_macro(exprs...))
+end
+
+    
+"""
+根据「可交换性/无序性」判断元组内元素是否相等
+- 可交换性：默认不可交换
+
+【20230820 12:20:10】弃用自`methods.jl`
+"""
+function check_tuple_equal(
+    t1::Tuple, t2::Tuple;
+    is_commutative::Bool = false, 
+    eq_func = Base.isequal,
+    )::Bool
+    length(t1) == length(t2) || return false # 元素数相等
+    # 开始根据「可交换性」判断相等（可重复/不重复交给构造时构建）
+    i::Int, l::Int = 1, length(t1)
+    while i ≤ l # 使用「while+递增索引」跳出作用域
+        eq_func((@inbounds t1[i]), (@inbounds t2[i])) || break # 不相等⇒退出循环
+        i += 1 # 索引递增
+    end
+    # 全部依次相等(已超过末尾) 或 未到达末尾(有组分不相等)但可交换，否则返回false
+    (i>l || is_commutative) || return false
+    # 从第一个不等的地方开始，使用「无序比较」的方式比对检查 O(n²)
+    # 例子：A ^C D B
+    # 　　　A ^B C D
+    for j in i:l # 从i开始：避免(A,^B)与(B,^A)的谬误
+        any(
+            eq_func((@inbounds t1[i]), (@inbounds t2[k]))
+            for k in i:l # 这里的i是个常量
+        ) || return false # 找不到一个匹配的⇒false（不可能在「第一个不等的地方」之前，两个无序集不可能再相等）
+    end
+    # 检查成功，返回true
+    return true
 end
 
 end

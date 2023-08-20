@@ -29,7 +29,10 @@ begin "长度：用于「判断所直接含有的原子数量」"
     Base.length(a::Atom)::Integer = 1
 
     "复合词项の长度=其元素的数量(像占位符不含在内)"
-    Base.length(c::Compound)::Integer = length(c.terms)
+    Base.length(c::ACompound)::Integer = length(c.terms)
+
+    "陈述の长度=2" # 主词+谓词
+    Base.length(c::AStatement)::Integer = 2
 
 end
 
@@ -284,89 +287,157 @@ begin "检查合法性（API接口，用于后续NAL识别）"
     end
 end
 
+# 复合词项⇒对接容器
+begin "容器对接：对复合词项的操作⇔对其容器的操作"
+    
+    Base.getindex(c::AbstractCompound, i) = getindex(c.terms, i)
+
+    
+end
+
+# 排序
+begin "排序: 用于判断「词项的先后」"
+
+    """
+    对类名的排序
+    - ⚠注意：可能在不同调用点有不同的类名
+        - 不过类名「JuNarsese.XXX」的前缀还是相等的
+    """
+    @inline _isless_type(t1::Type, t2::Type) = isless(
+        string(t1),
+        string(t2),
+    )
+    "自动变为Type类型"
+    @inline _isless_type(t1::Any, t2::Any) = _isless_type(
+        typeof(t1),
+        typeof(t2),
+    )
+
+    "兜底排序=类名"
+    Base.isless(t1::Term, t2::Term) = _isless_type(
+        typeof(t1),
+        typeof(t2),
+    )
+    
+    """
+    原子の排序=其名|类名
+    - 🎯用于`sort`方法，进一步用于无序复合词项的「唯一序列」存储
+        - 例如外延集`{A,B,C}` == `{B,A,C}` == `{B,C,A}` ==> `(A,B,C)`
+    - 优先比名称，其次比类型
+        - 比较逻辑源自Julia`tuple.jl`库
+        - 📌模型：「第一个小于」⇒「第一个不大于」且「剩下的小于」
+        - 逻辑：
+            1. `1.1<2.1`？
+            2. 若否(1.1≥2.1)，判断2.1≥1.1 && 第二项...
+                - 合取等价于`1.1==2.1`
+                - 若此项为false，等价于`1.1>2.1`，自然返回false「不小于」
+    - ⚠与「字符串形式」的比较可能不同
+        - 例如：`w"W" > o"W"`，但`"W" < "^W"`
+        - 🎯减少耦合与提升效率
+    """
+    Base.isless(a1::Atom, a2::Atom) = (
+        isless(a1.name, a2.name) || (!isless(a2.name, a1.name) &&
+        _isless_type(a1, a2)
+        )
+    )
+    
+    """
+    复合词项の排序 = 元素|类名
+    - 优先比元素，其次比类名
+        - ⚡通常类名比元素的字串更长，复合词项一般只有1~10个组分
+        - 对组分数不多的复合词项更快
+    """
+    Base.isless(c1::ACompound, c2::ACompound) = (
+        isless(c1.terms, c2.terms) || (!isless(c2.terms, c1.terms) &&
+        _isless_type(c1, c2)
+        )
+    )
+    
+    """
+    像の排序：像占位符位置|元素|类名
+    """
+    Base.isless(i1::TermImage, i2::TermImage) = (
+        isless(i1.relation_index, i2.relation_index) || (i2.relation_index == i1.relation_index &&
+        isless(i1.terms, i2.terms) || (!isless(i2.terms, i1.terms) &&
+        _isless_type(i1, i2)
+        ))
+    )
+
+    """
+    陈述の排序 = 其主谓项|类名
+    - 主谓项通过ϕ1、ϕ2两个属性分别实现
+        - 先比较第一项
+        - 再比较第二项
+        - 最后比较类型
+    - 不同于「复合词项の排序」：直接「主项⇒谓项⇒类名」逐个比对
+    """
+    function Base.isless(s1::AStatement, s2::AStatement)
+        isless(s1.ϕ1, s2.ϕ1) || (isequal(s1.ϕ1, s2.ϕ1) && # 后面断言第一项相等(注：似乎用isless会出现「既大于又小于」的情况)
+        isless(s1.ϕ2, s2.ϕ2) || (isequal(s1.ϕ2, s2.ϕ2) && # 后面断言第二项相等
+        _isless_type(s1, s2)
+        ))
+    end
+end
+
 # 判断相等 #
 begin "判断相等(Base.isequal)：基于值而非基于引用"
 
+    "统一的类型相等逻辑"
+    _isequal_type(t1::Type, t2::Type) = t1 == t2
+
     "兜底判等逻辑" # 没有不行：类型不同的词项无法进行比较
     @inline function Base.isequal(t1::Term, t2::Term)
-        typeof(t1) == typeof(t2) && ( # 同类型
+        typeof(t1) == typeof(t2) && all( # 同类型
             isequal(getproperty(t1, propertyname), getproperty(t2, propertyname)) # 所有属性相等
             for propertyname in t1 |> propertynames # 使用t1的，在同类型的前提下
-        ) |> all
+        )
     end
 
-    "原子词项相等"
-    @inline Base.isequal(t1::AbstractAtom, t2::AbstractAtom)::Bool = (
-        typeof(t1) == typeof(t2) && # 类型相等
-        t1.name == t2.name # 名称相等
+    "原子词项相等：其名&类型"
+    @inline Base.isequal(t1::Atom, t2::Atom)::Bool = (
+        t1.name == t2.name && # 名称相等
+        _isequal_type(typeof(t1), typeof(t2)) # 类型相等
     )
     
-    "（特殊）间隔相等"
+    "（特殊）间隔相等：仅需其名"
     @inline Base.isequal(i1::Interval, i2::Interval)::Bool = (
         i1.interval == i2.interval
     )
 
-    
     """
-    根据「可交换性/无序性」判断元组内元素是否相等
-    - 可交换性：默认不可交换
+    通用复合词项`CommonCompound`相等：元素&类型
+    - 逻辑同`isless`方法，但前者要被调用两次
+
+    【20230820 12:20:32】基于「构造时排序」的预处理，现可直接比对其中的组分
     """
-    @inline function _check_tuple_equal(
-        t1::Tuple, t2::Tuple, 
-        is_commutative::Bool = false, 
-        eq_func = Base.isequal,
-        )::Bool
-        length(t1) == length(t2) || return false # 元素数相等
-        # 开始根据「可交换性」判断相等（可重复/不重复交给构造时构建）
-        i::Int, l::Int = 1, length(t1)
-        while i ≤ l # 使用「while+递增索引」跳出作用域
-            eq_func((@inbounds t1[i]), (@inbounds t2[i])) || break # 不相等⇒退出循环
-            i += 1 # 索引递增
-        end
-        # 全部依次相等(已超过末尾) 或 未到达末尾(有组分不相等)但可交换，否则返回false
-        (i>l || is_commutative) || return false
-        # 从第一个不等的地方开始，使用「无序比较」的方式比对检查 O(n²)
-        # 例子：A ^C D B
-        # 　　　A ^B C D
-        for j in i:l # 从i开始：避免(A,^B)与(B,^A)的谬误
-            any(
-                eq_func((@inbounds t1[i]), (@inbounds t2[k]))
-                for k in i:l # 这里的i是个常量
-            ) || return false # 找不到一个匹配的⇒false（不可能在「第一个不等的地方」之前，两个无序集不可能再相等）
-        end
-        # 检查成功，返回true
-        return true
+    function Base.isequal(t1::CommonCompound{T1}, t2::CommonCompound{T2})::Bool where {T1, T2}
+        t1.terms == t2.terms && # 先元素
+        _isequal_type(typeof(t1), typeof(t2)) # 再类型
     end
 
     """
-    （默认）复合词项相等：其元素的逐个比对
-    - 包括通用复合词项`CommonCompound`
-    - 根据「是否可交换/无序」判断内部元素相等
-    """
-    function Base.isequal(t1::AbstractCompound{T1}, t2::AbstractCompound{T2})::Bool where {T1, T2}
-        T1 == T2 && # 复合词项类型相等
-        _check_tuple_equal(t1.terms, t2.terms, is_commutative(T1))
-    end
-
-    """
-    特殊重载：像相等
+    特殊重载「像相等」：元素&类型
     - 类型相等
     - 占位符位置相等
     - 所有元素相等
+
+    【20230820 12:20:32】基于「构造时排序」的预处理，作为「有序可重复」的默认定义，现可直接比对其中的组分
     """
     function Base.isequal(t1::TermImage{EIT1}, t2::TermImage{EIT2})::Bool where {EIT1, EIT2}
         EIT1 == EIT2 && # 类型相等（外延像/内涵像）
         t1.relation_index == t2.relation_index &&  # 占位符位置相等
-        _check_tuple_equal(t1.terms, t2.terms, is_commutative(TermImage)) # 组分相等
+        t1.terms == t2.terms # 组分相等
     end
 
-    "陈述相等"
+    """
+    陈述相等：元素&类型
+
+    【20230820 12:20:32】基于「构造时排序」的预处理，现可直接比对其中的组分
+    """
     function Base.isequal(s1::Statement{P1}, s2::Statement{P2})::Bool where {P1, P2}
-        P1 == P2 && (# 类型相等
-            s1.ϕ1 == s2.ϕ1 && s1.ϕ2 == s2.ϕ2 || # 对应相等就最好，不行的话检查是否无序
-            is_commutative(s1) && is_commutative(s2) && 
-                s1.ϕ1 == s2.ϕ2 && s1.ϕ2 == s2.ϕ1 # 尝试下反过来
-        )
+        P1 == P2 && # 类型相等
+        s1.ϕ1 == s2.ϕ1 && # 主词相等
+        s1.ϕ2 == s2.ϕ2 # 谓词相等
     end
     
     "重定向「==」符号"

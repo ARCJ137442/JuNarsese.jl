@@ -201,17 +201,43 @@ begin "方法集"
     
 
     """
-    判等の法：相等@词项&真值&时间戳
+    判等の法：词项⇒真值⇒时间戳⇒标点
     """
-    Base.:(==)(s1::Sentence, s2::Sentence)::Bool = (
-        s1.term  == s2.term &&
-        get_truth(s1) == get_truth(s2) && # 可能无真值
-        s1.stamp == s2.stamp 
+    Base.isequal(s1::AbstractSentence, s2::AbstractSentence)::Bool = (
+        get_term(s1) == get_term(s2) &&
+        get_truth(s1) == get_truth(s2) && # 兼容nothing
+        get_stamp(s1) == get_stamp(s2) &&
+        get_punctuation(s1) == get_punctuation(s2)
     )
+
+    "重定向等号（否则无法引至isequal）"
+    Base.:(==)(s1::AbstractSentence, s2::AbstractSentence)::Bool = isequal(s1, s2)
+
+    #= 【20230820 12:45:09】语句和词项、语句和语句之间的「比大小」过于反直觉
+    """
+    重定向「语句🆚词项」比大小：取语句的「内含词项」作对比
+    - 相同条件下，语句更大
+    """
+    Base.isless(s::AbstractSentence, t::AbstractTerm)::Bool = (
+        isless(get_term(s), t) #=|| (!isless(get_term(s), t) && # 后面断言第一项相等
+        false)=# # 这里按格式是false，但完全可以省略掉
+    )
+    """
+    交换顺序：`t < s == s > t != s < t`（不可在调用中交换顺序）
+    - ⚠修改前者时，此方法须一并修改
+    """
+    Base.isless(t::AbstractTerm, s::AbstractSentence)::Bool = isless(t, get_term(s))
+
+    """
+    由「比大小」衍生出的「判等」方法
+    - 与「不大于又不小于」/「不（大于或小于）」一致
+    """
+    Base.isequal(t::AbstractTerm, s::AbstractSentence)::Bool = isequal(t, get_term(s))
+    =#
 
     """
     语句的「语法复杂度」「语法简易度」 => 内含词项的对应属性
-    - 重定向
+    - 重定向至「内含词项」的大小
     """
     @inline get_syntactic_complexity(s::AbstractSentence) = get_syntactic_complexity(s.term)
     @inline get_syntactic_simplicity(s::AbstractSentence, r::Number) = get_syntactic_simplicity(s.term, r)

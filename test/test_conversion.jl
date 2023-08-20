@@ -8,13 +8,11 @@ begin "用于「判等失败」后递归查找「不等の元素」的断言函�
     "通用复合词项"
     recursive_assert(t1::CommonCompound, t2::CommonCompound) = begin
         @assert typeof(t1) == typeof(t2)
-        JuNarsese.Narsese._check_tuple_equal(
-            t1.terms, t2.terms, is_commutative(typeof(t1)),
-            (t1, t2) -> begin
-                recursive_assert(t1, t2)
-                Base.isequal(t1, t2)
-            end
-        )
+        # 【20230820 12:52:34】因为复合词项现采用「预先排序」的方式，现在只需逐个比对
+        @assert length(t1) == length(t2)
+        for (tt1, tt2) in zip(t1.terms, t2.terms)
+            @assert tt1 == tt2 "$tt1 ≠ $tt2 !"
+        end
     end
 
     "陈述"
@@ -43,7 +41,7 @@ macro equal_test(
         # 比对相等
         for (reconv, origin) in zip(reconverted_terms, ($test_set).terms)
             if reconv ≠ origin
-                @error "Not eq!" reconv origin
+                @error "$($parser): Not eq!" reconv origin
                 # if typeof(reconv) == typeof(origin) <: Statement
                 recursive_assert(reconv, origin)
             end

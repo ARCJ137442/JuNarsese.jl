@@ -500,12 +500,17 @@ begin "单体词项"
         统一的内部构造方法
         - 统一具备合法性检查
         - 根据外部函数「构造器类型」获取构造器（支持重定向）
-        - 根据「是否可重复」筛选掉重复项
+        - 根据「可重复性」筛选掉重复项
         """
         function CommonCompound{type}(terms::Tuple{Vararg{AbstractTerm}}) where {type <: AbstractCompoundType}
-            # 根据「是否可重复」筛选掉重复项
-            terms_tuple::Tuple = is_repeatable(type) ? terms : 
-                Tuple{Vararg{AbstractTerm}}(unique(isequal, terms)) # 在`isequal`的含义上，筛选其中的「唯一词项」
+            # 根据「可重复性」筛选掉重复项，根据「可交换性」决定是否排序
+            
+            # 生成并处理数组
+            terms_arr::Vector{AbstractTerm} = collect(terms) # 创建新数组
+            is_repeatable(type) || unique!(terms_arr) # 若不可重复，筛选重复项（不会改变内容顺序）
+            is_commutative(type) && sort!(terms_arr) # 若可交换，排序（不会改变内容）
+
+            terms_tuple::Tuple = Tuple{Vararg{AbstractTerm}}(terms_arr) # 创建新元组
             constructor::Type = constructor_type(type) # 【20230818 0:30:25】注意：new不能当参数传递
             # 增加合法性检查
             return check_valid_explainable(
@@ -523,7 +528,7 @@ begin "单体词项"
         function CommonCompound{CompoundTypeTermLogicalSet{EIType, Not}}(ϕ₁::AbstractTerm, ϕ₂::AbstractTerm) where EIType # 此EIType构造时还会被检查类型
             check_valid_explainable(
                 new{CompoundTypeTermLogicalSet{EIType, Not}}(
-                    (ϕ₁, ϕ₂) # 【20230814 13:21:55】直接构造元组
+                    (ϕ₁, ϕ₂) # 【20230814 13:21:55】不可交换，直接构造元组
                 )
             ) # 增加合法性检查
         end
@@ -612,6 +617,7 @@ begin "单体词项"
         """
         function TermImage{EIType}(terms::Tuple{Vararg{AbstractTerm}}, relation_index::Unsigned) where {EIType}
             relation_index == 0 || @assert relation_index ≤ length(terms) + 1 "索引`$relation_index`越界！"
+            # 其默认已无序
             check_valid_explainable(
                 new{EIType}(terms, relation_index) # 加入合法性检查
             ) # 增加合法性检查
@@ -758,7 +764,9 @@ begin "陈述词项"
             ϕ1::AbstractTerm, ϕ2::AbstractTerm,
             ) where {type <: AbstractStatementType}
             check_valid_explainable(
-                new{type}(ϕ1, ϕ2)
+                is_commutative(type) ? # 可交换⇒排序
+                    new{type}(sort!([ϕ1, ϕ2])...) :
+                    new{type}(ϕ1, ϕ2)
             ) # 增加合法性检查
         end
     end

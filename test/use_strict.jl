@@ -9,7 +9,7 @@ end
 
 "继承&相似⇒是否为「一等公民」"
 @inline function JuNarsese.check_valid_explainable(t::Statement{<:TermBasedSTs})
-    @assert t.ϕ1 ≠ t.ϕ2 "禁止重言式！"
+    @assert t.ϕ1 ≠ t.ϕ2 "禁止重言式「$(t.ϕ1)==$(t.ϕ2)」！"
     @assert t.ϕ1 isa FOTerm "主项「$(t.ϕ1)」必须是「一等公民词项」！"
     @assert t.ϕ2 isa FOTerm "谓项「$(t.ϕ2)」必须是「一等公民词项」！"
     t
@@ -22,7 +22,7 @@ end
 
 "蕴含&等价⇒是否为「陈述词项」"
 @inline function JuNarsese.check_valid_explainable(t::Statement{<:StatementBasedSTs})
-    @assert t.ϕ1 ≠ t.ϕ2 "禁止重言式！"
+    @assert t.ϕ1 ≠ t.ϕ2 "禁止重言式「$(t.ϕ1)==$(t.ϕ2)」！"
     @assert t.ϕ1 isa StatementLike "检测到非陈述词项：$(t.ϕ1)"
     @assert t.ϕ2 isa StatementLike "检测到非陈述词项：$(t.ϕ2)"
     t
