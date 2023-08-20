@@ -22,20 +22,6 @@
         1. 并进一步预测代码的可能效率
 =#
 
-# 长度
-begin "长度：用于「判断所直接含有的原子数量」"
-    
-    "原子の长度=1"
-    Base.length(a::Atom)::Integer = 1
-
-    "复合词项の长度=其元素的数量(像占位符不含在内)"
-    Base.length(c::ACompound)::Integer = length(c.terms)
-
-    "陈述の长度=2" # 主词+谓词
-    Base.length(c::AStatement)::Integer = 2
-
-end
-
 # # 散列/哈希 # 弃用：见上文笔记
 # begin "散列/哈希: 应用于集合操作中，使得集合用于判断相等"
     
@@ -155,16 +141,16 @@ begin "NAL信息支持"
     """
     @inline is_commutative(::Type{<:Term})::Bool = false
     "所有陈述类型 默认 = false"
-    @inline is_commutative(::Type{<:AbstractStatementType}) = false
+    @inline is_commutative(::Type{<:AStatementType}) = false
     "各个「复合词项类型」的可交换性：默认 = false"
-    @inline is_commutative(::Type{<:AbstractCompoundType})::Bool = false
+    @inline is_commutative(::Type{<:ACompoundType})::Bool = false
 
     "词项→重定向到其Type类型" # 使用参数类型取代typeof
     @inline (is_commutative(::T)::Bool) where {T <: Term} = is_commutative(T)
     "Type@陈述→重定向到其陈述类型" # 使用参数类型取代typeof
-    @inline (is_commutative(::Type{<:Statement{T}})::Bool) where {T <: AbstractStatementType} = is_commutative(T)
+    @inline (is_commutative(::Type{<:Statement{T}})::Bool) where {T <: AStatementType} = is_commutative(T)
     "Type@复合词项→重定向到「符合词项类型」"
-    @inline (is_commutative(::Type{<:AbstractCompound{T}})::Bool) where {T <: AbstractCompoundType} = is_commutative(T)
+    @inline (is_commutative(::Type{<:ACompound{T}})::Bool) where {T <: ACompoundType} = is_commutative(T)
 
     "相似&等价 = true"
     @inline is_commutative(::Type{STSimilarity})::Bool = true
@@ -202,12 +188,12 @@ begin "NAL信息支持"
     """
     @inline is_repeatable(::Type{<:Term})::Bool = true
     "各个「复合词项类型」的可重复性：默认为true"
-    @inline is_repeatable(::Type{<:AbstractCompoundType})::Bool = true
+    @inline is_repeatable(::Type{<:ACompoundType})::Bool = true
 
     "词项→重定向到其类型" # 使用参数类型取代typeof
     @inline (is_repeatable(::T)::Bool) where {T <: Term} = is_repeatable(T)
     "Type@复合词项→重定向到「符合词项类型」"
-    @inline (is_repeatable(::Type{<:CommonCompound{T}})::Bool) where {T <: AbstractCompoundType} = is_repeatable(T)
+    @inline (is_repeatable(::Type{<:CommonCompound{T}})::Bool) where {T <: ACompoundType} = is_repeatable(T)
 
     "外延集&内涵集 = false"
     @inline is_repeatable(::Type{<:CTTermSet})::Bool = false
@@ -287,11 +273,61 @@ begin "检查合法性（API接口，用于后续NAL识别）"
     end
 end
 
-# 复合词项⇒对接容器
+# 对接容器
 begin "容器对接：对复合词项的操作⇔对其容器的操作"
     
-    Base.getindex(c::AbstractCompound, i) = getindex(c.terms, i)
+    "原子の长度=1"
+    Base.length(a::Atom)::Integer = 1
 
+    "原子の索引[] = 其名"
+    Base.getindex(c::Atom) = c.name
+    
+    
+
+    "复合词项の长度=其元素的数量(像占位符不含在内)"
+    Base.length(c::ACompound)::Integer = length(c.terms)
+
+    "复合词项の索引[i] = 内容の索引"
+    Base.getindex(c::ACompound, i) = getindex(c.terms, i)
+
+    "复合词项の枚举 = 内容の枚举"
+    Base.iterate(c::ACompound, i=1) = iterate(c.terms, i)
+
+    "复合词项のmap = 内容のmap(变成Vector)再构造"
+    Base.map(f, c::ACompound) = typeof(c)(map(f, c.terms))
+
+    "复合词项の随机 = 内容の随机"
+    Base.rand(c::ACompound, args...; kw...) = rand(c, args...; kw...)
+
+    "复合词项のall&any = 内容のall&any"
+    Base.all(f, c::ACompound) = all(f, c.terms)
+    Base.any(f, c::ACompound) = any(f, c.terms)
+
+    "复合词项の倒转 = 内容倒转"
+    Base.reverse(c::ACompound) = typeof(c)(reverse(c.terms))
+
+
+    "陈述の长度=2" # 主词+谓词
+    Base.length(c::AStatement)::Integer = 2
+
+    "陈述の索引[i] = 对Pair的索引"
+    Base.getindex(s::AStatement, i) = getindex(Pair(s), i)
+
+    "陈述の枚举 = 对Pair的枚举"
+    Base.iterate(s::AStatement, i=1) = iterate(Pair(s), i)
+
+    "陈述のmap = 对Pair的map(变成Vector)再构造"
+    Base.map(f, s::AStatement) = typeof(s)(map(f, Pair(s)))
+
+    "陈述の随机 = 对元组的随机"
+    Base.rand(s::AStatement, args...; kw...) = rand((s.ϕ1, s.ϕ2), args...; kw...)
+
+    "陈述のall&any = 对Pair的all&any"
+    Base.all(f, s::AStatement) = all(f, Pair(s))
+    Base.any(f, s::AStatement) = any(f, Pair(s))
+
+    "陈述の倒转 = 对Pair的倒转"
+    Base.reverse(s::AStatement) = typeof(s)(reverse(Pair(s)))
     
 end
 
@@ -449,7 +485,7 @@ end
 begin "收集(Base.collect)其中包含的所有（原子）词项，并返回向量"
 
     "原子词项のcollect：只有它自己"
-    Base.collect(aa::AbstractAtom) = Term[aa]
+    Base.collect(aa::Atom) = Term[aa]
 
     """
     抽象词项集/抽象陈述集のcollect：获取terms参数
@@ -462,7 +498,7 @@ begin "收集(Base.collect)其中包含的所有（原子）词项，并返回�
     
     ⚠不会拷贝
     """
-    Base.collect(s::AbstractCompound) = [
+    Base.collect(s::ACompound) = [
         (
             (s.terms .|> collect)...
         )... # 📌二次展开：📌二次展开：第一次展开成「向量の向量」，第二次展开成「词项の向量」
@@ -501,7 +537,7 @@ begin "时态：用于获取(Base.collect)「时序蕴含/等价」中的「时�
     - 默认值：对其它语句返回「Eternal」
     - ⚠和语句的时态可能不一致「参见OpenNARS」
     """
-    @inline function get_tense(::Statement{ST})::TTense where {ST <: AbstractStatementType}
+    @inline function get_tense(::Statement{ST})::TTense where {ST <: AStatementType}
         if ST <: TemporalStatementTypes # 若其为「有时态系词」
             return ST.parameters[1] # 获取ST{::TTense}的第一个类型参数，直接作为返回值
         end

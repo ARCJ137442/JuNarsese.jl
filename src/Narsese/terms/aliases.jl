@@ -33,6 +33,7 @@ export STInheritance, STSimilarity, STImplication, STEquivalence,
 export TemporalStatementTypes
 export AStatement, AbstractStatement
 
+export ASType, AStatementType, AbstractStatementType
 export STImplicationRetrospective, STImplicationConcurrent, STImplicationPredictive
 export   ImplicationRetrospective,   ImplicationConcurrent,   ImplicationPredictive
 export STEquivalenceRetrospective, STEquivalenceConcurrent, STEquivalencePredictive
@@ -141,6 +142,8 @@ const SeqConjunction = STSet{Sequential}
 # 陈述 #
 
 # 类型
+const ASType = AStatementType = AbstractStatementType
+
 const STInheritance = StatementTypeInheritance
 const STSimilarity  = StatementTypeSimilarity
 const STImplication = StatementTypeImplication{Eternal} # 【20230804 14:48:54】⚠此处变成了特值「Eternal」
