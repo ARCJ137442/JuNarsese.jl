@@ -122,6 +122,13 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
     truth_separator::Content
 
     """
+    （预留）预算值の括弧
+    """
+    budget_brackets::Tuple{Content, Content}
+    "（预留）预算值の分隔符"
+    budget_separator::Content
+
+    """
     预处理函数::Function `(::Content) -> Content`
     """
     preprocess::Function
@@ -141,6 +148,8 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
         punctuation2sentence::Dict,
         truth_brackets::Tuple{Content, Content},
         truth_separator::Content,
+        budget_brackets::Tuple{Content, Content},
+        budget_separator::Content,
         preprocess::Function,
         ) where {Content <: CONTENT}
         copulas = values(copula_dict) |> collect # 📌不能放在new内，不然会被识别为关键字参数
@@ -185,8 +194,8 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
             ),
             values(punctuation_dict) |> collect,
             punctuation2sentence,
-            truth_brackets,
-            truth_separator,
+            truth_brackets, truth_separator,
+            budget_brackets, budget_separator,
             preprocess,
         )
     end

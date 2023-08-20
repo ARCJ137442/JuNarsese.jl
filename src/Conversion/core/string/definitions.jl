@@ -77,6 +77,9 @@ const StringParser_ascii::StringParser = StringParser{String}(
     # 真值: 括号&分隔符
     ("%", "%"),
     ";",
+    # 预算值: 括号&分隔符
+    ("\$", "\$"),
+    ";",
     # 预处理：去除空白符
     (s::AbstractString) -> filter(!isspace, s)
 )
@@ -159,6 +162,9 @@ const StringParser_latex::StringParser = StringParser{String}(
     # 真值: 括号&分隔符
     ("\\langle", "\\rangle"),
     ",",
+    # 预算值: 括号&分隔符
+    ("\\\$", "\\\$"), # 【20230820 18:46:30】目前尚未找到LaTeX有关规范
+    ";",
     # 预处理：把多个空白符统一转换成单个空格
     (s::AbstractString) -> replace(s, r"\s+" => ' ')
 )
@@ -239,6 +245,9 @@ const StringParser_han::StringParser = StringParser{String}(
     # 真值: 括号&分隔符
     ("真值=", "信"), # 此处不能留空！！！
     "真",
+    # 预算值: 括号&分隔符
+    ("预", "算"), # `预0.5、0.8、0.1算`，尚未找到更好的显示方法
+    "、",
     # 预处理：去除空白符
     (s::AbstractString) -> filter(!isspace, s)
 )
