@@ -4,7 +4,7 @@ if !isdefined(Main, :JuNarsese)
 
     # 自动导入JuNarsese模块
     using JuNarsese
-    # using JuNarsese.Util # 【20230821 22:20:42】现在不用特别using其中的「Util」
+    using JuNarsese.Util # 【20230821 22:20:42】现在不用特别using其中的「Util」
 
     # 启用「严格模式」
     JuNarsese.Narsese.use_strict!()
