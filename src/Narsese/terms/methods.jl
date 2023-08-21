@@ -162,7 +162,7 @@ begin "NAL信息支持"
     @inline (is_commutative(::Type{<:CTTermLogicalSet{EI, LO}})::Bool) where {EI <: AbstractEI, LO <: Union{And, Or}} = true
     "陈述逻辑集 = true" # 对只有一个组分的「否定」而言，使用「一元元组」更有利于性能
     @inline is_commutative(::Type{<:CTStatementLogicalSet})::Bool = true
-    "时序合取 = false"
+    "序列合取 = false"
     @inline is_commutative(::Type{<:CTStatementTemporalSet{Sequential}})::Bool = false
     "平行合取 = true"
     @inline is_commutative(::Type{<:CTStatementTemporalSet{Parallel}})::Bool = true
@@ -201,7 +201,7 @@ begin "NAL信息支持"
     @inline is_repeatable(::Type{<:CTTermLogicalSet})::Bool = false
     "陈述逻辑集 = false" # 对只有一个组分的「否定」而言，使用「一元元组」更有利于性能
     @inline is_repeatable(::Type{<:CTStatementLogicalSet})::Bool = false
-    "时序合取 = true"
+    "序列合取 = true"
     @inline is_repeatable(::Type{<:CTStatementTemporalSet{Sequential}})::Bool = true
     "平行合取 = false"
     @inline is_repeatable(::Type{<:CTStatementTemporalSet{Parallel}})::Bool = false

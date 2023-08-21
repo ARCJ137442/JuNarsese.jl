@@ -140,7 +140,7 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
     @test Conjunction(iab, iba, iab, iba) == Conjunction(iab, iba) # 不重复
     @test Disjunction(iab, iba, iab, iba) == Disjunction(iab, iba) # 不重复
 
-    # 时序合取(有序可重复) 平行合取(无序不重复)
+    # 序列合取(有序可重复) 平行合取(无序不重复)
     @test SeqConjunction(iab, iba, iac, ica) ≠ SeqConjunction(iba, iab, iac, ica) ≠ SeqConjunction(iab, iac, iba, ica) # 有序性
     @test SeqConjunction(iab, iab, iac, iac) ≠ SeqConjunction(iab, iac, iac) ≠ SeqConjunction(iab, iab, iac) ≠ SeqConjunction(iab, iac) # 可重复
     
