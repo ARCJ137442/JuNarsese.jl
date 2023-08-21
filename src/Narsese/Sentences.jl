@@ -39,5 +39,5 @@ include("Sentences/stamp.jl")
 
 # 语句
 include("Sentences/sentence.jl")
-    
+
 end # module

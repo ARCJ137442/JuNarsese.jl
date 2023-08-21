@@ -16,6 +16,7 @@ export TSet
 export TLSet, TermLSet, TLogicSet
 export TImage, TProduct
 export SLSet, StatementLSet, SLogicSet
+export STSet, StatementTSet, STemporalSet
 
 export AVType, AVariableType
 export VTIndependent, VTDependent, VTQuery
@@ -56,7 +57,6 @@ export ExtUnion, ExtensionUnion, IntUnion, IntensionUnion
 export ExtDiff, ExtensionDiff, ExtDifference, ExtensionDifference, 
     IntDiff, IntensionDiff, IntDifference, IntensionDifference
 export ParConjunction, SeqConjunction
-export TermSetLike, TermCompoundSetLike
 
 
 # 抽象类型 #
@@ -177,32 +177,4 @@ const EquivalenceRetrospective = Statement{STEquivalenceRetrospective}
 const EquivalenceConcurrent    = Statement{STEquivalenceConcurrent}
 const EquivalencePredictive    = Statement{STEquivalencePredictive}
 
-"（内置）陈述的类型：基于词项"
-const TermBasedSTs = Union{ # 因其「内部不可扩展性」不予导出
-    STInheritance,
-    STSimilarity
-}
-"（内置）陈述的类型：基于陈述"
-const StatementBasedSTs = Union{ # 不予导出，理由同上
-    StatementTypeImplication, # 注意：ST开头的是「永恒」时态变种
-    StatementTypeEquivalence, # 注意：ST开头的是「永恒」时态变种
-}
-"（内置）一等公民词项" # 不予导出，理由同上
-const FOTerm = FirstOrderTerm = Union{Atom, ACompound} # 原子词项&词项集
-"（内置）基于陈述的词项集（复合词项类型）"
-const StatementBasedCTs = Union{ # 不予导出，理由同上
-    CTStatementLogicalSet,
-    CTStatementTemporalSet,
-}
-"（内置）「基于陈述」所言之「陈述」：陈述+陈述逻辑集"
-const StatementLike = Union{ # 不予导出，理由同上
-    AbstractStatement, 
-    StatementLogicalSet, 
-    StatementTemporalSet,
-    Interval, # 「间隔」表示在「时序推理」中的「时间间隔」
-}
-
-# 集合类的词项: 形如`(操作符, 词项...)`与其它「有`terms`字段，且有多个元素的集合」
-const TermLogicalSetLike  = Union{TermLSet, StatementLSet{And}, StatementLSet{Or}, StatementTSet} # 「逻辑非」不含在内
-const TermCompoundSetLike = Union{TermLogicalSetLike, TermImage, TermProduct, StatementLSet{Not}}
-const TermSetLike         = Union{TermSet, TermCompoundSetLike} # 与OpenJunars不同的是，还包括「乘积」与「像」
+# 【20230821 22:14:31】现在只放置别名，那些其他什么的「统称」之类，留给「严格模式」预加载

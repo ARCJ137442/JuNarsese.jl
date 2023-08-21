@@ -197,8 +197,8 @@ begin "NAL信息支持"
 
     "外延集&内涵集 = false"
     @inline is_repeatable(::Type{<:CTTermSet})::Bool = false
-    "外延交&内涵交/外延并&内涵并 = false" # 解决方案：括弧。issue链接：https://github.com/JuliaLang/julia/issues/21847
-    @inline (is_repeatable(::Type{<:CTTermLogicalSet{EI, LO}})::Bool) where {EI <: AbstractEI, LO <: Union{And, Or}} = false
+    "词项逻辑集 = false" # 解决方案：括弧。issue链接：https://github.com/JuliaLang/julia/issues/21847
+    @inline is_repeatable(::Type{<:CTTermLogicalSet})::Bool = false
     "陈述逻辑集 = false" # 对只有一个组分的「否定」而言，使用「一元元组」更有利于性能
     @inline is_repeatable(::Type{<:CTStatementLogicalSet})::Bool = false
     "时序合取 = true"

@@ -98,7 +98,7 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
     @test ExtSet(A,B,C,E,E) == ExtSet(C,E,B,A) # 不重复
     @test IntSet(E,A,B,C,E) == IntSet(C,E,B,A) # 不重复
 
-    # 词项逻辑集 外延交/内涵交(无序不重复)+外延差/内涵差(有序可重复)
+    # 词项逻辑集 外延交/内涵交(无序不重复)+外延差/内涵差(有序不重复)
     @test ExtIntersection(A,B,C,D,E) == ExtIntersection(C,E,A,B,D) # 无序
     @test IntIntersection(A,B,C,D,E) == IntIntersection(C,E,A,B,D) # 无序
 
@@ -108,8 +108,8 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
     @test ExtDiff(A,B) ≠ ExtDiff(B,A) # 有序性
     @test IntDiff(A,B) ≠ IntDiff(B,A) # 有序性
 
-    @test ExtDiff(B,B) == ExtDiff(B,B) # 可重复
-    @test IntDiff(B,B) == IntDiff(B,B) # 可重复
+    @test @expectedError ExtDiff(B,B) # 不重复（现在会报错）
+    @test @expectedError IntDiff(B,B) # 不重复（现在会报错）
 
     # 乘积(有序可重复)
     @test TermProduct(A,B,C) ≠ TermProduct(A,C,B) ≠ TermProduct(B,A,C) ≠ TermProduct(B,C,A) # 有序性
@@ -240,12 +240,12 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
 
     @test is_repeatable(TermProduct)
     @test is_repeatable(ExtImage)
-    @test is_repeatable(IntDiff)
     @test is_repeatable(SeqConjunction)
     # 不应该对「否定」判断「可交换性」：其本身无意义
     @test !is_repeatable(ExtSet)
     @test !is_repeatable(IntIntersection)
     @test !is_repeatable(ExtUnion)
+    @test !is_repeatable(IntDiff) # 【20230821 22:53:26】现在也不可重复了
     @test !is_repeatable(Conjunction)
     @test !is_repeatable(Disjunction)
     @test !is_repeatable(ParConjunction)

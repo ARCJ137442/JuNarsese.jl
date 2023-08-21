@@ -526,9 +526,10 @@ begin "单体词项"
         
         "(有序)差集 Difference{外延/内涵} - ~" # 注意：这是二元的 参数命名参考自OpenJunars
         function CommonCompound{CompoundTypeTermLogicalSet{EIType, Not}}(ϕ₁::AbstractTerm, ϕ₂::AbstractTerm) where EIType # 此EIType构造时还会被检查类型
+            ϕ₁ == ϕ₂ && error("不允许重复词项「$ϕ1==$ϕ2」！")
             check_valid_explainable(
                 new{CompoundTypeTermLogicalSet{EIType, Not}}(
-                    (ϕ₁, ϕ₂) # 【20230814 13:21:55】不可交换，直接构造元组
+                    (ϕ₁, ϕ₂) # 【20230814 13:21:55】不可交换，直接构造元组，但因「不可重复」需要筛选；参考《NAL》中`different`
                 )
             ) # 增加合法性检查
         end
@@ -536,7 +537,7 @@ begin "单体词项"
         "陈述非 Negation"
         function CommonCompound{CompoundTypeStatementLogicalSet{Not}}(ϕ::AbstractTerm)
             check_valid_explainable(
-                new{CompoundTypeStatementLogicalSet{Not}}((ϕ,)) # 只有一个
+                new{CompoundTypeStatementLogicalSet{Not}}((ϕ,)) # 只有一个，且不要求是陈述（留给「合法性检查」；PyNARS也兼容「非陈述元素」）
             ) # 增加合法性检查
         end # 内涵并=外延交
 

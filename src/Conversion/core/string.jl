@@ -924,6 +924,8 @@ begin "语句相关"
         default_punctuation::Type = Judgement, # 实际无默认标点（语句类型）
         punctuation2sentence::Dict{TPunctuation, Type{<:ASentence}} = parser.punctuation2sentence
         )::STRING_PARSE_TARGETS
+        # 拒绝解析空字串
+        isempty(s) && throw(ArgumentError("尝试解析空字符串！"))
         # 预处理覆盖局部变量
         str::String = parser.preprocess(s)
         # 从尾部到头部，逐一解析「真值→时态→标点→词项」
