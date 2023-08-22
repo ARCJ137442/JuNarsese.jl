@@ -650,20 +650,6 @@ begin "单体词项"
         TermImage{EIType}(array...)
     end
 
-    """
-    转换兼容支持：多参数构造(兼容「词项序列」，以Nothing替代词项)
-
-    【20230818 15:38:09】现在使用新的「像占位符」类型，原有使用Nothing的方法即将弃用
-    - 📄出于兼容性考虑，此方法仍然保留
-    - ⚠计划在下一个主版本号中移除
-    """
-    function TermImage{EIType}(uni_terms::Vararg{Union{AbstractTerm, Nothing}}) where EIType
-        TermImage{EIType}(
-            filter(!isnothing, uni_terms), # 过滤出所有非空词项
-            findfirst(isnothing, uni_terms) |> unsigned, # 使用「匹配函数」找到首个「占位符」位置
-        )
-    end
-
 end
 
 begin "陈述词项"

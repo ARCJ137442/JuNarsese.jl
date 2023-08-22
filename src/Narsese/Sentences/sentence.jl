@@ -35,7 +35,7 @@ abstract type AbstractSentence{punctuation <: Punctuation} end
 struct SentenceJudgement <: AbstractSentence{Judgement}
     term::Term
     stamp::Stamp
-    truth::Truth
+    truth::ATruth
 end
 
 """
@@ -44,7 +44,7 @@ end
 @inline function SentenceJudgement(
     term::Term; # 下面无顺序，作为可选参数
     stamp::Stamp = StampBasic(),
-    truth::Truth = Truth64(1.0, 0.5),
+    truth::ATruth = Truth64(1.0, 0.5),
     )
     SentenceJudgement(
         term, 
@@ -59,7 +59,7 @@ end
 @inline function SentenceJudgement(
     term::Term, # 下面无顺序，作为可选参数
     tense::Type, # 把「只有一个参数」的情况交给上面
-    truth::Truth = Truth64(1.0, 0.5),
+    truth::ATruth = Truth64(1.0, 0.5),
     )
     SentenceJudgement(
         term; # 基于「可选参数」版本
@@ -73,7 +73,7 @@ end
 struct SentenceGoal <: AbstractSentence{Goal}
     term::Term
     stamp::Stamp
-    truth::Truth # 与Judgement「判断」统一（参考自Sentence.py）
+    truth::ATruth # 与Judgement「判断」统一（参考自Sentence.py）
 end
 
 """
@@ -83,7 +83,7 @@ end
 @inline function SentenceGoal(
     term::Term; # 下面无顺序，作为可选参数
     stamp::Stamp = StampBasic(),
-    truth::Truth = Truth64(1.0, 0.5),
+    truth::ATruth = Truth64(1.0, 0.5),
     )
     SentenceGoal(
         term, 
@@ -98,7 +98,7 @@ end
 @inline function SentenceGoal(
     term::Term, # 下面无顺序，作为可选参数
     tense::Type, # 把「只有一个参数」的情况交给上面
-    desire::Truth = Truth64(1.0, 0.5),
+    desire::ATruth = Truth64(1.0, 0.5),
     )
     SentenceGoal(
         term; # 基于「可选参数」版本
@@ -121,7 +121,7 @@ end
 @inline function SentenceQuestion(
     term::Term; # 下面无顺序，作为可选参数
     stamp::Stamp = StampBasic(),
-    truth::UNothing{Truth} = nothing # 📝Julia: 可选参数中不能省略参数变量名，会导致「畸形表达式」错误
+    truth::UNothing{TruthBasic} = nothing # 📝Julia: 可选参数中不能省略参数变量名，会导致「畸形表达式」错误
     )
     SentenceQuestion(
         term,
@@ -143,7 +143,7 @@ end
 @inline function SentenceQuest(
     term::Term; # 下面无顺序，作为可选参数
     stamp::Stamp = StampBasic(), # 将「只有一个参数」的情况交给上面
-    truth::UNothing{Truth} = nothing
+    truth::UNothing{TruthBasic} = nothing
     )
     SentenceQuest(
         term,
@@ -184,20 +184,20 @@ begin "方法集"
     
     """
     获取词项
-    - 【20230814 20:49:19】现在使用自定义方法，而非扩展Base方法
-        - 根据：Julia官方库亦非一昧扩展get方法
+    
+    【20230822 10:39:55】单行函数Julia编译器会自动内联，无需可以添加
     """
-    @inline get_term(s::Sentence)::Term = s.term
+    get_term(s::Sentence)::Term = s.term
     "获取时间戳"
-    @inline get_stamp(s::Sentence)::Stamp = s.stamp
+    get_stamp(s::Sentence)::Stamp = s.stamp
     "获取时态（从时间戳中拿）"
-    @inline get_tense(s::Sentence)::TTense = get_tense(get_stamp(s)) # 获取第一个类型参数
+    get_tense(s::Sentence)::TTense = get_tense(get_stamp(s)) # 获取第一个类型参数
     "获取标点（直接就是泛型类）" # 📌单行函数有where时不能使用`::类型`注释，否则报错「参数类型未定义」
-    @inline get_punctuation(::Sentence{punctuation}) where {punctuation <: Punctuation} = punctuation
+    get_punctuation(::Sentence{punctuation}) where {punctuation <: Punctuation} = punctuation
 
     "获取「真值」（总体来说，是`UNothing{Truth}`，可能为空）"
-    @inline get_truth(s::Sentence{P}) where {P <: Union{Judgement, Goal}} = s.truth
-    @inline get_truth( ::Sentence{P}) where {P <: Union{Question, Quest}} = nothing
+    (get_truth(s::Sentence{P})::Truth) where {P <: Union{Judgement, Goal}} = s.truth
+    (get_truth( ::Sentence{P})::Nothing) where {P <: Union{Question, Quest}} = nothing
     
 
     """
@@ -212,6 +212,13 @@ begin "方法集"
 
     "重定向等号（否则无法引至isequal）"
     Base.:(==)(s1::AbstractSentence, s2::AbstractSentence)::Bool = isequal(s1, s2)
+    
+    #= 抽象类型 的抽象方法，与真值一脉相承 =#
+    for method_name in [:get_f, :get_c]
+        @eval begin
+            $method_name(s::AbstractSentence) = $method_name(get_truth(s))
+        end
+    end
 
     #= 【20230820 12:45:09】语句和词项、语句和语句之间的「比大小」过于反直觉
     """
@@ -235,11 +242,16 @@ begin "方法集"
     Base.isequal(t::AbstractTerm, s::AbstractSentence)::Bool = isequal(t, get_term(s))
     =#
 
+    
+    #= 
+    =#
+    
     """
-    语句的「语法复杂度」「语法简易度」 => 内含词项的对应属性
-    - 重定向至「内含词项」的大小
+    抽象类型 的抽象方法，与词项一脉相承
+    - 重定向至「内含词项」的方法
     """
-    @inline get_syntactic_complexity(s::AbstractSentence) = get_syntactic_complexity(s.term)
-    @inline get_syntactic_simplicity(s::AbstractSentence, r::Number) = get_syntactic_simplicity(s.term, r)
+    get_syntactic_complexity(s::AbstractSentence) = get_syntactic_complexity(get_term(s))
+    "带额外参数的「语法简单度」需要另外实现"
+    get_syntactic_simplicity(s::AbstractSentence, r::Number) = get_syntactic_simplicity(get_term(s), r)
 
 end

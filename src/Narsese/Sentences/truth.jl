@@ -5,26 +5,57 @@
 
 # 导出 #
 
-export Truth
+export AbstractTruth, ATruth, Truth
+export TruthBasic
 export Truth16, Truth32, Truth64, TruthBig
-export default_precision_truth
+export get_f, get_c, default_precision_truth
 
 # 结构 #
+
+"""
+抽象「真值」类型
+- 实现「频率」「信度」两个属性
+    - f frequency 频率 [0,1]
+    - c confidence 信度 [0,1]
+- 实现对应的两个get方法：
+    - `get_f(::AbstractTruth)`
+    - `get_c(::AbstractTruth)`
+- 其API便于后续实现与扩展
+"""
+abstract type AbstractTruth end
+
+# 别名
+const Truth = ATruth = AbstractTruth
+
+"""
+判等の法：相等@f,c
+- 判等忽略数值精度
+"""
+Base.:(==)(t1::Truth, t2::Truth)::Bool = (
+    number_value_eq(get_f(t1), get_f(t2)) &&
+    number_value_eq(get_c(t1), get_c(t2))
+)
+
+"""
+实现迭代器协议
+- 迭代の法：等价于迭代数组`[f,c]`
+"""
+Base.iterate(t::Truth, state=1) = iterate([get_f(t), get_c(t)], state)
+"长度恒等于2"
+Base.length(t::Truth) = 2
+
 
 """
 可配置的「真值」类型
 - 允许背后对f、c值类型的自定义
     - 二者必须是[0,1]的浮点数
 """
-struct Truth{
-    F_TYPE <: AbstractFloat,
-    C_TYPE <: AbstractFloat,
-    }
+struct TruthBasic{F_TYPE <: AbstractFloat, C_TYPE <: AbstractFloat} <: AbstractTruth
     f::F_TYPE
     c::C_TYPE
 
     "内部构造方法: 检查数值是否越界"
-    function Truth{F_TYPE, C_TYPE}(f::F_TYPE, c::C_TYPE) where {
+    function TruthBasic{F_TYPE, C_TYPE}(f::F_TYPE, c::C_TYPE) where {
         F_TYPE <: AbstractFloat,
         C_TYPE <: AbstractFloat,
         }
@@ -39,59 +70,37 @@ struct Truth{
 end
 
 "外部构造方法：对于任意实数，都尝试转换为目标类型"
-function Truth{F_TYPE, C_TYPE}(f::Real, c::Real) where {
+function TruthBasic{F_TYPE, C_TYPE}(f::Real, c::Real) where {
     F_TYPE <: AbstractFloat,
     C_TYPE <: AbstractFloat,
     }
 
-    Truth{F_TYPE, C_TYPE}(
+    TruthBasic{F_TYPE, C_TYPE}(
         convert(F_TYPE, f),
         convert(C_TYPE, c),
     )
 end
 
 "外部构造方法：只指定一个参数类型，相当于复制两个类型"
-@inline Truth{V_TYPE}(args...) where {V_TYPE} = Truth{V_TYPE, V_TYPE}(args...)
+@inline TruthBasic{V_TYPE}(args...) where {V_TYPE} = TruthBasic{V_TYPE, V_TYPE}(args...)
 
-"面向默认的方法：使用默认精度"
-@inline Truth(f::AbstractFloat, c::AbstractFloat) = Truth{DEFAULT_FLOAT_PRECISION}(
+"外部构造方法（面向默认）：使用默认精度"
+@inline TruthBasic(f::Real, c::Real) = TruthBasic{DEFAULT_FLOAT_PRECISION}(
     DEFAULT_FLOAT_PRECISION(f), DEFAULT_FLOAT_PRECISION(c)
 )
 
-"提供默认精度，并统一提供默认值"
-default_precision_truth(f::AbstractFloat = 1.0, c::AbstractFloat = 0.5) = Truth(f, c)
+"外部构造方法（面向默认）：提供默认精度，并统一提供默认值"
+default_precision_truth(f::Real = 1.0, c::Real = 0.5) = TruthBasic(f, c)
 
 # 别名：各类精度的真值 #
-const Truth16::DataType = Truth{Float16, Float16}
-const Truth32::DataType = Truth{Float32, Float32}
-const Truth64::DataType = Truth{Float64, Float64}
+const Truth16::DataType = TruthBasic{Float16, Float16}
+const Truth32::DataType = TruthBasic{Float32, Float32}
+const Truth64::DataType = TruthBasic{Float64, Float64}
 
-const TruthBig::DataType = Truth{BigFloat, BigFloat} # 大浮点
+const TruthBig::DataType = TruthBasic{BigFloat, BigFloat} # 大浮点
 
-"""
-类型脱敏判断数值相等
-- 用于应对「不同类型但值相同的Float『fallback到全等』导致不相等」
-    - 方法：类型不等⇒转换到「默认精度」进行比较
-        - 此举仍有可能不等。。。
-- fallback到「相等」
-"""
-@inline number_value_eq(a::Number, b::Number)::Bool = (a == b)
+"获取频率f"
+(get_f(t::TruthBasic{F_TYPE, C_TYPE})::F_TYPE) where {F_TYPE, C_TYPE} = t.f
 
-"同类直接比较"
-@inline (number_value_eq(a::F, b::F)::Bool) where {F <: AbstractFloat} = (
-    a == b
-)
-
-"异类转换精度"
-@inline (number_value_eq(a::F1, b::F2)::Bool) where {F1 <: AbstractFloat, F2 <: AbstractFloat} = (
-    DEFAULT_FLOAT_PRECISION(a) == DEFAULT_FLOAT_PRECISION(b)
-)
-
-"""
-判等の法：相等@f,c
-- 
-"""
-Base.:(==)(t1::Truth, t2::Truth)::Bool = (
-    number_value_eq(t1.f, t2.f) &&
-    number_value_eq(t1.c, t2.c)
-)
+"获取信度c"
+(get_c(t::TruthBasic{F_TYPE, C_TYPE})::C_TYPE) where {F_TYPE, C_TYPE} = t.c

@@ -30,42 +30,72 @@ macro equal_test(
     )
     # quote里的`($parser)`已经自动把内部对象eval了
     quote
-        # 词项 #
-        # 二次转换
-        local converted_terms = ($parser).(($test_set).terms)
-        @info "converted_terms@$($parser):"
-        join(converted_terms, "\n") |> println
-        local reconverted_terms = ($parser).(converted_terms)
-        @info "reconverted_terms@$($parser):"
-        join(reconverted_terms, "\n") |> println
-        # 比对相等
-        for (reconv, origin) in zip(reconverted_terms, ($test_set).terms)
-            if reconv ≠ origin
-                @error "$($parser): Not eq!" reconv origin
-                # if typeof(reconv) == typeof(origin) <: Statement
-                recursive_assert(reconv, origin)
+        try
+            # 词项 #
+            # 二次转换
+            local converted_terms = ($parser).(($test_set).terms)
+            @info "converted_terms@$($parser):"
+            join(converted_terms, "\n") |> println
+            local reconverted_terms = ($parser).(converted_terms)
+            @info "reconverted_terms@$($parser):"
+            join(reconverted_terms, "\n") |> println
+            # 比对相等
+            for (reconv, origin) in zip(reconverted_terms, ($test_set).terms)
+                if reconv ≠ origin
+                    @error "$($parser): Not eq!" reconv origin
+                    # if typeof(reconv) == typeof(origin) <: Statement
+                    recursive_assert(reconv, origin)
+                end
+                @test reconv == origin # 📌【20230806 15:24:11】此处引入额外参数会报错……引用上下文复杂
             end
-            @test reconv == origin # 📌【20230806 15:24:11】此处引入额外参数会报错……引用上下文复杂
-        end
-        # 语句 #
-        # 二次转换
-        local converted_sentences = ($parser).(($test_set).sentences)
-        @info "converted_sentences@$($parser):"
-        join(converted_sentences, "\n") |> println
-        local reconverted_sentences = ($parser).(converted_sentences)
-        @info "converted_sentences@$($parser):" 
-        join(converted_sentences, "\n") |> println
-        # 比对相等
-        for (reconv, origin) in zip(reconverted_sentences, ($test_set).sentences)
-            if reconv ≠ origin
-                @error "$($parser): Not eq!" reconv origin
-                dump.([reconv, origin]; maxdepth=typemax(Int))
+            # 语句 #
+            # 二次转换
+            local converted_sentences = ($parser).(($test_set).sentences)
+            @info "converted_sentences@$($parser):"
+            join(converted_sentences, "\n") |> println
+            local reconverted_sentences = ($parser).(converted_sentences)
+            @info "converted_sentences@$($parser):" 
+            join(converted_sentences, "\n") |> println
+            # 比对相等
+            for (reconv, origin) in zip(reconverted_sentences, ($test_set).sentences)
+                if reconv ≠ origin
+                    @error "$($parser): Not eq!" reconv origin
+                    dump.([reconv, origin]; maxdepth=typemax(Int))
+                end
+                @assert reconv == origin # 📌【20230806 15:24:11】此处引入额外参数会报错……引用上下文复杂
             end
-            @assert reconv == origin # 📌【20230806 15:24:11】此处引入额外参数会报错……引用上下文复杂
+            # 任务 #
+            # 二次转换
+            local converted_tasks = ($parser).(($test_set).tasks)
+            @info "converted_tasks@$($parser):"
+            join(converted_tasks, "\n") |> println
+            local reconverted_tasks = ($parser).(converted_tasks)
+            @info "converted_tasks@$($parser):" 
+            join(converted_tasks, "\n") |> println
+            # 比对相等
+            for (reconv, origin) in zip(reconverted_tasks, ($test_set).tasks)
+                if reconv ≠ origin
+                    @error "$($parser): Not eq!" reconv origin
+                    dump.([reconv, origin]; maxdepth=typemax(Int))
+                end
+                @assert reconv == origin # 📌【20230806 15:24:11】此处引入额外参数会报错……引用上下文复杂
+            end
+        catch e # 打印堆栈
+            Base.printstyled("ERROR: "; color=:red, bold=true)
+            Base.showerror(stdout, e)
+            Base.show_backtrace(stdout, Base.catch_backtrace())
+            rethrow(e)
         end
     end |> esc # 在调用的上下文中解析
 end
-
+begin "报错debug专用"
+    # 测试@字符串
+    @equal_test StringParser_ascii test_set
+    # 测试@LaTeX
+    @equal_test StringParser_latex test_set
+    # 测试@漢
+    @equal_test StringParser_han test_set
+end
 @testset "Conversion" begin
 
     @testset "StringParser" begin

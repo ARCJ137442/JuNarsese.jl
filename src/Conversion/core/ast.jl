@@ -418,33 +418,6 @@ begin "打包の逻辑"
     
     end
     
-    begin "语句の打包" # 【20230806 14:57:27】此处实际上使用默认的打包方法就足够了
-    
-        """
-        真值的打包方法(:类名, f, c)
-        
-        协议@真值：
-        - 属性「f」
-        - 属性「c」
-        """
-        # ast_pack(
-        #     parser::TASTParser, 
-        #     t::Truth, 
-        #     recurse_callback::Function = ast_pack,
-        # recurse_parser::TAbstractParser = parser
-        #     )::Expr = ast_form_struct(
-        #     typeof(t),
-        #     recurse_callback(recurse_parser, t.f),
-        #     recurse_callback(recurse_parser, t.c),
-        # )
-
-        """
-        时间戳&语句：皆采用默认方法(Any)
-        """
-        # 此处无需再适配
-    
-    end
-    
 end
 
 begin "解析器入口"

@@ -20,23 +20,6 @@ module JuNarsese
 
 using Reexport
 
-# 配置类参数
-
-DEFAULT_INT_PRECISION::Type{<:Signed} = Int
-DEFAULT_UINT_PRECISION::Type{<:Unsigned} = UInt
-DEFAULT_FLOAT_PRECISION::Type{<:AbstractFloat} = Float64
-
-"按照「默认浮点精度」解析字符串(📝Julia这样定义函数不会形成闭包)"
-parse_default_float(s) = Base.parse(DEFAULT_FLOAT_PRECISION, s)
-
-"按照「默认有符号整型精度」解析字符串"
-parse_default_int(s) = Base.parse(DEFAULT_INT_PRECISION, s)
-
-"按照「默认无符号整型精度」解析字符串"
-parse_default_uint(s) = Base.parse(DEFAULT_UINT_PRECISION, s)
-export DEFAULT_FLOAT_PRECISION, DEFAULT_INT_PRECISION, DEFAULT_UINT_PRECISION
-export parse_default_float, parse_default_int, parse_default_uint
-
 # 导入各个文件 #
 
 # 不导出Util

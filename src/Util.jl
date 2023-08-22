@@ -319,4 +319,26 @@ function check_tuple_equal(
     return true
 end
 
+begin "（移植自`truth.jl`）适用于不同精度的数值判等方法"
+
+    export number_value_eq
+
+    """
+    类型脱敏判断数值相等
+    - 用于应对「不同类型但值相同的Float『fallback到全等』导致不相等」
+        - 方法：类型不等⇒转换到「默认精度」进行比较
+            - 此举仍有可能不等。。。
+    - fallback到「相等」
+    """
+    @inline number_value_eq(a::Number, b::Number)::Bool = (a == b)
+
+    "同类直接比较"
+    @inline (number_value_eq(a::F, b::F)::Bool) where {F <: AbstractFloat} = (
+        a == b
+    )
+
+    # "异类转换精度" # 在`Narsese.jl`中实现
+
+end
+
 end

@@ -12,6 +12,7 @@
 
 export StringParser_ascii, StringParser_latex, StringParser_han
 
+"所有可能的「文本类型」"
 const CONTENT::Type = Union{
     AbstractString,
     AbstractChar,
@@ -233,7 +234,9 @@ begin "【特殊链接】词项/语句↔字符串"
     # 【特殊链接】语句(时间戳/真值)↔字符串 #
     @redirect_SRS s::Sentence narsese2data(StringParser_ascii, s)
     # @redirect_SRS s::Stamp narsese2data(StringParser_ascii, s) # 把时间戳当做「默认对象」
-    @redirect_SRS t::Truth narsese2data(StringParser_ascii, t)
+    @redirect_SRS t::ATruth narsese2data(StringParser_ascii, t)
+    @redirect_SRS b::ABudget narsese2data(StringParser_ascii, b)
+    @redirect_SRS t::ATask narsese2data(StringParser_ascii, t)
 
     "构造方法支持" # 【20230817 20:07:14】不要对Term的所有子类型做自动转换
     ((::Type{Term})(s::String)::Term) = data2narsese(StringParser_ascii, Term, s)
@@ -261,7 +264,7 @@ begin "陈述形式"
         first::CONTENT, copula::CONTENT, last::CONTENT, # 词项+系词+词项
         space::CONTENT
         )::CONTENT
-        "$prefix$first$space$copula$space$last$suffix"
+        prefix * first * space * copula * space * last * suffix
     end
     
     """
@@ -285,14 +288,21 @@ begin "陈述形式"
         separator::CONTENT,
         # 此处无需额外空格参数：已包含于separator中
         )::CONTENT
-        "$prefix$connector$separator" * join(contents, separator) * suffix
+        prefix * connector * separator * join(contents, separator) * suffix
     end
 
     "_autoIgnoreEmpty: 字串为空⇒不变，字串非空⇒加前导分隔符"
-    @inline _aie(s::CONTENT, sept::CONTENT=" ") = (
+    @inline _aie(s::CONTENT, sep::CONTENT=" ") = (
         isempty(s) ? 
             s : 
-            sept * s
+            sep * s
+    )
+
+    "_autoIgnoreEmptyAfter: 字串为空⇒不变，字串非空⇒加后缀分隔符"
+    @inline _aiea(s::CONTENT, sep::CONTENT=" ") = (
+        isempty(s) ? 
+            s : 
+            s * sep
     )
     
 
@@ -306,18 +316,26 @@ begin "陈述形式"
         tense::CONTENT, truth::CONTENT,
         space::CONTENT,
         )::CONTENT
-        "$(term_str)$punctuation" * "$(_aie(tense, space))$(_aie(truth, space))"
+        term_str * punctuation * _aie(tense, space) * _aie(truth, space)
+    end
+
+    raw"""
+    任务：预算值+语句
+    - 自动为「空参数」省去空格
+    """
+    @inline function form_task(budget::CONTENT, sentence::CONTENT, space::CONTENT)::CONTENT
+        _aiea(budget, space) * sentence
     end
 
     """
-    格式化真值: 左 + f + 分隔符 + c + 右
+    格式化真值/欲望值: 
+    - 左 + 数值 (+ 分隔符 + 数值)... + 右
     """
-    @inline function form_truth(
+    @inline function form_truth!budget(
         left::CONTENT, right::CONTENT, separator::CONTENT,
-        f::Real, c::Real
+        values::Vector
         )
-        left * "$f$separator$c" * right
-        
+        left * join(values, separator) * right
     end
 
     """
@@ -327,7 +345,6 @@ begin "陈述形式"
         left::CONTENT, right::CONTENT, time::Integer
         )
         left * "$time" * right
-        
     end
 
     """
@@ -597,7 +614,7 @@ begin "复合词项↔字符串"
         # 解析剩余词项
         components::Vector{UNothing{Term}} = UNothing{Term}[
             startswith(term_str, parser.atom_prefixes[PlaceHolder]) ?
-                nothing : # 使用nothing兼容「像占位符」
+                Narsese.placeholder : # 【20230823 0:23:38】现不使用Nothing兼容像占位符
                 data2narsese(parser, Term, term_str)
             for term_str in term_strings
         ]
@@ -781,9 +798,15 @@ end
 begin "语句相关"
 
     "真值→字符串"
-    narsese2data(parser::StringParser, t::Truth) = form_truth(
+    narsese2data(parser::StringParser, t::ATruth) = form_truth!budget(
         parser.truth_brackets..., parser.truth_separator,
-        t.f, t.c
+        collect(t)
+    )
+
+    "真值→字符串"
+    narsese2data(parser::StringParser, b::ABudget) = form_truth!budget(
+        parser.budget_brackets..., parser.budget_separator,
+        collect(b)
     )
 
     "标点→字符串"
@@ -823,6 +846,15 @@ begin "语句相关"
             parser.space
         )
     end
+    
+    "语句→字符串"
+    function narsese2data(parser::StringParser, t::ATask)
+        form_task(
+            narsese2data(parser, get_budget(t)),
+            narsese2data(parser, get_sentence(t)),
+            parser.space
+        )
+    end
 
     """
     字符串→标点
@@ -859,18 +891,19 @@ begin "语句相关"
     """
     字符串→真值
     - 默认有前后缀（未剥皮）：自动剥皮
+    - 自动配置特定精度（默认64）
 
     例：
     - `%1.00;0.90%` => `1.00;0.90` => Truth64(1.0, 0.9)
     """
     function data2narsese(
-        parser::StringParser, ::Type{Truth{F, C}}, s::String,
+        parser::StringParser, ::Type{Truth}, s::String,
         stripped::Bool = false
-        ) where {F, C}
+        )
         if !stripped
             left::String, right::String = parser.truth_brackets
             return data2narsese(
-                parser, Truth{F, C}, 
+                parser, Truth, 
                 s[nextind(s, begin, length(left)):prevind(s, end, length(right))], # 自动剥皮
                 true # 标示已经剥皮
             )
@@ -880,58 +913,83 @@ begin "语句相关"
             s, # 已剥皮，待分割
             parser.truth_separator # 分隔符
         )
-        Truth{F, C}( # 分别解析
-            parse(F, f_str),
-            parse(C, c_str),
+        Narsese.default_precision_truth( # 分别解析
+            Narsese.parse_default_float(f_str),
+            Narsese.parse_default_float(c_str),
         )
-    end
-    "只指定一个参数类型，相当于复制两个类型"
-    function data2narsese(
-        parser::StringParser, ::Type{Truth{V}},
-        args...
-        ) where {V}
-        data2narsese(parser, Truth{V, V}, args...)
-    end
-    "最默认的情况：配置指定的精度（默认64）"
-    function data2narsese(
-        parser::StringParser, ::Type{Truth},
-        args...
-        )
-        data2narsese(parser, Truth{DEFAULT_FLOAT_PRECISION}, args...)
     end
 
+    raw"""
+    字符串→预算值
+    - 默认有前后缀（未剥皮）：自动剥皮
+    - 自动配置特定精度（默认64）
+
+    例：
+    - `$0.50;0.50;0.50$` => `0.50;0.50;0.50` => BudgetBasic(0.5, 0.5, 0.5)
     """
+    function data2narsese(
+        parser::StringParser, ::Type{Budget}, s::String,
+        stripped::Bool = false
+        )
+        if !stripped
+            left::String, right::String = parser.truth_brackets
+            return data2narsese(
+                parser, Budget, 
+                s[nextind(s, begin, length(left)):prevind(s, end, length(right))], # 自动剥皮
+                true # 标示已经剥皮
+            )
+        end
+        # 剥皮后
+        p_str::AbstractString, d_str::AbstractString, q_str::AbstractString = split(
+            s, # 已剥皮，待分割
+            parser.budget_separator # 分隔符
+        )
+        Narsese.default_precision_budget( # 分别解析
+            Narsese.parse_default_float(p_str),
+            Narsese.parse_default_float(d_str),
+            Narsese.parse_default_float(q_str),
+        )
+    end
+
+    raw"""
     总解析方法 : 词项+标点+时态+真值
     - 【20230808 9:34:22】兼容模式：词项语句均可
         - 在「目标类型」中统一使用Any以避免「各自目标类型不同」的歧义
         - 「真值」「时态」「标点」俱无⇒转换为词项
 
-    默认真值 default_truth
+    默认真值构造器 default_truth_constructor
     - 核心功能：在没有真值时，自动创建真值
-    - 留给后续具体NARS实现的自定义化
-        - 例子：有些实现会默认c=0.5，而有些是0.9
+
+    默认预算值构造器 default_budget_constructor
+    - 核心功能：在没有预算值时，自动创建预算值
 
     例：
-    - `<A --> B>. :|: %1.00;0.90%`
-    - （预处理去空格后）`<A-->B>.:|:%1.00;0.90%`
+    - `$0.5; 0.5; 0.5$ <A --> B>. :|: %1.00;0.90%`
+    - （预处理去空格后）``$0.5;0.5;0.5$<A-->B>.:|:%1.00;0.90%`
     """
     function data2narsese(
         parser::StringParser, 
         ::Type{Any}, # 兼容模式
-        s::String,
-        F::Type=DEFAULT_FLOAT_PRECISION, C::Type=DEFAULT_FLOAT_PRECISION;
-        default_truth::Truth = Truth{DEFAULT_FLOAT_PRECISION}(1.0, 0.5), # 动态创建
-        default_punctuation::Type = Judgement, # 实际无默认标点（语句类型）
+        s::String;
+        default_truth_constructor::Function = Narsese.default_precision_truth, # 调用时创建
+        default_budget_constructor::Function = Narsese.default_precision_budget, # 调用时创建
+        default_punctuation::Type = Narsese.Judgement, # 实际无默认标点（语句类型）
         punctuation2sentence::Dict{TPunctuation, Type{<:ASentence}} = parser.punctuation2sentence
         )::STRING_PARSE_TARGETS
         # 拒绝解析空字串
         isempty(s) && throw(ArgumentError("尝试解析空字符串！"))
-        # 预处理覆盖局部变量
+
+        # 预处理
         str::String = parser.preprocess(s)
+
+        # 从头部截取预算值
+        budget::ABudget, budget_index::Integer = _match_budget(parser, str; default_budget_constructor)
+        str = str[budget_index:end] # 剪去头部
+
         # 从尾部到头部，逐一解析「真值→时态→标点→词项」
         index_start::Integer = lastindex(str)
 
-        truth::Truth, index = _match_truth(parser, str, F, C; default_truth)
+        truth::ATruth, index = _match_truth(parser, str; default_truth_constructor)
         str = str[begin:index] # 反复剪裁
 
         stamp::Stamp, index = _match_stamp(parser, str)
@@ -945,22 +1003,31 @@ begin "语句相关"
         # 「真值」「时态」「标点」俱无⇒转换为词项
         index == index_start && return term
 
-        # 否则构造成语句(使用可选参数形式)
-        return punctuation2sentence[punctuation](
+        # 否则构造成任务/语句(使用可选参数形式)
+        sentence::ASentence = punctuation2sentence[punctuation](
             term; 
             stamp,
             truth
         )
+
+        # 有预算值⇒转换为任务
+        budget_index > firstindex(str) && return TaskBasic(
+            sentence,
+            budget,
+        )
+
+        # 兜底转换成语句
+        return sentence
     end
 
     """
-    兼容化后的「语句转换方法」：兼容+类型断言
+    兼容化后的「语句转换方法」
     """
     function data2narsese(
         parser::StringParser, ::TYPE_SENTENCES,
         s::String,
         F::Type=DEFAULT_FLOAT_PRECISION, C::Type=DEFAULT_FLOAT_PRECISION;
-        default_truth::Truth = Truth{DEFAULT_FLOAT_PRECISION}(1.0, 0.5), # 动态创建
+        default_truth::ATruth = JuNarsese.default_precision_truth(), # 动态创建
         default_punctuation::Type = Nothing # 默认类型
         )::AbstractSentence # 使用类型断言限制
         data2narsese(
@@ -973,36 +1040,107 @@ begin "语句相关"
     end
 
     """
+    兼容化后的「任务转换方法」
+    """
+    function data2narsese(
+        parser::StringParser, ::Type{ATask},
+        s::String,
+        F::Type=DEFAULT_FLOAT_PRECISION, C::Type=DEFAULT_FLOAT_PRECISION;
+        default_truth::ATruth = JuNarsese.default_precision_truth(), # 动态创建
+        default_budget::ABudget = JuNarsese.default_precision_budget(), # 动态创建
+        default_punctuation::Type = Nothing # 默认类型
+        )::AbstractSentence # 使用类型断言限制
+        data2narsese(
+            parser, Any, # Any对接兼容模式
+            s, 
+            F, C; 
+            default_truth, 
+            default_budget,
+            default_punctuation,
+        )
+    end
+
+    raw"""
+    正序匹配预算值（可选）
+
+    返回：(预算值对象, 预算值字符串后一个索引)
+
+    例：
+    - `$0.50;0.50;0.50$<A-->B>.:|:%1.00;0.90%` => (Budget(1.00,0.90), begin+16)
+    """
+    function _match_budget(
+        parser::StringParser, s::String;
+        default_budget_constructor::Function
+        )
+        left::String, right::String = parser.budget_brackets
+        # 先找到所有左括弧的索引
+        left_indices::Vector = findall(left, s)
+        while true # 为了使用break统一return语句
+            # 左括弧都没有⇒失败
+            isempty(left_indices) && break
+            left_range::AbstractRange = @inbounds left_indices[1]
+            # 左括弧不是起始字符（匹配到了独立变量的前缀）⇒失败
+            first(left_range) == firstindex(s) || break
+            # 若左右括弧相同
+            if left == right
+                right_range = length(left_indices) > 1 ? (@inbounds left_indices[2]) : nothing # 找到的「第二个左括弧」，或者没找到
+            # 不同就找第一个
+            else
+                right_range = findfirst(right, s) # 没找到是nothing
+            end
+            # 有左括弧没右括弧⇒失败
+            isnothing(right_range) && break
+            # 顺带剥皮
+            return (
+                data2narsese(
+                    parser, ABudget,
+                    s[
+                        nextind(
+                            s, last(left_range)
+                        ):prevind(
+                            s, first(right_range)
+                        )
+                    ],
+                    true
+                ),
+                # 「右括弧最后一个索引」的上一个索引
+                nextind(
+                    s, 
+                    last(right_range)
+                )
+            )
+        end
+        return (
+            default_budget_constructor(),
+            firstindex(s) # 首个索引
+        )
+    end
+
+    """
     倒序匹配真值（可选）
 
     返回：(真值对象, 真值字符串前一个索引)
 
     例：
     - `<A-->B>.:|:%1.00;0.90%` => (Truth16(1.00,0.90), end-11)
+
+    【20230822 11:33:03】现不再提供F、C精度选择
     """
     function _match_truth(
-        parser::StringParser, s::String,
-        F::Type{F_TYPE}, C::Type{C_TYPE};
-        default_truth::Truth
-        ) where {F_TYPE <: Real, C_TYPE <: Real}
+        parser::StringParser, s::String;
+        default_truth_constructor::Function
+        )
         left::String, right::String = parser.truth_brackets
         if endswith(s, right)
             # 获取前括弧的索引范围
             start_range::AbstractRange = findlast(
                 left, s[1:prevind(s, end, length(right))]
             )
-            stripped = s[
-                nextind( # 跳到「前括弧最后一个索引」的下一个索引
-                    s, last(start_range), 1
-                ):prevind( # 跳到「后括弧第一个索引」的上一个索引
-                    s, end, length(right)
-                )
-            ]
+            # 剥皮等工作交给转换器
             return (
                 data2narsese(
-                    parser, Truth{F, C},
-                    stripped,
-                    true
+                    parser, Truth,
+                    s[first(start_range):end],
                 ),
                 # 「前括弧第一个索引」的上一个索引
                 prevind(
@@ -1011,7 +1149,7 @@ begin "语句相关"
             )
         else # 否则采用默认真值
             return (
-                default_truth,
+                default_truth_constructor(),
                 lastindex(s) # 最后一个索引
             )
         end

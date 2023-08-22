@@ -55,6 +55,7 @@ const TAbstractParser::Type = Union{
 const DEFAULT_PARSE_TARGETS::Type = Union{
     AbstractTerm,
     AbstractSentence,
+    AbstractTask, # 🆕任务
     }
 
 """

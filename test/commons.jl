@@ -11,6 +11,10 @@ if !isdefined(Main, :JuNarsese)
 end
 begin "报错debug专用"
     # @show CommonCompound{CompoundTypeTermLogicalSet{Intension, Or}}()
+    # @show nse"$0.5;0.5;0.5$ <A-->B>."
+    # @show nse"<$A-->$B>." # 预算值不能匹配到独立变量的「$」
+    # @show nse"预0.5、0.8、0.1算「我是墓地」。"han
+    # @show nse"「我是墓地」。"han
 end
 if !isdefined(Main, :Test)
     using Test
@@ -96,7 +100,17 @@ if !isdefined(Main, :Test)
         nse"「（同时，「系统有开放性」，「系统有自主性」，「系统有实时性」）将得「系统是AGI」」？"han
         SentenceJudgement(s6)
     ]
-    @info "sentences: " sentences
+
+    # 构建
+    tasks::Vector{AbstractTask} = [
+        narsese"$1.0;0.5;0.5$ <A-->B>. :|: %1.00;0.90%"
+        narsese"$0.5;0.5;0.5$ <SELF {-] good>! :|: "
+        narsese"$0.4;0.6;0.5$ <<(*, A, B) --> (*, C, D)> ==> (&&, <A --> C>, <B --> D>)>@ %1.00;0.90%"
+        narsese"$0.3;0.7;0.5$ <(*, A, B, C, D) --> R>? "
+        narsese"$0.2;0.8;0.5$ <BALL {-] left>. :!132:"
+        TaskBasic.(sentences)... # 所有语句转换为一个基本的任务
+    ]
+    @info "tasks: " tasks
     # 下面这些注释是利用系统报错精确获得堆栈信息/调试支持的
     # ASTParser.(ASTParser.(ASTParser.(sentences)))
     # XMLParser_optimized.(XMLParser_optimized.(XMLParser_optimized.(sentences)))
@@ -113,7 +127,7 @@ if !isdefined(Main, :Test)
     # @show sentences
 
     "标准测试集 = 词项 + 语句"
-    test_set::NamedTuple = (;terms, sentences) # 具名元组
+    test_set::NamedTuple = (;terms, sentences, tasks) # 具名元组
     # test_set = (;terms=[s7], sentences=[])
 
     "测试集：\n$test_set" |> println

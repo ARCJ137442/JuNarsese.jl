@@ -13,7 +13,7 @@ module Conversion
 
 # 前置导入 #
 
-import ..JuNarsese: DEFAULT_FLOAT_PRECISION
+import ..Narsese: DEFAULT_FLOAT_PRECISION
 
 import ..Narsese
 using ..Narsese

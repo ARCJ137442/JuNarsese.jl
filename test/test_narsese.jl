@@ -232,7 +232,7 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
     @test is_commutative(A ↔ B)
     @test is_commutative((A → B) ⇔ (B ↔ A))
     @test is_commutative(⩀(A, B, C))
-    @test !is_commutative(\(A, B, nothing, C))
+    @test !is_commutative(\(A, B, placeholder, C))
     @test !is_commutative(*(A, B, C))
     @test !is_commutative(*(A, B, C) → R)
 
@@ -251,7 +251,7 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
     @test !is_repeatable(ParConjunction)
 
     @test !is_repeatable(⩀(A, B, C))
-    @test is_repeatable(\(A, B, nothing, C))
+    @test is_repeatable(\(A, B, placeholder, C))
     @test is_repeatable(*(A, B, C))
 
     # 快捷构造 #
@@ -347,16 +347,25 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
     
     @test se0 == narsese"<{SELF} --> [good]>! :|: %1.0;0.9%"
 
+    # 真值/欲望值/预算值越界
+
     @test @expectedError SentenceJudgement(
         s5,
         StampBasic(),
         Truth64(1.1, 0.9), # f越界
     )
 
-    @test @expectedError SentenceJudgement(
+    @test @expectedError SentenceGoal(
         s5,
         StampBasic(),
         Truth64(0, -1.0), # c越界
     )
+
+    # 合法情况
+    @test BudgetBasic(1, 1.0, 0.1) isa Budget
+    # 越界
+    @test @expectedError BudgetBasic(2, 1.0, 0.1)
+    @test @expectedError BudgetBasic(0, -1.0, 0)
+    @test @expectedError BudgetBasic(0, 1.0, 023)
     
 end

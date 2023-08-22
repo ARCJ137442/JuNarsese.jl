@@ -104,7 +104,7 @@ begin "NAL信息支持"
     get_syntactic_complexity(s::AStatement) = 1 + get_syntactic_complexity(s.ϕ1) + get_syntactic_complexity(s.ϕ2)
 
     """
-    [NAL-3]获取词项的「语法简易度」
+    [NAL-3]获取词项的「语法简单度」
     
     参考：《NAL》定义7.11
     > If the syntactic complexity of a term is n, then its syntactic simplicity is s = 1/nʳ, where r > 0 is a system parameter.
@@ -112,7 +112,7 @@ begin "NAL信息支持"
     > Atomic terms have the highest simplicity, 1.0.
     
     机翻：
-    > 如果某一词项的语法复杂度为n，则其语法简易度为s = 1/nʳ，其中r > 0为系统参数。
+    > 如果某一词项的语法复杂度为n，则其语法简单度为s = 1/nʳ，其中r > 0为系统参数。
     > 由于n≥1，s在(0,1]中。【译者注：n ≥ 1 ⇒ 0 < s ≤ 1】
     > 原子词项的简易度最高，为1.0。
 
