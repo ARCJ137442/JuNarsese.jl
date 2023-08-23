@@ -1,15 +1,17 @@
 name = "JuNarsese"
 uuid = "11330a76-bea1-45e0-8f80-7114e2f607b1"
 authors = ["ARCJ137442 <61109168+ARCJ137442@users.noreply.github.com>"]
-version = "2.0.0"
 git-tree-sha1 = "308b5830bd3f1eb7f6bde386a3a23b3ce8b3365e"
 repo-url = "https://github.com/ARCJ137442/JuNarsese.jl"
+version = "2.1.0"
 
 [deps]
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 
 [extras]
+Profile = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
+ProfileView = "c46f51b8-102a-5cf2-8d2c-8597cb0e0da7"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Test", "Profile", "ProfileView"]

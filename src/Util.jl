@@ -5,7 +5,7 @@ module Util
 
 export UNothing
 export @reverse_dict_content, @redirect_SRS, @expectedError
-export match_first, allproperties, allproperties_generator
+export match_first, match_first_view, allproperties, allproperties_generator
 export get_pure_type_string, get_pure_type_symbol, verify_type_expr, assert_type_expr
 export SYMBOL_NULL
 export @generate_ifelseif, @rand
@@ -63,6 +63,19 @@ function match_first(
     )::Any
     index = findfirst(criterion, collection)
     return !isnothing(index) ? collection[index] : default_value
+end
+
+"""
+同`match_first`，但返回「元素切片」而非「元素子集」
+- 在一些无需修改元素的地方，可以有效减少内存分配，并提高性能
+"""
+function match_first_view(
+    criterion::Function,
+    collection::Union{Array, Set, Dict, Tuple}, 
+    default_value::Any = nothing,
+    )::Any
+    index = findfirst(criterion, collection)
+    return !isnothing(index) ? (@views collection[index]) : default_value
 end
 
 """

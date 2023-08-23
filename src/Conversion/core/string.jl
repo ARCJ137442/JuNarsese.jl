@@ -348,33 +348,10 @@ begin "陈述形式"
     end
 
     """
-    根据开括号的位置，寻找同级的闭括号(返回第一个位置)
-    """
-    function find_braces(
-        s::AbstractString, i_begin::Integer, 
-        s_start::AbstractString, s_end::AbstractString
-        )::Integer
-        # 顺序查找
-        l_start::Integer = length(s_start)
-        level::Unsigned = 0
-        sl::AbstractString = ""
-        for i in (i_begin+1):length(s)
-            sl = s[i:i+l_start-1] # ⚠此处可能溢出
-            if sl == s_start
-                level += 1
-            elseif sl == s_end
-                level == 0 && return i # 当同级括号闭上时
-                level -= 1
-            end
-        end
-        return -1 # 无效值
-    end
-
-    """
     自动给词项「剥皮」
     - 在「括号集」中寻找对应的「词缀」
     - 自动去除词项两边的括号，并返回识别结果
-    - 返回值: 对应类型, 前缀, 后缀, 切割后的字符串
+    - 返回值: 对应类型, 前缀, 后缀, 切割后的字符串(切片)
     """
     function auto_strip_term(type_brackets::Dict, s::String)::Tuple
         for ( # 遍历所有「类型 => (前缀, 后缀)对」
@@ -382,7 +359,7 @@ begin "陈述形式"
                 (prefix::AbstractString, suffix::AbstractString) # 对其中元组进行解构
             ) in type_brackets
             if startswith(s, prefix) && endswith(s, suffix) # 前后缀都符合(兼容「任意长度词缀」)
-                stripped::String = s[
+                stripped::AbstractString = @views s[ # 切片即可
                     nextind(
                         s, firstindex(s), length(prefix)
                     ):prevind(
@@ -397,10 +374,10 @@ begin "陈述形式"
     end
 
     "一系列判断「括弧开闭」的方法（默认都是「作为前缀识别」，以兼容「多字节字串」）"
-    match_opener(parser::StringParser, s::AbstractString)::String  = match_first(str -> startswith(s, str), parser.bracket_openers, "")
-    match_closure(parser::StringParser, s::AbstractString)::String = match_first(str -> startswith(s, str), parser.bracket_closures, "")
-    match_opener(parser::StringParser, c::Char)::String  = match_opener(parser, string(c))
-    match_closure(parser::StringParser, c::Char)::String = match_closure(parser, string(c))
+    match_opener(parser::StringParser, s::AbstractString)::AbstractString  = match_first_view(str -> startswith(s, str), parser.bracket_openers, "")
+    match_closure(parser::StringParser, s::AbstractString)::AbstractString = match_first_view(str -> startswith(s, str), parser.bracket_closures, "")
+    match_opener(parser::StringParser, c::Char)::AbstractString  = match_opener(parser, string(c))
+    match_closure(parser::StringParser, c::Char)::AbstractString = match_closure(parser, string(c))
 end
 
 """
@@ -412,7 +389,7 @@ end
     - `[A,B]`/`{A,B}`: 词项集
     - `?A`: 原子词项
 """
-function data2narsese(parser::StringParser, ::TYPE_TERMS, s::String)
+function data2narsese(parser::StringParser, ::TYPE_TERMS, s::AbstractString)
     # 预处理覆盖局部变量
     s::String = parser.preprocess(s)
 
@@ -445,17 +422,17 @@ begin "原子↔字符串"
         - 协议：默认类型有一个「类型(名字)」的构造方法
     - 对原子词项而言，「去除了词缀的方法」就是本来的方法
     """
-    function data2narsese(parser::StringParser, ::Type{Atom}, s::String, ::Bool=false)::Atom
+    function data2narsese(parser::StringParser, ::Type{Atom}, s::AbstractString, ::Bool=false)::Atom
         # 判空
         isempty(s) && error("尝试解析空字符串！")
         # 无前缀的默认类型/名称
-        term_type::Type, term_literal::String = Word, s
+        term_type::Type, term_literal::AbstractString = Word, s
         # 遍历比对前缀（支持变长字符串）
         for (type::Type, prefix::String) in parser.atom_prefixes
             # 若为前缀→获得类型&截取（空字串是任意类型的前缀，为避免提前被索引，此处跳过）
             if !isempty(prefix) && startswith(s, prefix)
                 term_type = type
-                term_literal = s[nextind(s, 1, length(prefix)):end] # 📌`0+n`兼容多字节Unicode字符
+                term_literal = (@views s[nextind(s, 1, length(prefix)):end]) # 📌`0+n`兼容多字节Unicode字符
                 break
             end
         end
@@ -490,21 +467,21 @@ begin "复合词项↔字符串"
         level::Unsigned = 0
         i::Integer = start
         i_last::Integer = lastindex(s)
-        copula::String = ""
-        si::String = ""
+        copula::AbstractString = ""
+        si::AbstractString = ""
         while i ≤ i_last # 📌不能使用enumerate，因为其中的「索引」只是「序数」不是「实际索引」
-            si = s[i:end] # 截取指定长字符串
+            si = (@views s[i:end]) # 截取指定长字符串（切片）
             # 跳过子词项系词
             if level > 0
                 copula = parser.startswith_copula(
-                    s[i:i_last]
+                    (@views s[i:i_last])
                 )
                 if !isempty(copula)
                     i = nextind(s, i, length(copula))
                     continue
                 end
             # 识别底层分隔符
-            elseif startswith(s[i:end], separator) # 兼容「任意长度分隔符」
+            elseif startswith((@views s[i:end]), separator) # 兼容「任意长度分隔符」
                 # 返回范围：分隔符的起止位置(加到外面去后，要「-1」回来)
                 return i:nextind(s, i, length(separator)-1)
             end
@@ -536,7 +513,7 @@ begin "复合词项↔字符串"
     - `(|,A,B,C),<S-->P>,{SELF},[good]`
     """
     function _parse_term_series(
-        parser::StringParser, s::String
+        parser::StringParser, s::AbstractString
         )::Vector{String}
         # 初始化返回值
         components::Vector{String} = String[]
@@ -544,7 +521,7 @@ begin "复合词项↔字符串"
         i::Integer = 1
         i_last::Integer = lastindex(s) # 📌不能使用长度代替索引：多字节Unicode字符可能会变短
         term_start::Integer = i
-        term_str::String = ""
+        term_str::AbstractString = ""
         # term_end
         while i ≤ i_last
             # 获取词项末尾（下一个分隔符位置/字符串末尾）
@@ -556,7 +533,7 @@ begin "复合词项↔字符串"
             )
             # 截取
             term_end = prevind(s, first(separator_next), 1) # 使用first而非separator_next[begin]，更精准获得索引
-            term_str = s[term_start:term_end]
+            term_str = @views s[term_start:term_end] # 切片即可
             # 解析&追加
             push!(components, term_str)
             # 更新词项头索引
@@ -572,7 +549,7 @@ begin "复合词项↔字符串"
     复合词项的「总解析方法」(语句除外)
     - 总是「无空格」的
     """
-    function data2narsese(parser::StringParser, ::Type{Compound}, s::String)
+    function data2narsese(parser::StringParser, ::Type{Compound}, s::AbstractString)
         # 自动剥皮并跳转
         return data2narsese(
             parser, Compound,
@@ -601,7 +578,7 @@ begin "复合词项↔字符串"
         - `&&,A,B,C` => `Conjunction`, (`A`, `B`, `C`)
         - `||,(/,A,B,_,C),D` => `Disjunction`, (`(/,A,B,_,C)`,`D`)
     """
-    function data2narsese(parser::StringParser, ::Type{Compound}, s::String, ::Bool)
+    function data2narsese(parser::StringParser, ::Type{Compound}, s::AbstractString, ::Bool)
         # 解析出「词项序列字串」
         term_strings::Vector{String} = _parse_term_series(parser, s)
         # 解析词项类型: 使用第一项
@@ -638,7 +615,7 @@ begin "复合词项↔字符串"
     """
     字符串→外延集/内涵集（有词缀）：自动剥皮并转换
     """
-    function data2narsese(parser::StringParser, ::Type{TermSet{EI}}, s::String)::TermSet{EI} where {EI <: AbstractEI}
+    function data2narsese(parser::StringParser, ::Type{TermSet{EI}}, s::AbstractString)::TermSet{EI} where {EI <: AbstractEI}
         # 自动剥皮并跳转
         return data2narsese(
             parser, TermSet{EI},
@@ -657,7 +634,7 @@ begin "复合词项↔字符串"
     例子(无额外空格)
     - `data2narsese(StringParser, TermSet{Extension}, "A,B,C", true) == TermSet{Extension}(A,B,C)`
     """
-    function data2narsese(parser::StringParser, ::Type{TermSet{EI}}, s::String, ::Bool)::TermSet{EI} where {EI <: AbstractEI}
+    function data2narsese(parser::StringParser, ::Type{TermSet{EI}}, s::AbstractString, ::Bool)::TermSet{EI} where {EI <: AbstractEI}
         term_strings::Vector{String} = _parse_term_series(parser, s) # 使用新的「词项序列解析法」
         TermSet{EI}(
             (
@@ -684,7 +661,7 @@ begin "复合词项↔字符串"
     """
     字符串→陈述（有词缀）：自动剥皮并转换
     """
-    function data2narsese(parser::StringParser, ::Type{Statement}, s::String)::Statement
+    function data2narsese(parser::StringParser, ::Type{Statement}, s::AbstractString)::Statement
         # 自动剥皮并跳转
         return data2narsese(
             parser, Statement,
@@ -718,7 +695,7 @@ begin "复合词项↔字符串"
     - `<A==>B><->C`
     - `(&&,<A-->B>,<B-->C>)==><A-->C>`
     """
-    function data2narsese(parser::StringParser, ::Type{Statement}, s::String, ::Bool)::Statement
+    function data2narsese(parser::StringParser, ::Type{Statement}, s::AbstractString, ::Bool)::Statement
         # 识别并匹配在「顶层」的系词（避免子词项中系词的干扰）
         # 循环变量(📌不使用local)
         i::Integer, level::Unsigned = firstindex(s), 0
@@ -727,16 +704,16 @@ begin "复合词项↔字符串"
             # 系词识别：当前位置是否以任意系词为前缀
             for (type::Type, copula::String) in parser.copula_dict
                 # 此时i停在系词字串的开头
-                if startswith(s[i:end], copula)
+                if startswith(@views(s[i:end]), copula) # 【20230823 22:20:22】使用`@views`创建切片，而非使用新数组
                     # 若是「顶层系词」，获取参数&返回(return后面不用else)
                     level == 0 && return Statement{type}(
                         data2narsese(
                             parser, Term, 
-                            s[begin:prevind(s, i, 1)] # ϕ1 📌
+                            (@views s[begin:prevind(s, i, 1)]) # ϕ1 📌
                         ),
                         data2narsese(
                             parser, Term, 
-                            s[nextind(s, i, length(copula)):end] # ϕ2
+                            (@views s[nextind(s, i, length(copula)):end]) # ϕ2
                         )
                     )
                     # 若非顶层，跳过整个系词部分（匹配到了，就直接忽略，避免后续被认作括弧）
@@ -745,8 +722,8 @@ begin "复合词项↔字符串"
                 end
             end
             # 没匹配到系词：识别括弧→变更层级
-            if     !isempty(match_opener(parser, s[i:end]))  level += 1     # 截取の字串∈开括弧→增加层级
-            elseif !isempty(match_closure(parser, s[i:end])) level -= 1 end # 截取の字串∈闭括弧→降低层级
+            if     !isempty(match_opener(parser, (@views s[i:end])))  level += 1     # 截取の字串∈开括弧→增加层级
+            elseif !isempty(match_closure(parser, (@views s[i:end]))) level -= 1 end # 截取の字串∈闭括弧→降低层级
             # 索引自增
             i = nextind(s, i) # 📌避免多字节Unicode字符识别无效
         end
@@ -866,7 +843,7 @@ begin "语句相关"
     """
     function data2narsese(
         parser::StringParser, ::Type{Punctuation}, 
-        s::String,
+        s::AbstractString,
         default::Type = Judgement, # 📌【20230808 9:46:21】此处不能用Type{P}限制，会导致类型变量连锁，类型转换失败
         )::Type{ <: UNothing{Punctuation}}
         get(parser.punctuation2type, s, default)
@@ -882,7 +859,7 @@ begin "语句相关"
     """
     function data2narsese(
         parser::StringParser, ::Type{Tense}, 
-        s::String,
+        s::AbstractString,
         default = Eternal,
         )
         get(parser.tense2type, s, default)
@@ -897,14 +874,14 @@ begin "语句相关"
     - `%1.00;0.90%` => `1.00;0.90` => Truth64(1.0, 0.9)
     """
     function data2narsese(
-        parser::StringParser, ::Type{Truth}, s::String,
+        parser::StringParser, ::Type{Truth}, s::AbstractString,
         stripped::Bool = false
         )
         if !stripped
             left::String, right::String = parser.truth_brackets
             return data2narsese(
                 parser, Truth, 
-                s[nextind(s, begin, length(left)):prevind(s, end, length(right))], # 自动剥皮
+                (@views s[nextind(s, begin, length(left)):prevind(s, end, length(right))]), # 自动剥皮(切片)
                 true # 标示已经剥皮
             )
         end
@@ -928,14 +905,14 @@ begin "语句相关"
     - `$0.50;0.50;0.50$` => `0.50;0.50;0.50` => BudgetBasic(0.5, 0.5, 0.5)
     """
     function data2narsese(
-        parser::StringParser, ::Type{Budget}, s::String,
+        parser::StringParser, ::Type{Budget}, s::AbstractString,
         stripped::Bool = false
         )
         if !stripped
             left::String, right::String = parser.truth_brackets
             return data2narsese(
                 parser, Budget, 
-                s[nextind(s, begin, length(left)):prevind(s, end, length(right))], # 自动剥皮
+                (@views s[nextind(s, begin, length(left)):prevind(s, end, length(right))]), # 自动剥皮(切片)
                 true # 标示已经剥皮
             )
         end
@@ -970,7 +947,7 @@ begin "语句相关"
     function data2narsese(
         parser::StringParser, 
         ::Type{Any}, # 兼容模式
-        s::String;
+        s::AbstractString;
         default_truth_constructor::Function = Narsese.default_precision_truth, # 调用时创建
         default_budget_constructor::Function = Narsese.default_precision_budget, # 调用时创建
         default_punctuation::Type = Narsese.Judgement, # 实际无默认标点（语句类型）
@@ -980,7 +957,7 @@ begin "语句相关"
         isempty(s) && throw(ArgumentError("尝试解析空字符串！"))
 
         # 预处理
-        str::String = parser.preprocess(s)
+        str::AbstractString = parser.preprocess(s)
 
         # 从头部截取预算值
         budget::ABudget, budget_index::Integer = _match_budget(parser, str; default_budget_constructor)
@@ -1025,7 +1002,7 @@ begin "语句相关"
     """
     function data2narsese(
         parser::StringParser, ::TYPE_SENTENCES,
-        s::String,
+        s::AbstractString,
         F::Type=DEFAULT_FLOAT_PRECISION, C::Type=DEFAULT_FLOAT_PRECISION;
         default_truth::ATruth = JuNarsese.default_precision_truth(), # 动态创建
         default_punctuation::Type = Nothing # 默认类型
@@ -1044,7 +1021,7 @@ begin "语句相关"
     """
     function data2narsese(
         parser::StringParser, ::Type{ATask},
-        s::String,
+        s::AbstractString,
         F::Type=DEFAULT_FLOAT_PRECISION, C::Type=DEFAULT_FLOAT_PRECISION;
         default_truth::ATruth = JuNarsese.default_precision_truth(), # 动态创建
         default_budget::ABudget = JuNarsese.default_precision_budget(), # 动态创建
@@ -1069,7 +1046,7 @@ begin "语句相关"
     - `$0.50;0.50;0.50$<A-->B>.:|:%1.00;0.90%` => (Budget(1.00,0.90), begin+16)
     """
     function _match_budget(
-        parser::StringParser, s::String;
+        parser::StringParser, s::AbstractString;
         default_budget_constructor::Function
         )
         left::String, right::String = parser.budget_brackets
@@ -1094,13 +1071,13 @@ begin "语句相关"
             return (
                 data2narsese(
                     parser, ABudget,
-                    s[
+                    (@views s[ # 切片即可
                         nextind(
                             s, last(left_range)
                         ):prevind(
                             s, first(right_range)
                         )
-                    ],
+                    ]),
                     true
                 ),
                 # 「右括弧最后一个索引」的上一个索引
@@ -1127,20 +1104,20 @@ begin "语句相关"
     【20230822 11:33:03】现不再提供F、C精度选择
     """
     function _match_truth(
-        parser::StringParser, s::String;
+        parser::StringParser, s::AbstractString;
         default_truth_constructor::Function
         )
         left::String, right::String = parser.truth_brackets
         if endswith(s, right)
             # 获取前括弧的索引范围
             start_range::AbstractRange = findlast(
-                left, s[1:prevind(s, end, length(right))]
+                left, (@views s[1:prevind(s, end, length(right))]) # 切片即可
             )
             # 剥皮等工作交给转换器
             return (
                 data2narsese(
                     parser, Truth,
-                    s[first(start_range):end],
+                    (@views s[first(start_range):end]), # 切片即可
                 ),
                 # 「前括弧第一个索引」的上一个索引
                 prevind(
@@ -1168,9 +1145,9 @@ begin "语句相关"
     例：
     - `<A-->B>.:|:` => (, end-11)
     """
-    function _match_stamp(parser::StringParser, s::String)::Tuple
+    function _match_stamp(parser::StringParser, s::AbstractString)::Tuple
         # 自动匹配已存储的「时态」
-        tense_string::String = match_first(
+        tense_string::AbstractString = match_first_view(
             tense_str -> !isempty(tense_str) && endswith(s, tense_str), # 避免空字符串提前结束匹配
             parser.tenses,
             ""
@@ -1181,7 +1158,7 @@ begin "语句相关"
             if endswith(s, right)
                 l_range::UNothing{AbstractRange} = findlast(left, s)
                 if !isnothing(l_range)
-                    num_str::String = s[
+                    num_str::AbstractString = @views s[ # 切片即可
                         nextind( # 后挪
                             s, last(
                             l_range # 左边的范围
@@ -1225,9 +1202,9 @@ begin "语句相关"
     例：
     - `<A-->B>.` => (Judgement, end-1)
     """
-    function _match_punctuation(parser::StringParser, s::String, default_punctuation::Type)::Tuple
+    function _match_punctuation(parser::StringParser, s::AbstractString, default_punctuation::Type)::Tuple
         # 自动匹配
-        punctuation_string::String = match_first(
+        punctuation_string::AbstractString = match_first(
             punctuation_str -> endswith(s, punctuation_str),
             parser.punctuations,
             ""

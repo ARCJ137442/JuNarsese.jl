@@ -88,13 +88,14 @@ macro equal_test(
         end
     end |> esc # 在调用的上下文中解析
 end
+
 begin "报错debug专用"
     # 测试@字符串
-    @equal_test StringParser_ascii test_set
+    # @equal_test StringParser_ascii test_set
     # 测试@LaTeX
-    @equal_test StringParser_latex test_set
+    # @equal_test StringParser_latex test_set
     # 测试@漢
-    @equal_test StringParser_han test_set
+    # @equal_test StringParser_han test_set
 end
 @testset "Conversion" begin
 
@@ -130,4 +131,18 @@ end
     @testset "ASTParser" begin
         @equal_test ASTParser test_set
     end
+end
+
+# 使用可视化的性能评估库`ProfileView`
+using ProfileView # 参考：https://www.math.pku.edu.cn/teachers/lidf/docs/Julia/html/_book/perf.html#perf-prof
+
+begin "番外：性能评估"
+
+    @info "性能评估开始"
+
+    # 避免与VSCode冲突
+    ProfileView.@profview @equal_test StringParser_ascii test_set # 先前测试已触发编译
+
+    readline() # 在直接执行时，防止异步操作提前退出（不会影响`Pkg.test`）
+
 end
