@@ -3,7 +3,7 @@ uuid = "11330a76-bea1-45e0-8f80-7114e2f607b1"
 authors = ["ARCJ137442 <61109168+ARCJ137442@users.noreply.github.com>"]
 git-tree-sha1 = "308b5830bd3f1eb7f6bde386a3a23b3ce8b3365e"
 repo-url = "https://github.com/ARCJ137442/JuNarsese.jl"
-version = "2.1.0"
+version = "2.2.0"
 
 [deps]
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"

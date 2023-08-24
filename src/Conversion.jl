@@ -26,6 +26,7 @@ include("Conversion/template.jl")
 # 核心
 include("Conversion/core/string.jl")
 include("Conversion/core/ast.jl")
+include("Conversion/core/native.jl")
 
 # 附加
 include("Conversion/extra/string_shortcut.jl") # 使用eval的字符串
