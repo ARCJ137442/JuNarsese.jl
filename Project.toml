@@ -9,9 +9,7 @@ version = "2.2.0"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 
 [extras]
-Profile = "9abbd945-dff8-562f-b5e8-e1ebf5ef1b79"
-ProfileView = "c46f51b8-102a-5cf2-8d2c-8597cb0e0da7"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test", "Profile", "ProfileView"]
+test = ["Test"]

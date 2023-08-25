@@ -1,4 +1,4 @@
-include("commons.jl") # 已在此中导入JuNarsese、Test
+isdefined(Main, :JuNarsese) || include("commons.jl") # 已在此中导入JuNarsese、Test
 
 A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
 @assert (∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D))) == (∨(⩜(A→B, B→C, C→D), ⩚(A→B, B→C, C→D)))
