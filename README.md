@@ -1,5 +1,7 @@
 # JuNarsese
 
+**中文** | [English](https://github.com/ARCJ137442/JuNarsese.jl/blob/main/README_en.md)
+
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
 [![Static Badge](https://img.shields.io/badge/julia-package?logo=julia&label=1.8%2B)](https://julialang.org/)
 
@@ -22,11 +24,12 @@ JuNarsese包含两个主要模块：
     - 「基于类型的解析器」与「基于对象的解析器」
   - 实现上述数据结构与以下常用结构的相互转化
     - 字符串
-    - AST(抽象语法树)
+    - AST（抽象语法树，对应Julia的`Expr`类型）
+    - 原生（Julia的原生类型，包括`Dict`与`Vector`）
 
 ## 安裝
 
-作为一个**Julia包**，您只需：
+作为一个**Julia包**，只需：
 
 1. 在安装`Pkg`包管理器的情况下，
 2. 在REPL(`julia.exe`)运行如下代码：
@@ -34,6 +37,12 @@ JuNarsese包含两个主要模块：
 ```julia
 using Pkg
 Pkg.add(url="https://github.com/ARCJ137442/JuNarsese.jl")
+```
+
+在REPL，通过按下 `]` 键，同样可以：
+
+```REPL
+(v1.8) pkg> add https://github.com/ARCJ137442/JuNarsese.jl
 ```
 
 ## 作者注
