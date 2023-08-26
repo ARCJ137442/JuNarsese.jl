@@ -149,9 +149,9 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
 
     # 获取所有子词项
     @show terms_ = fetch_all_terms((A→B)⇒(B→C))
-    @test A in terms_ && B in terms_ && C in terms_# &&
-        #   (A→B) in terms_ && (A→C) in terms_ &&
-        #   ((A→B)⇒(B→C)) in terms_
+    @test A in terms_ && B in terms_ && C in terms_ &&
+          (A→B) in terms_ && (B→C) in terms_ &&
+          ((A→B)⇒(B→C)) in terms_
 
     # 判等/比大小逻辑 #
 
