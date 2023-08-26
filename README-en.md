@@ -1,6 +1,6 @@
 # JuNarsese
 
-[中文](https://github.com/ARCJ137442/JuNarsese.jl/blob/main/README.md) | **English**
+[简体中文](https://github.com/ARCJ137442/JuNarsese.jl/blob/main/README.md) | [繁體中文](https://github.com/ARCJ137442/JuNarsese.jl/blob/main/README-zh_tr.md) | **English**
 
 [![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
 [![Static Badge](https://img.shields.io/badge/julia-package?logo=julia&label=1.8%2B)](https://julialang.org/)
