@@ -150,8 +150,8 @@ begin "用于「判等失败」后递归查找「不等の元素」的断言函�
 
     "陈述"
     recursive_assert(s1::Statement, s2::Statement) = begin
-        recursive_assert(s1.ϕ1, s2.ϕ1)
-        recursive_assert(s1.ϕ2, s2.ϕ2)
+        recursive_assert(ϕ1(s1), ϕ1(s2))
+        recursive_assert(ϕ2(s1), ϕ2(s2))
     end
 
 end

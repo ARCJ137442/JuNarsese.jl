@@ -5,41 +5,7 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
 
 @testset "Narsese" begin
 
-    @info "各个词项的复杂度："
-    [println(get_syntactic_complexity(t), " of $t") for t in test_set.terms]
-
-    # 判等/比大小逻辑 #
-    "抽取所有词项：复合词项也变成「自身+所有组分」"
-    fetch_all_terms(terms::Union{Tuple,Array,Base.Generator}) = terms |> collect
-    fetch_all_terms(term::Term) = term # 默认只有它自己
-    fetch_all_terms(term::AbstractCompound) = (term, fetch_all_terms(term.terms)...)
-    fetch_all_terms(s::AbstractStatement) = (s, fetch_all_terms(s.ϕ1)..., fetch_all_terms(s.ϕ2)...)
-    "用「词项+语句の词项」构造大测试集"
-    all_terms::Tuple = (fetch_all_terms(test_set.terms)..., fetch_all_terms(JuNarsese.get_term.(test_set.sentences))...)
-    @info "抽取到的词项：" all_terms
-
-    # 性能测试：使用大于&小于的方式，是否等效于isequal的效果
-    @info "判等性能测试：" (@elapsed [
-        (t1 == t2) # 直接使用等号的方法
-        for t1 in all_terms, t2 in all_terms
-    ]) (@elapsed [
-        !(s1<s2 || s2<s1) # 使用「不大于也不小于」的方法
-        for s1 in all_terms, s2 in all_terms
-    ])
-    
-    # 等价性测试：「不（大于或小于）」就是「等于」而非「大于或小于」
-    for s1 in all_terms, s2 in all_terms
-        @test (s1 == s2) ≠ (s1<s2 || s2<s1)
-    end
-    # 严格顺序测试：不存在「既大于又小于」的情况
-    for s1 in all_terms, s2 in all_terms
-        local fail::Bool = s1<s2 && s2<s1
-        @test !fail
-        if fail
-            @info "既大于又小于！" s1 s2
-            @assert !fail # 强制中断测试
-        end
-    end
+    # 词项构建测试 #
 
     # 原子词项
 
@@ -52,8 +18,8 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
     @test o == Operator(:操作)
 
     # 词项集
-    exSet = Base.:(&)(w, d, o)
-    inSet = Base.:(|)(d, q, i) # 【20230730 23:34:29】TODO: 必须改掉这样的语法
+    exSet = ⩀(w, d, o)
+    inSet = ⊍(d, q, i) # 【20230730 23:34:29】TODO: 必须改掉这样的语法
     @show exSet inSet "$exSet and $inSet"
 
     @test exSet == ExtSet(w,o,d) # 无序
@@ -88,6 +54,129 @@ A,B,C,D,E = "A B C D E" |> split .|> String .|> Symbol .|> Word
 
     @show p = TermProduct(A,B,C)
     @test p == *(A, B, C) == (A*B*C) ≠ (B*A*C) # 有序性 老式构造方法仍可使用
+
+    # 词项与数组等可迭代对象的联动方法 #
+
+    # 测试原子的长度函数
+    @test length(A) == 1
+
+    # 测试原子的索引函数
+    @test getindex(A) == A[] == :A
+
+    # 测试除差、像以外的所有复合词项
+    for compoundType::Type in [TermProduct, ExtSet, IntSet, ExtIntersection, IntIntersection]
+
+        # 测试复合词项的长度函数
+        @test 3 == length(compoundType([A, B, C])) > length(compoundType([A, B])) == 2
+
+        # 测试复合词项的索引函数
+        @test getindex(
+            compoundType([A, B]), 
+            2
+        ) == compoundType([A, B])[2] == B ≠ compoundType([A, B])[1] == A
+
+        # 测试复合词项的枚举函数
+        @test [t for t in compoundType([A, B])] == [A, B]
+
+        # 测试复合词项的映射函数
+        @test map(
+            t -> typeof(t)(Symbol(:_, nameof(t))), 
+            compoundType([A, B])
+        ) == compoundType([w"_A", w"_B"])
+
+        # 测试复合词项的随机函数
+        random_term = rand(compoundType([A, B]))
+        @test random_term isa Atom
+        @test random_term == A || random_term == B
+
+        # 测试复合词项的 all 和 any 函数
+        @test all(t -> t isa Atom, compoundType([A, B]))
+        @test any(==(B), compoundType([A, B]))
+
+        # 测试复合词项的倒转函数
+        @test reverse(compoundType([A, B])) == compoundType([B, A])
+
+    end
+
+    # 测试继承、相似两类陈述（严格模式需要另作改变）
+    for statementType in [Inheritance, Similarity]
+        # 测试陈述的长度函数
+        @test length(statementType(A, B)) == 2
+
+        # 测试陈述的索引函数
+        @test getindex(
+            statementType(A, B),
+            2
+        ) == statementType(A, B)[2] == B ≠ statementType(A, B)[1] == A
+
+        # 测试陈述的枚举函数
+        @test [t for t in statementType(A, B)] == [A, B]
+
+        # 测试陈述的映射函数
+        @test map(
+            t -> typeof(t)(Symbol(:_, nameof(t))), 
+            statementType([A, B])
+        ) == statementType([w"_A", w"_B"])
+
+        # 测试陈述的随机函数
+        random_element = rand(statementType(A, B))
+        @test random_element isa Atom
+        @test random_element == A || random_element == B
+
+        # 测试陈述的 all 和 any 函数
+        @test all(t -> t isa Atom, statementType(A, B))
+        @test any(==(B), statementType(A, B))
+
+        # 测试陈述的倒转函数
+        @test reverse(statementType(A, B)) == statementType(B, A)
+
+    end
+
+    # 词项NAL信息支持 #
+    "用「词项+语句の词项」构造大测试集"
+    all_terms = (
+        (fetch_all_terms.(test_set.terms)...)..., 
+        (fetch_all_terms.(JuNarsese.get_term.(test_set.sentences))...)...
+    )
+    @info "抽取到的词项：" all_terms
+
+    @info "各个词项的复杂度："
+    [println(get_syntactic_complexity(t), " of $t") for t in test_set.terms]
+    
+    # 收集所有原子词项
+    atoms_ = atoms((A→B)⇒(B→C))
+    @test A in atoms_ && B in atoms_ && C in atoms_
+
+    # 获取所有子词项
+    @show terms_ = fetch_all_terms((A→B)⇒(B→C))
+    @test A in terms_ && B in terms_ && C in terms_# &&
+        #   (A→B) in terms_ && (A→C) in terms_ &&
+        #   ((A→B)⇒(B→C)) in terms_
+
+    # 判等/比大小逻辑 #
+
+    # 性能测试：使用大于&小于的方式，是否等效于isequal的效果
+    @info "判等性能测试：" (@elapsed [
+        (t1 == t2) # 直接使用等号的方法
+        for t1 in all_terms, t2 in all_terms
+    ]) (@elapsed [
+        !(s1<s2 || s2<s1) # 使用「不大于也不小于」的方法
+        for s1 in all_terms, s2 in all_terms
+    ])
+    
+    # 等价性测试：「不（大于或小于）」就是「等于」而非「大于或小于」
+    for s1 in all_terms, s2 in all_terms
+        @test (s1 == s2) ≠ (s1<s2 || s2<s1)
+    end
+    # 严格顺序测试：不存在「既大于又小于」的情况
+    for s1 in all_terms, s2 in all_terms
+        local fail::Bool = s1<s2 && s2<s1
+        @test !fail
+        if fail
+            @info "既大于又小于！" s1 s2
+            @assert !fail # 强制中断测试
+        end
+    end
 
     # 测试Narsese特性之「有序可重复|无序不重复」 #
 

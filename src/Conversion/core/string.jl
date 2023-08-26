@@ -444,7 +444,7 @@ begin "原子↔字符串"
     function narsese2data(parser::StringParser, a::Narsese.Atom)::String
         form_atom(
             parser.atom_prefixes[typeof(a)],
-            string(a.name)
+            nameof_string(a)
         )
     end
 
@@ -606,9 +606,9 @@ begin "复合词项↔字符串"
         parser.compound_brackets[typeof(t)]..., # 前后缀
         [
             narsese2data(parser, term)
-            for term in t.terms
+            for term in terms(t)
         ], # 内容
-        # ↑📌不能使用「narsese2data.(parser, t.terms)」：报错「MethodError: no method matching length(::JuNarsese.Conversion.StringParser)」
+        # ↑📌不能使用「narsese2data.(parser, terms(t))」：报错「MethodError: no method matching length(::JuNarsese.Conversion.StringParser)」
         parser.comma_t2d
     )
 
@@ -651,9 +651,9 @@ begin "复合词项↔字符串"
     function narsese2data(parser::StringParser, s::Statement{Type}) where Type
         form_statement(
             parser.compound_brackets[Statement]...,
-            narsese2data(parser, s.ϕ1), 
+            narsese2data(parser, ϕ1(s)), 
             parser.copula_dict[Type], 
-            narsese2data(parser, s.ϕ2),
+            narsese2data(parser, ϕ2(s)),
             parser.space,
         )
     end
@@ -749,7 +749,7 @@ begin "复合词项↔字符串"
         parser.compound_symbols[typeof(t)],
         [
             narsese2data(parser, term)
-            for term in t.terms
+            for term in terms(t)
         ], # 内容
         parser.comma_t2d
     )
@@ -764,7 +764,7 @@ begin "复合词项↔字符串"
         parser.compound_brackets[Compound]...,
         parser.compound_symbols[typeof(t)],
         insert!( # 使用「插入元素」的处理办法，因为数组是新建的
-            [narsese2data(parser, term) for term in t.terms], # 自动转换字符串
+            [narsese2data(parser, term) for term in terms(t)], # 自动转换字符串
             t.relation_index, parser.atom_prefixes[PlaceHolder] # 在对应索引处插入元素，并返回
         ),
         parser.comma_t2d

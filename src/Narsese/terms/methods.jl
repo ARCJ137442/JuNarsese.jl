@@ -26,7 +26,7 @@
 # begin "散列/哈希: 应用于集合操作中，使得集合用于判断相等"
     
 #     # "原子の哈希=其名"
-#     # Base.hash(a::Atom, h) = Base.hash(Base.hash(a.name, h), Base.hash(:NarseseAtom, h))
+#     # Base.hash(a::Atom, h) = Base.hash(Base.hash(nameof(a), h), Base.hash(:NarseseAtom, h))
     
 #     # "复合词项の哈希"
 #     # Base.hash(c::Compound, h) = 
@@ -36,6 +36,7 @@
 # NAL信息支持
 begin "NAL信息支持"
     
+    export atoms, fetch_all_terms
     export get_syntactic_complexity, get_syntactic_simplicity
     export is_commutative, is_repeatable
 
@@ -85,23 +86,19 @@ begin "NAL信息支持"
 
     参见 `get_syntactic_complexity(::Term)`的引用
     > 复合词项的句法复杂度等于1加上其组成部分的句法复杂度之和。
-
-    协议：所有复合词项都支持`terms`属性
     """
     get_syntactic_complexity(c::ACompound) = 1 + sum(
         get_syntactic_complexity, # 每一个的复杂度
-        c.terms # 遍历每一个组分
+        terms(c) # 遍历每一个组分
     )
 
     """
-    陈述の复杂度 = 1 + 主词复杂度 + 谓词复杂度
-    - 特立于复合词项
-
-    因：陈述无`terms`属性，不满足复合词项的协议
-
-    协议：所有「陈述」都有`ϕ1`与`ϕ2`属性
+    陈述の复杂度 = 1 + ∑组分の复杂度(主词复杂度 + 谓词复杂度)
     """
-    get_syntactic_complexity(s::AStatement) = 1 + get_syntactic_complexity(s.ϕ1) + get_syntactic_complexity(s.ϕ2)
+    get_syntactic_complexity(s::AStatement) = 1 + sum(
+        get_syntactic_complexity, # 每一个的复杂度
+        terms(s) # 遍历每一个组分
+    )
 
     """
     [NAL-3]获取词项的「语法简单度」
@@ -205,7 +202,27 @@ begin "NAL信息支持"
     @inline is_repeatable(::Type{<:CTStatementTemporalSet{Sequential}})::Bool = true
     "平行合取 = false"
     @inline is_repeatable(::Type{<:CTStatementTemporalSet{Parallel}})::Bool = false
+
+    """
+    获取其内的所有原子词项
+    - 用于从任意词项中获得所有（直接或间接）包含的原子词项列表
+    - 迁移自`Base.collect`方法
+        - 原方法的逻辑将在下一个主版本中弃用，跟随所有可迭代对象的逻辑
     
+    对不同类型的词项而言：
+    - 原子：返回仅含其自身的数组
+    - 陈述：返回其主词、谓词中的所有原子词项
+    - 复合：返回其所有组分中的所有原子词项
+    """
+    atoms(t::AAtom)::Vector{Atom} = Atom[t]
+    atoms(t::AStatement)::Vector{Atom} = [(atoms.(terms(t))...)...] # 📌二次展开：第一次展开成「向量の向量」，第二次展开成「词项の向量」
+    atoms(t::ACompound)::Vector{Atom} = [(atoms.(terms(t))...)...]
+    
+    "抽取所有出现的词项：复合词项也变成「自身+所有组分」"
+    fetch_all_terms(term::Term)::Vector{Term} = [term]
+    fetch_all_terms(term::AbstractCompound)::Vector{Term} = [term, (fetch_all_terms.(terms(term))...)...]
+    fetch_all_terms(s::AbstractStatement)::Vector{Term} = [s, fetch_all_terms(ϕ1(s))..., fetch_all_terms(ϕ2(s))...]
+
 end
 
 begin "检查合法性（API接口，用于后续NAL识别）"
@@ -262,15 +279,59 @@ begin "检查合法性（API接口，用于后续NAL识别）"
 
         "原子：识别词项名是否为纯文字(Word)：不能有其它特殊符号出现"
         @inline check_valid(a::Atom) = isnothing(
-            findfirst(r"[^\w]", string(a.name)) # 【20230814 13:07:16】根据`@code_native`的输出行数，比occursin高效
+            findfirst(r"[^\w]", nameof_string(a)) # 【20230814 13:07:16】根据`@code_native`的输出行数，比occursin高效
         )
 
         "可解释"
         @inline check_valid_explainable(a::Atom)::Term = check_valid(a) ? 
             a : 
-            error("非法词项名「$(a.name)」！")
+            error("非法词项名「$a」！")
         
     end
+end
+
+# 抽象方法实现
+begin "抽象方法实现：`Terms.jl`中定义的具体类型实现其抽象类型的「协议」方法"
+    
+    export nameof_string
+
+    """
+    原子词项实现`Base.nameof`方法
+    - 仅用于获取其「实际名称」而不包括前缀
+        - 如CommonNarsese中`^op`名为`op`
+    - 【20230826 22:54:39】用以替代强行统一的`.name`属性
+    """
+    @inline Base.nameof(t::Word       )::Symbol = t.name
+    @inline Base.nameof( ::PlaceHolder)::Symbol = Symbol() # 像占位符→空符号
+    @inline Base.nameof(t::Variable   )::Symbol = t.name
+    @inline Base.nameof(t::Interval   )::Symbol = Symbol(t.interval)
+    @inline Base.nameof(t::Operator   )::Symbol = t.name
+
+    """
+    扩展：名称的字符串形式
+    - 便于在需要时提高获取名称的性能
+    """
+    @inline nameof_string(t::Term       ) = string(nameof(t)) # 默认
+    @inline nameof_string(t::Interval   ) = string(t.interval)
+    @inline nameof_string( ::PlaceHolder) = ""
+
+
+    """
+    复合词项实现`terms`方法
+    - 【20230826 22:54:39】用以替代强行统一的`.terms`属性
+    """
+    @inline terms(c::CommonCompound)::Tuple = c.terms
+    @inline terms(c::TermImage)::Tuple = c.terms # 不包括像占位符
+
+
+    """
+    陈述实现`terms`、`ϕ1`和`ϕ2`方法
+    - 【20230826 22:54:39】用以替代强行统一的`ϕ1`和`ϕ2`属性
+    """
+    @inline terms(s::Statement)::Tuple = (s.ϕ1, s.ϕ2)
+    @inline ϕ1(s::Statement)::Term = s.ϕ1
+    @inline ϕ2(s::Statement)::Term = s.ϕ2
+
 end
 
 # 对接容器
@@ -280,54 +341,70 @@ begin "容器对接：对复合词项的操作⇔对其容器的操作"
     Base.length(a::Atom)::Integer = 1
 
     "原子の索引[] = 其名"
-    Base.getindex(c::Atom) = c.name
-    
-    
+    Base.getindex(a::Atom) = nameof(a)
+
+    "【！即将弃用：请使用`atoms`方法】原子词项のcollect：只有它自己"
+    Base.collect(aa::Atom) = Term[aa]
+
+
 
     "复合词项の长度=其元素的数量(像占位符不含在内)"
-    Base.length(c::ACompound)::Integer = length(c.terms)
+    Base.length(c::ACompound)::Integer = length(terms(c))
 
     "复合词项の索引[i] = 内容の索引"
-    Base.getindex(c::ACompound, i) = getindex(c.terms, i)
+    Base.getindex(c::ACompound, i) = getindex(terms(c), i)
+
+    """
+    【！即将弃用：请使用`atoms`方法】复合词项のcollect：浅拷贝terms参数
+    
+    ⚠不会拷贝其内的原子词项
+    """
+    Base.collect(s::ACompound) = [ # 📌【20230826 23:30:32】有Term[]时无法二次展开：会被认为是「函数参数」
+        (
+            (collect.(terms(s)))...
+        )... # 📌二次展开：第一次展开成「向量の向量」，第二次展开成「词项の向量」
+    ]
 
     "复合词项の枚举 = 内容の枚举"
-    Base.iterate(c::ACompound, i=1) = iterate(c.terms, i)
+    Base.iterate(c::ACompound, i=1) = iterate(terms(c), i)
 
     "复合词项のmap = 内容のmap(变成Vector)再构造"
-    Base.map(f, c::ACompound) = typeof(c)(map(f, c.terms))
+    Base.map(f, c::ACompound) = typeof(c)(map(f, terms(c)))
 
     "复合词项の随机 = 内容の随机"
-    Base.rand(c::ACompound, args...; kw...) = rand(c, args...; kw...)
-
-    "复合词项のall&any = 内容のall&any"
-    Base.all(f, c::ACompound) = all(f, c.terms)
-    Base.any(f, c::ACompound) = any(f, c.terms)
+    Base.rand(c::ACompound, args...; kw...) = rand(terms(c), args...; kw...)
 
     "复合词项の倒转 = 内容倒转"
-    Base.reverse(c::ACompound) = typeof(c)(reverse(c.terms))
+    Base.reverse(c::ACompound) = typeof(c)(reverse(terms(c)))
+
 
 
     "陈述の长度=2" # 主词+谓词
     Base.length(c::AStatement)::Integer = 2
 
-    "陈述の索引[i] = 对Pair的索引"
-    Base.getindex(s::AStatement, i) = getindex(Pair(s), i)
+    "陈述の索引[i] = 对terms的索引"
+    Base.getindex(s::AStatement, i) = getindex(terms(s), i)
 
-    "陈述の枚举 = 对Pair的枚举"
-    Base.iterate(s::AStatement, i=1) = iterate(Pair(s), i)
+    """
+    【！即将弃用：请使用`atoms`方法】陈述のcollect = 对
+    - 不会拷贝
+    """
+    Base.collect(s::Statement) = Term[
+        collect(ϕ1(s))..., 
+        collect(ϕ2(s))...,
+    ]
 
-    "陈述のmap = 对Pair的map(变成Vector)再构造"
-    Base.map(f, s::AStatement) = typeof(s)(map(f, Pair(s)))
+    "陈述の枚举 = 对terms的枚举"
+    Base.iterate(s::AStatement, i=1) = iterate(terms(s), i)
+
+    "陈述のmap = 对terms的map(变成Vector)再构造"
+    Base.map(f, s::AStatement) = typeof(s)(map(f, terms(s)))
 
     "陈述の随机 = 对元组的随机"
-    Base.rand(s::AStatement, args...; kw...) = rand((s.ϕ1, s.ϕ2), args...; kw...)
+    Base.rand(s::AStatement, args...; kw...) = rand(terms(s), args...; kw...)
 
-    "陈述のall&any = 对Pair的all&any"
-    Base.all(f, s::AStatement) = all(f, Pair(s))
-    Base.any(f, s::AStatement) = any(f, Pair(s))
-
-    "陈述の倒转 = 对Pair的倒转"
-    Base.reverse(s::AStatement) = typeof(s)(reverse(Pair(s)))
+    "陈述の倒转 = 对terms的倒转"
+    Base.reverse(s::AStatement) = typeof(s)(reverse(terms(s)))
     
 end
 
@@ -372,7 +449,7 @@ begin "排序: 用于判断「词项的先后」"
         - 🎯减少耦合与提升效率
     """
     Base.isless(a1::Atom, a2::Atom) = (
-        isless(a1.name, a2.name) || (!isless(a2.name, a1.name) &&
+        isless(nameof(a1), nameof(a2)) || (!isless(nameof(a2), nameof(a1)) &&
         _isless_type(a1, a2)
         )
     )
@@ -384,7 +461,7 @@ begin "排序: 用于判断「词项的先后」"
         - 对组分数不多的复合词项更快
     """
     Base.isless(c1::ACompound, c2::ACompound) = (
-        isless(c1.terms, c2.terms) || (!isless(c2.terms, c1.terms) &&
+        isless(terms(c1), terms(c2)) || (!isless(terms(c2), terms(c1)) &&
         _isless_type(c1, c2)
         )
     )
@@ -394,7 +471,7 @@ begin "排序: 用于判断「词项的先后」"
     """
     Base.isless(i1::TermImage, i2::TermImage) = (
         isless(i1.relation_index, i2.relation_index) || (i2.relation_index == i1.relation_index &&
-        isless(i1.terms, i2.terms) || (!isless(i2.terms, i1.terms) &&
+        isless(terms(i1), terms(i2)) || (!isless(terms(i2), terms(i1)) &&
         _isless_type(i1, i2)
         ))
     )
@@ -408,8 +485,8 @@ begin "排序: 用于判断「词项的先后」"
     - 不同于「复合词项の排序」：直接「主项⇒谓项⇒类名」逐个比对
     """
     function Base.isless(s1::AStatement, s2::AStatement)
-        isless(s1.ϕ1, s2.ϕ1) || (isequal(s1.ϕ1, s2.ϕ1) && # 后面断言第一项相等(注：似乎用isless会出现「既大于又小于」的情况)
-        isless(s1.ϕ2, s2.ϕ2) || (isequal(s1.ϕ2, s2.ϕ2) && # 后面断言第二项相等
+        isless(ϕ1(s1), ϕ1(s2)) || (isequal(ϕ1(s1), ϕ1(s2)) && # 后面断言第一项相等(注：似乎用isless会出现「既大于又小于」的情况)
+        isless(ϕ2(s1), ϕ2(s2)) || (isequal(ϕ2(s1), ϕ2(s2)) && # 后面断言第二项相等
         _isless_type(s1, s2)
         ))
     end
@@ -431,7 +508,7 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
 
     "原子词项相等：其名&类型"
     @inline Base.isequal(t1::Atom, t2::Atom)::Bool = (
-        t1.name == t2.name && # 名称相等
+        nameof(t1) == nameof(t2) && # 名称相等
         _isequal_type(typeof(t1), typeof(t2)) # 类型相等
     )
     
@@ -447,7 +524,7 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
     【20230820 12:20:32】基于「构造时排序」的预处理，现可直接比对其中的组分
     """
     function Base.isequal(t1::CommonCompound{T1}, t2::CommonCompound{T2})::Bool where {T1, T2}
-        t1.terms == t2.terms && # 先元素
+        terms(t1) == terms(t2) && # 先元素
         _isequal_type(typeof(t1), typeof(t2)) # 再类型
     end
 
@@ -462,7 +539,7 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
     function Base.isequal(t1::TermImage{EIT1}, t2::TermImage{EIT2})::Bool where {EIT1, EIT2}
         EIT1 == EIT2 && # 类型相等（外延像/内涵像）
         t1.relation_index == t2.relation_index &&  # 占位符位置相等
-        t1.terms == t2.terms # 组分相等
+        terms(t1) == terms(t2) # 组分相等
     end
 
     """
@@ -472,8 +549,8 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
     """
     function Base.isequal(s1::Statement{P1}, s2::Statement{P2})::Bool where {P1, P2}
         P1 == P2 && # 类型相等
-        s1.ϕ1 == s2.ϕ1 && # 主词相等
-        s1.ϕ2 == s2.ϕ2 # 谓词相等
+        ϕ1(s1) == ϕ1(s2) && # 主词相等
+        ϕ2(s1) == ϕ2(s2) # 谓词相等
     end
     
     "重定向「==」符号"
@@ -481,45 +558,11 @@ begin "判断相等(Base.isequal)：基于值而非基于引用"
 
 end
 
-# 收集(`Base.collect`): 收集其中包含的所有（原子）词项 #
-begin "收集(Base.collect)其中包含的所有（原子）词项，并返回向量"
-
-    "原子词项のcollect：只有它自己"
-    Base.collect(aa::Atom) = Term[aa]
-
-    """
-    抽象词项集/抽象陈述集のcollect：获取terms参数
-    - 词项集
-    - 词项逻辑集
-    - 像
-    - 乘积
-    - 陈述逻辑集
-    - 陈述时序集
-    
-    ⚠不会拷贝
-    """
-    Base.collect(s::ACompound) = [
-        (
-            (s.terms .|> collect)...
-        )... # 📌二次展开：📌二次展开：第一次展开成「向量の向量」，第二次展开成「词项の向量」
-    ]
-
-    """
-    陈述のcollect：获取两项中的所有词项
-    - 不会拷贝
-    """
-    Base.collect(s::Statement) = Term[
-        collect(s.ϕ1)..., 
-        collect(s.ϕ2)...,
-    ]
-
-end
-
 # 运算重载
 begin "运算重载：四则运算等"
     
     "同类原子词项拼接 = 文字拼接（使用Juliaの加号，因与「乘积」快捷构造冲突）（间隔除外）"
-    (Base.:(+)(a1::T, a2::T)::T) where {T <: Atom} = T(string(a1.name) * string(a2.name))
+    (Base.:(+)(a1::T, a2::T)::T) where {T <: Atom} = T(nameof_string(a1) * nameof_string(a2))
 
     "间隔の加法（参照自PyNARS Interval.py/__add__）"
     Base.:(+)(i1::Interval, i2::Interval)::Interval = Interval(i1.interval + i2.interval)
@@ -550,7 +593,7 @@ begin "增加一些Narsese对象与Julia常用原生对象的互转方式"
     
     # 陈述 ↔ Pair
     "Pair接受陈述"
-    Base.Pair(s::Statement)::Base.Pair = Base.Pair(s.ϕ1, s.ϕ2)
+    Base.Pair(s::Statement)::Base.Pair = Base.Pair(ϕ1(s), ϕ2(s))
     "【20230812 22:21:48】现恢复与Pair的相互转换"
     ((::Type{s})(p::Base.Pair)::s) where {s <: Statement} = s(p.first, p.second)
     

@@ -121,6 +121,8 @@ export AbstractCompoundType, CompoundTypeTermSet, CompoundTypeTermLogicalSet, Co
 
 export AbstractTerm, AbstractAtom, AbstractCompound
 
+export terms, ϕ1, ϕ2
+
 export Word, PlaceHolder, Variable, Interval, Operator, CommonCompound, TermImage, Statement
 export placeholder, isplaceholder
 
@@ -159,6 +161,9 @@ abstract type Parallel <: AbstractTemporalRelation end
 
 # 复合词项类型
 
+"""
+所有复合词项类型的基类
+"""
 abstract type AbstractCompoundType end
 "[NAL-2]词项集"
 abstract type CompoundTypeTermSet{EI <: AbstractEI} <: AbstractCompoundType end
@@ -179,14 +184,17 @@ abstract type CompoundTypeStatementTemporalSet{TemporalRelation <: AbstractTempo
 abstract type AbstractTerm end
 
 
-"[NAL-1]所有的原子词项"
+"[NAL-1]所有的原子词项 | 协议：支持`nameof`方法"
 abstract type AbstractAtom <: AbstractTerm end
+import Base: nameof
 
-"[NAL-2]复合词项の基石"
+"[NAL-2]复合词项の基石 | 协议：支持`terms`方法（无需绑定属性）"
 abstract type AbstractCompound{type <: AbstractCompoundType} <: AbstractTerm end
+function terms end
 
-"[NAL-1]陈述词项の基石"
+"[NAL-1]陈述词项の基石 | 协议：支持`terms`、`ϕ1`和`ϕ2`方法（无需绑定属性）"
 abstract type AbstractStatement <: AbstractTerm end
+function ϕ1 end; function ϕ2 end
 
 # 具体结构定义
 
@@ -256,7 +264,7 @@ begin "单体词项"
     isplaceholder(x) = x === PlaceHolder
     isplaceholder(::PlaceHolder) = true
 
-    "兼容`.name`属性：对像占位符的任何属性访问都将返回空字符串"
+    "【！即将弃用：请使用`Base.nameof`方法，而非直接调用属性`name`】兼容`.name`属性：对像占位符的任何属性访问都将返回空字符串"
     Base.getproperty(::PlaceHolder, ::Symbol)::String = ""
     "兼容构造方法`constructor(string|expr|...)`: 直接返回`placeholder`"
     PlaceHolder(::Any) = placeholder
@@ -317,7 +325,7 @@ begin "单体词项"
     """
     struct Interval <: AbstractAtom
 
-        "（只读as缓存）继承自原子词项"
+        "【！即将弃用：现在使用`nameof`方法，而非外加属性】（只读as缓存）继承自原子词项"
         name::Symbol # 【20230817 15:02:57】现在与其它原子词项统一使用Symbol
     
         "间隔长度"
@@ -577,7 +585,9 @@ begin "单体词项"
 
     "外部构造方法：重载各类迭代器"
     @inline function CommonCompound{type}(itr::SUPPORTED_ALIAS_ITERATORS) where {type}
-        CommonCompound{type}(itr |> Tuple{Vararg{AbstractTerm}})
+        CommonCompound{type}(
+            Tuple{Vararg{AbstractTerm}}(itr)
+        )
     end
 
     raw"""
@@ -632,7 +642,7 @@ begin "单体词项"
 
     "转换兼容支持：多参数构造(倒过来，占位符位置放在最前面)"
     @inline function TermImage{EIType}(relation_index::Integer, terms::Vararg{AbstractTerm}) where EIType
-        TermImage{EIType}(terms, relation_index |> unsigned)
+        TermImage{EIType}(terms, unsigned(relation_index))
     end
 
     "转换兼容支持：多参数构造(兼容「词项序列」，使用新的「像占位符」单例类型)"
@@ -645,8 +655,8 @@ begin "单体词项"
         )
     end
 
-    "转换兼容支持：从词项数组构造"
-    @inline function TermImage{EIType}(array::AbstractArray) where EIType
+    "转换兼容支持：从元组以外的其它迭代器构造"
+    @inline function TermImage{EIType}(array::SUPPORTED_ALIAS_ITERATORS) where EIType
         TermImage{EIType}(array...)
     end
 
@@ -757,6 +767,9 @@ begin "陈述词项"
             ) # 增加合法性检查
         end
     end
+
+    "转换兼容支持：从迭代器构造"
+    Statement{type}(iter) where type = Statement{type}(iter...)
 
 end
 

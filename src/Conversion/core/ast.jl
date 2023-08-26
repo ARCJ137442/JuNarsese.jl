@@ -363,7 +363,7 @@ begin "打包の逻辑"
             recurse_parser::TAbstractParser = parser,
             )::Expr = ast_form_struct(
             typeof(a),
-            recurse_callback(recurse_parser, a.name), # ::Symbol
+            recurse_callback(recurse_parser, nameof(a)), # ::Symbol
         )
     
         """
@@ -371,13 +371,13 @@ begin "打包の逻辑"
         """
         ast_pack(
             parser::TASTParser, 
-            s::Statement, 
+            s::AStatement, 
             recurse_callback::Function = ast_pack,
             recurse_parser::TAbstractParser = parser,
             )::Expr = ast_form_struct(
             typeof(s),
-            recurse_callback(recurse_parser, s.ϕ1),
-            recurse_callback(recurse_parser, s.ϕ2),
+            recurse_callback(recurse_parser, ϕ1(s)),
+            recurse_callback(recurse_parser, ϕ2(s)),
         )
         
         """
@@ -393,7 +393,7 @@ begin "打包の逻辑"
             typeof(ts),
             (
                 recurse_callback(recurse_parser, term)
-                for term in ts.terms
+                for term in terms(ts)
             )... # 无论有序还是无序
         )
     
@@ -412,7 +412,7 @@ begin "打包の逻辑"
             recurse_callback(recurse_parser, i.relation_index), # 占位符索引(仅回调！)
             (
                 recurse_callback(recurse_parser, term)
-                for term in i.terms
+                for term in terms(i)
             )...
         )
     

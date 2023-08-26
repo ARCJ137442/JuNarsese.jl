@@ -3,7 +3,7 @@
         - 不完整时: `(Array{Int}) |> propertynames == (:var, :body)`
             - `var`: 缺省的参数类型变量（这里是维数N）
                 - 类型: `TypeVar`（类型变量）
-                - `(Array{Int}).var.name == :N`
+                - nameof(`(Array{Int}).var) == :N`
             - `body`: 由上述「类型变量」组成的「完整类型」
                 - `(Array{Int}).body` ⇒ Array{Int64, N}
         - 完整时: `(Array{Int,1}) |> propertynames == (:name, :super, :parameters, :types, :instance, :layout, :hash, :flags)`
