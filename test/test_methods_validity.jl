@@ -3,10 +3,6 @@
 # 判等/比大小逻辑 #
 @testset "methods/validity" begin
 
-    @test A + B == Word(:AB)
-    @test @expectedError w + i + d + q + n + o # 不同类型不允许相加
-    @test Interval(123) + Interval(234) == Interval(357) # 间隔相加
-
     # 合法性测试 & 严格模式 #
 
     # 原子词项名的合法性测试
@@ -25,6 +21,10 @@
     @test @expectedError Interval("+123") # 间隔不能加上前缀
 
     # 前面「严格模式」的具体作用
+
+    # 像：首个元素不能为占位符
+    @test @expectedError \(placeholder, A, B)
+    @test @expectedError /(placeholder, B)
 
     # 基于词项的陈述：必须是「一等公民」而非陈述
     @test @expectedError Inheritance(A, A)

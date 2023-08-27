@@ -1,6 +1,11 @@
 (@isdefined JuNarsese) || include("commons.jl") # 已在此中导入JuNarsese、Test
 
 @testset "methods/arrays" begin
+    
+    # 测试原子词项的特殊运算符重载
+    @test A + B == Word(:AB)
+    @test @expectedError w + i + d + q + n + o # 不同类型不允许相加
+    @test Interval(123) + Interval(234) == Interval(357) # 间隔相加
 
     # 测试原子的长度函数
     @test length(A) == 1

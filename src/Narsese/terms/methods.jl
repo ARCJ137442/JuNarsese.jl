@@ -473,9 +473,9 @@ begin "排序: 用于判断「词项的先后」"
         isless(i1.relation_index, i2.relation_index) && return true
         i2.relation_index == i1.relation_index || return false
 
-         isless(terms(i1), terms(i2)) && return true
+        isless(terms(i1), terms(i2)) && return true
         terms(i2) == terms(i1) || return false
-        
+
         _isless_type(i1, i2) && return true
         return false
     end

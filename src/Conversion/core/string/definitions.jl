@@ -1,3 +1,6 @@
+export StringParser_ascii, StringParser_latex, StringParser_han
+export PRESET_STRING_PARSERS
+
 """
 默认 ASCII版本
 - 来源：文档 `NARS ASCII Input.pdf`
@@ -252,24 +255,43 @@ const StringParser_han::StringParser = StringParser{String}(
     (s::AbstractString) -> filter(!isspace, s)
 )
 
+#= 【20230827 10:21:40】TODO：尝试支持NARS-Swift方言，但因语法差异与内置字符串解析器过大而搁置
+    - 主要缘由：
+        - 不统一的原子词项前缀表示：独立变量与非独变量不统一使用前缀表示
+        - 复合词项的输入是上下文无关的：在输入上下文（即向终端输入）时，复合词项需使用额外的尖括号括起来
+    - 参见：
+        - https://github.com/maxeeem/NARS-Swift/blob/main/Sources/Narsese/Narsese.swift
+        - https://github.com/maxeeem/NARS-Swift/blob/main/Sources/Narsese/Dialects.swift
+=#
+
+"""
+所有预置的字符串解析器
+- 所有字符串解析器的字典，便于其它地方遍历
+- 结构：`后缀符号 => 解析器`
+- 用法如：批量导出名称
+"""
+const PRESET_STRING_PARSERS::Dict{Symbol,StringParser} = Dict(
+    :ascii => StringParser_ascii,
+    :latex => StringParser_latex,
+    :han   => StringParser_han,
+    # :swift => StringParser_swift,
+)
+
 begin "字符串宏解析支持"
     
     "空字串⇒ASCII"
-    Conversion.get_parser_from_flag(::Val{SYMBOL_NULL})::TAbstractParser = StringParser_ascii
+    Conversion.get_parser_from_flag(::Val{Symbol()})::TAbstractParser = StringParser_ascii
 
-    ":ascii"
-    Conversion.get_parser_from_flag(::Val{:ascii})::TAbstractParser = StringParser_ascii
+    # 遍历所有解析器，批量增加解析支持（如：StringParser_han ⇒ `han`）
+    for (symbol::Symbol, parser::StringParser) in PRESET_STRING_PARSERS
+        Conversion.get_parser_from_flag(::Val{symbol})::TAbstractParser = parser
+    end
 
-    ":latex"
-    Conversion.get_parser_from_flag(::Val{:latex})::TAbstractParser = StringParser_latex
-
-    ":han"
-    Conversion.get_parser_from_flag(::Val{:han})::TAbstractParser = StringParser_han
-
+    # 漢文扩展的两个别名
     ":汉"
     Conversion.get_parser_from_flag(::Val{:汉})::TAbstractParser = StringParser_han
 
     ":漢"
     Conversion.get_parser_from_flag(::Val{:漢})::TAbstractParser = StringParser_han
-    # 【20230809 11:31:05】日文韩文都可以？？？
+    
 end

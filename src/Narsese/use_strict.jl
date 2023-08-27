@@ -41,6 +41,14 @@ quote # 在「使用严格模式」时执行的代码
 # 导入待更改函数
 import ..Terms: check_valid, check_valid_explainable, check_valid_external, check_valid_external_explainable
 
+"遵循《NAL》定义：像占位符首个元素不能为占位符（为关系所预留）"
+@inline check_valid(t::TermImage) = t.relation_index != 1
+"遵循《NAL》定义：像占位符首个元素不能为占位符（为关系所预留）"
+@inline function check_valid_explainable(t::TermImage)
+    @assert t.relation_index != 1 "像「$t」的首个元素为「关系词项」所预留，不能为占位符！"
+    t
+end
+
 # 临时定义陈述合法性：改变「内联合法性检查」逻辑
 "继承&相似⇒是否为「一等公民」"
 @inline function check_valid(t::Statement{<:TermBasedSTs})

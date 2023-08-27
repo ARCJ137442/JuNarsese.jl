@@ -10,8 +10,6 @@
         >  syntax: Global method definition around [...] needs to be placed at the top level, or use "eval".
 =#
 
-export StringParser_ascii, StringParser_latex, StringParser_han
-
 "所有可能的「文本类型」"
 const CONTENT::Type = Union{
     AbstractString,

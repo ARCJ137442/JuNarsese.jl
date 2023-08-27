@@ -7,7 +7,6 @@ export UNothing
 export @reverse_dict_content, @redirect_SRS, @expectedError
 export match_first, match_first_view, allproperties, allproperties_generator
 export get_pure_type_string, get_pure_type_symbol, verify_type_expr, assert_type_expr
-export SYMBOL_NULL
 export @generate_ifelseif, @rand
 
 "便捷の可空の支持（同时不与Nullable.jl冲突）"
@@ -123,9 +122,6 @@ raw"""
     r""
 (Base.empty(::Union{T, Type{T}})::Symbol) where {T <: Symbol} = 
     Symbol()
-
-"空符号"
-SYMBOL_NULL::Symbol = empty(Symbol)
 
 """
 删除「父模块路径」的正则替换对
