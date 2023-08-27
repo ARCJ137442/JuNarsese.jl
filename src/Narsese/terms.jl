@@ -193,7 +193,7 @@ abstract type AbstractCompound{type <: AbstractCompoundType} <: AbstractTerm end
 function terms end
 
 "[NAL-1]陈述词项の基石 | 协议：支持`terms`、`ϕ1`和`ϕ2`方法（无需绑定属性）"
-abstract type AbstractStatement <: AbstractTerm end
+abstract type AbstractStatement{type <: AbstractStatementType} <: AbstractTerm end
 function ϕ1 end; function ϕ2 end
 
 # 具体结构定义
@@ -749,7 +749,7 @@ begin "陈述词项"
             > (3)为了简化语言，「T \⇔ S」总是被表示为「S /⇔ T」，所以关联词「\⇔」实际上并不在Narsese语法中。
             >   - 译者注：此举与先前的「外延并/内涵并」类似
     """
-    struct Statement{type <: AbstractStatementType} <: AbstractStatement
+    struct Statement{type <: AbstractStatementType} <: AbstractStatement{type}
         ϕ1::AbstractTerm # subject 主词
         ϕ2::AbstractTerm # predicate 谓词
 

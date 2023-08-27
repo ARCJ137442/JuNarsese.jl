@@ -328,7 +328,7 @@ function register_parser_string_flag_macro(expr::Expr)
             push!(
                 blk.args,
                 :(Conversion.get_parser_from_flag(::Val{$flag_symbol})::TAbstractParser = $parser_symbol)
-                )
+            )
         end
     end
 
