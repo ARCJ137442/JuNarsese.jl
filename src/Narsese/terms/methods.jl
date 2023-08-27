@@ -36,9 +36,10 @@
 # NAL信息支持
 begin "NAL信息支持"
     
-    export atoms, fetch_all_terms
+    export atoms, atoms_full, fetch_all_terms, fetch_all_terms_full
     export get_syntactic_complexity, get_syntactic_simplicity
     export is_commutative, is_repeatable
+    export terms_full
 
     """
     [NAL-3]获取词项的「语法复杂度」
@@ -217,11 +218,29 @@ begin "NAL信息支持"
     atoms(t::AAtom)::Vector{Atom} = Atom[t]
     atoms(t::AStatement)::Vector{Atom} = [(atoms.(terms(t))...)...] # 📌二次展开：第一次展开成「向量の向量」，第二次展开成「词项の向量」
     atoms(t::ACompound)::Vector{Atom} = [(atoms.(terms(t))...)...]
+
+    "获取「完整原子词项集」：使用`terms_full`方法"
+    atoms_full(t::Term)::Vector{Atom} = atoms(t) # 默认继承
+    atoms_full(t::AStatement)::Vector{Atom} = [(atoms_full.(terms_full(t))...)...] # 📌二次展开：第一次展开成「向量の向量」，第二次展开成「词项の向量」
+    atoms_full(t::ACompound)::Vector{Atom} = [(atoms_full.(terms_full(t))...)...]
     
     "抽取所有出现的词项：复合词项也变成「自身+所有组分」"
-    fetch_all_terms(term::Term)::Vector{Term} = [term]
-    fetch_all_terms(term::AbstractCompound)::Vector{Term} = [term, (fetch_all_terms.(terms(term))...)...]
-    fetch_all_terms(s::AbstractStatement)::Vector{Term} = [s, fetch_all_terms(ϕ1(s))..., fetch_all_terms(ϕ2(s))...]
+    fetch_all_terms(t::AAtom)::Vector{Term} = Term[t]
+    fetch_all_terms(t::ACompound)::Vector{Term} = [t, (fetch_all_terms.(terms(t))...)...]
+    fetch_all_terms(t::AStatement)::Vector{Term} = [t, fetch_all_terms(ϕ1(t))..., fetch_all_terms(ϕ2(t))...]
+
+    "完整抽取「出现的词项」：使用`terms_full`方法"
+    fetch_all_terms_full(t::Term)::Vector{Term} = fetch_all_terms_full(t) # 默认继承
+    fetch_all_terms_full(t::ACompound)::Vector{Term} = [t, (fetch_all_terms_full.(terms_full(t))...)...]
+    fetch_all_terms_full(t::AStatement)::Vector{Term} = [t, fetch_all_terms_full(ϕ1(t))..., fetch_all_terms_full(ϕ2(t))...]
+
+    """
+    获取「完整组分集」
+    - 目前只对「外延像/内涵像」有特殊作用：返回包括像占位符（在特定位置）的元组
+    - 其它情况等同于`terms`
+    """
+    terms_full(t::Term) = terms(t)
+    terms_full(i::TermImage) = (i.terms[1:i.relation_index-1]..., placeholder, i.terms[i.relation_index:end]...)
 
 end
 
@@ -288,6 +307,7 @@ begin "检查合法性（API接口，用于后续NAL识别）"
             error("非法词项名「$a」！")
         
     end
+
 end
 
 # 抽象方法实现
@@ -320,17 +340,17 @@ begin "抽象方法实现：`Terms.jl`中定义的具体类型实现其抽象类
     复合词项实现`terms`方法
     - 【20230826 22:54:39】用以替代强行统一的`.terms`属性
     """
-    @inline terms(c::CommonCompound)::Tuple = c.terms
-    @inline terms(c::TermImage)::Tuple = c.terms # 不包括像占位符
+    @inline terms(@nospecialize c::CommonCompound)::Tuple = c.terms
+    @inline terms(@nospecialize c::TermImage)::Tuple = c.terms # 不包括像占位符
 
 
     """
     陈述实现`terms`、`ϕ1`和`ϕ2`方法
     - 【20230826 22:54:39】用以替代强行统一的`ϕ1`和`ϕ2`属性
     """
-    @inline terms(s::Statement)::Tuple = (s.ϕ1, s.ϕ2)
-    @inline ϕ1(s::Statement)::Term = s.ϕ1
-    @inline ϕ2(s::Statement)::Term = s.ϕ2
+    @inline terms(@nospecialize s::Statement)::Tuple = (s.ϕ1, s.ϕ2)
+    @inline ϕ1(@nospecialize s::Statement)::Term = s.ϕ1
+    @inline ϕ2(@nospecialize s::Statement)::Term = s.ϕ2
 
 end
 
@@ -342,48 +362,49 @@ begin "容器对接：对复合词项的操作⇔对其容器的操作"
 
     "原子の索引[] = 其名"
     Base.getindex(a::Atom) = nameof(a)
+    Base.getindex(a::Atom, ::Any) = nameof(a)
 
     "【！即将弃用：请使用`atoms`方法】原子词项のcollect：只有它自己"
-    Base.collect(aa::Atom) = Term[aa]
+    Base.collect(a::Atom) = Term[a]
 
 
 
     "复合词项の长度=其元素的数量(像占位符不含在内)"
-    Base.length(c::ACompound)::Integer = length(terms(c))
+    Base.length(@nospecialize c::ACompound)::Integer = length(terms(c))
 
     "复合词项の索引[i] = 内容の索引"
-    Base.getindex(c::ACompound, i) = getindex(terms(c), i)
+    Base.getindex(@nospecialize(c::ACompound), i) = getindex(terms(c), i)
 
     """
     【！即将弃用：请使用`atoms`方法】复合词项のcollect：浅拷贝terms参数
     
     ⚠不会拷贝其内的原子词项
     """
-    Base.collect(s::ACompound) = [ # 📌【20230826 23:30:32】有Term[]时无法二次展开：会被认为是「函数参数」
+    Base.collect(@nospecialize s::ACompound) = [ # 📌【20230826 23:30:32】有Term[]时无法二次展开：会被认为是「函数参数」
         (
             (collect.(terms(s)))...
         )... # 📌二次展开：第一次展开成「向量の向量」，第二次展开成「词项の向量」
     ]
 
     "复合词项の枚举 = 内容の枚举"
-    Base.iterate(c::ACompound, i=1) = iterate(terms(c), i)
+    Base.iterate(@nospecialize(c::ACompound), i=1) = iterate(terms(c), i)
 
     "复合词项のmap = 内容のmap(变成Vector)再构造"
-    Base.map(f, c::ACompound) = typeof(c)(map(f, terms(c)))
+    Base.map(f, @nospecialize(c::ACompound)) = typeof(c)(map(f, terms(c)))
 
     "复合词项の随机 = 内容の随机"
-    Base.rand(c::ACompound, args...; kw...) = rand(terms(c), args...; kw...)
+    Base.rand(@nospecialize(c::ACompound), args...; kw...) = rand(terms(c), args...; kw...)
 
     "复合词项の倒转 = 内容倒转"
-    Base.reverse(c::ACompound) = typeof(c)(reverse(terms(c)))
+    Base.reverse(@nospecialize c::ACompound) = typeof(c)(reverse(terms(c)))
 
 
 
     "陈述の长度=2" # 主词+谓词
-    Base.length(c::AStatement)::Integer = 2
+    Base.length(@nospecialize s::AStatement)::Integer = 2
 
     "陈述の索引[i] = 对terms的索引"
-    Base.getindex(s::AStatement, i) = getindex(terms(s), i)
+    Base.getindex(@nospecialize(s::AStatement), i) = getindex(terms(s), i)
 
     """
     【！即将弃用：请使用`atoms`方法】陈述のcollect = 对
@@ -395,17 +416,27 @@ begin "容器对接：对复合词项的操作⇔对其容器的操作"
     ]
 
     "陈述の枚举 = 对terms的枚举"
-    Base.iterate(s::AStatement, i=1) = iterate(terms(s), i)
+    Base.iterate(@nospecialize(s::AStatement), i=1) = iterate(terms(s), i)
 
     "陈述のmap = 对terms的map(变成Vector)再构造"
-    Base.map(f, s::AStatement) = typeof(s)(map(f, terms(s)))
+    Base.map(f, @nospecialize(s::AStatement)) = typeof(s)(map(f, terms(s)))
 
     "陈述の随机 = 对元组的随机"
-    Base.rand(s::AStatement, args...; kw...) = rand(terms(s), args...; kw...)
+    Base.rand(@nospecialize(s::AStatement), args...; kw...) = rand(terms(s), args...; kw...)
 
     "陈述の倒转 = 对terms的倒转"
-    Base.reverse(s::AStatement) = typeof(s)(reverse(terms(s)))
+    Base.reverse(@nospecialize s::AStatement) = typeof(s)(reverse(terms(s)))
     
+
+
+    # 所有词项通用
+    "用于`eachindex(t)`"
+    Base.keys(t::Term) = Base.OneTo(length(t)) # 摘自`tuple.jl`
+    
+    "用于获取索引"
+    Base.prevind(t::Term, i::Integer) = Int(i)-1
+    Base.nextind(t::Term, i::Integer) = Int(i)+1
+
 end
 
 # 排序
@@ -594,15 +625,20 @@ begin "时态：用于获取(Base.collect)「时序蕴含/等价」中的「时�
 end
 
 # 对象互转
-begin "增加一些Narsese对象与Julia常用原生对象的互转方式"
+begin "增加一些Narsese对象、Julia原生对象间的互转方式"
     
-    # 陈述 ↔ Pair
-    "Pair接受陈述"
+    "陈述→Pair"
     Base.Pair(s::Statement)::Base.Pair = Base.Pair(ϕ1(s), ϕ2(s))
-    "【20230812 22:21:48】现恢复与Pair的相互转换"
+    "Pair→陈述"
     ((::Type{s})(p::Base.Pair)::s) where {s <: Statement} = s(p.first, p.second)
     
     "间隔→无符号整数"
     Base.UInt(i::Interval)::UInt = i.interval
+
+    "原子词项同名互转"
+    ((::Type{T})(a::Atom)::Atom) where {T <: Atom} = T(nameof(a))
+    ((::Type{T})(a::T)::T) where {T <: Atom} = a # 同类型返回自身
+    "消歧义@像占位符"
+    PlaceHolder(::Atom) = placeholder
 
 end
