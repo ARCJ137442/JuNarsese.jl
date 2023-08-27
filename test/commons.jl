@@ -1,4 +1,4 @@
-if !isdefined(Main, :JuNarsese)
+if !(@isdefined JuNarsese)
     push!(LOAD_PATH, "../src") # 用于直接打开（..上一级目录）
     push!(LOAD_PATH, "src") # 用于VSCode调试（项目根目录起）
 
@@ -16,7 +16,7 @@ begin "报错debug专用"
     # @show nse"预0.5、0.8、0.1算「我是墓地」。"han
     # @show nse"「我是墓地」。"han
 end
-if !isdefined(Main, :Test)
+if !(@isdefined Test)
     using Test
     """
     ========

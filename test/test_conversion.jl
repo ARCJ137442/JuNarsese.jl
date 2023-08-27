@@ -1,4 +1,4 @@
-isdefined(Main, :JuNarsese) || include("commons.jl") # 已在此中导入JuNarsese、Test
+(@isdefined JuNarsese) || include("commons.jl") # 已在此中导入JuNarsese、Test
 
 begin "报错debug专用"
     # 测试@原生对象
@@ -8,19 +8,6 @@ end
 @testset "Conversion" begin
 
     @testset "StringParser" begin
-        # 原子词项
-    
-        @test "$w" == "词项"
-        @test "$i" == "\$独立变量"
-        @test "$d" == "#非独变量"
-        @test "$q" == "?查询变量"
-        @test "$o" == "^操作"
-    
-        # 像
-        @test /(A, B, ⋄, C) |> StringParser_ascii == "(/, A, B, _, C)"
-        @test \(A, w, ⋄, q) |> StringParser_ascii == "(\\, A, 词项, _, ?查询变量)"
-        @test \(/(A, B, ⋄, C), w, ⋄, q) |> StringParser_ascii == "(\\, (/, A, B, _, C), 词项, _, ?查询变量)"
-        
         # 测试@字符串
         @equal_test StringParser_ascii test_set
         

@@ -469,12 +469,16 @@ begin "排序: 用于判断「词项的先后」"
     """
     像の排序：像占位符位置|元素|类名
     """
-    Base.isless(i1::TermImage, i2::TermImage) = (
-        isless(i1.relation_index, i2.relation_index) || (i2.relation_index == i1.relation_index &&
-        isless(terms(i1), terms(i2)) || (!isless(terms(i2), terms(i1)) &&
-        _isless_type(i1, i2)
-        ))
-    )
+    Base.isless(i1::TermImage, i2::TermImage) = begin
+        isless(i1.relation_index, i2.relation_index) && return true
+        i2.relation_index == i1.relation_index || return false
+
+         isless(terms(i1), terms(i2)) && return true
+        terms(i2) == terms(i1) || return false
+        
+        _isless_type(i1, i2) && return true
+        return false
+    end
 
     """
     陈述の排序 = 其主谓项|类名
@@ -490,6 +494,7 @@ begin "排序: 用于判断「词项的先后」"
         _isless_type(s1, s2)
         ))
     end
+
 end
 
 # 判断相等 #
