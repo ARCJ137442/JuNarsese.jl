@@ -280,18 +280,18 @@ const PRESET_STRING_PARSERS::Dict{Symbol,StringParser} = Dict(
 begin "字符串宏解析支持"
     
     "空字串⇒ASCII"
-    Conversion.get_parser_from_flag(::Val{Symbol()})::TAbstractParser = StringParser_ascii
+    @register_parser_string_flag Symbol() => StringParser_ascii
 
     # 遍历所有解析器，批量增加解析支持（如：StringParser_han ⇒ `han`）
     for (symbol::Symbol, parser::StringParser) in PRESET_STRING_PARSERS
-        Conversion.get_parser_from_flag(::Val{symbol})::TAbstractParser = parser
+        @register_parser_string_flag symbol => parser
     end
 
     # 漢文扩展的两个别名
     ":汉"
-    Conversion.get_parser_from_flag(::Val{:汉})::TAbstractParser = StringParser_han
+    @register_parser_string_flag :汉 => StringParser_han
 
     ":漢"
-    Conversion.get_parser_from_flag(::Val{:漢})::TAbstractParser = StringParser_han
+    @register_parser_string_flag :漢 => StringParser_han
     
 end

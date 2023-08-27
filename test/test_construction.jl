@@ -7,31 +7,32 @@
 
     @show w i d q o
 
-    @test w == Word(:词项)
-    @test i == IVar(:独立变量)
-    @test d == DVar(:非独变量)
-    @test q == QVar(:查询变量)
-    @test o == Operator(:操作)
+    @test w == Word(:词项)::Word
+    @test i == IVar(:独立变量)::Variable{VTIndependent}
+    @test d == DVar(:非独变量)::Variable{VTDependent}
+    @test q == QVar(:查询变量)::Variable{VTQuery}
+    @test o == Operator(:操作)::Operator
+    @test n == Interval(+137)::Interval
 
     # 词项集
     exSet = ⩀(w, d, o)
-    inSet = ⊍(d, q, i) # 【20230730 23:34:29】TODO: 必须改掉这样的语法
+    inSet = ⊍(n, q, i)
     @show exSet inSet "$exSet and $inSet"
 
     @test exSet == ExtSet(w,o,d) # 无序
-    @test inSet == IntSet(i,d,q) # 无序
+    @test inSet == IntSet(i,n,q) # 无序
 
     # 词项逻辑集
-    extI = ExtIntersection(A, i)
+    extI = ExtIntersection(w, i, d, E, n)
     intI = IntIntersection(d, i, A, o)
-    extD = ExtDifference(C, q)
+    extD = ExtDifference(A, i)
     intD = IntDifference(d, B)
     @show extI intI
     println("外延交$(extI)与内涵交$(intI)\n外延差$(extD)与内涵差$intD")
 
-    @test extI == ExtIntersection(i, A) # 无序
+    @test extI == ExtIntersection(w, i, n, n, E, d) # 无序&不重复
     @test intI == IntIntersection(A, i, o, d) # 无序
-    @test extD == ExtDifference(C, q) ≠ ExtDifference(q, C) # 有序
+    @test extD == ExtDifference(A, i) ≠ ExtDifference(i, A) # 有序
     @test intD == IntDifference(d, B) ≠ IntDifference(B, d) # 有序
 
     # 像

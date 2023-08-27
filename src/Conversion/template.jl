@@ -21,6 +21,7 @@ export DEFAULT_PARSE_TARGETS, TYPE_TERMS, TYPE_SENTENCES # API对接
 export parse_target_types # API对接
 export parse_type, pack_type_string, pack_type_symbol # API对接
 export @narsese_str, @nse_str # 字符串宏(📌短缩写只要不盲目using就没有冲突问题)
+export @register_parser_string_flag
 
 """
 陈述转换器的抽象类型模板
@@ -303,3 +304,57 @@ Expr(:(=), Symbol("@nse_str"), Symbol("@narsese_str")) |> eval
 - 默认⇒报错
 """
 get_parser_from_flag(::Val)::TAbstractParser = error("未定义的解析器符号！")
+
+"""
+`@register_parser_string_flag`的表达式处理方法
+"""
+function register_parser_string_flag_macro(expr::Expr)
+
+    # 这两个「symbol」可能是封装Symbol字面量的QuoteNode，也可能是指定其它变量的变量名或其它待计算的表达式
+    local flag_symbol, parser_symbol
+
+    # 若只有一个
+    if expr.head == :call
+        flag_symbol, parser_symbol = expr.args[2:end]
+        return :(Conversion.get_parser_from_flag(::Val{$flag_symbol})::TAbstractParser = $parser_symbol)
+    end
+
+    # 若有多个：创建代码块
+    blk::Expr = Expr(:block)
+
+    for arg in expr.args
+        if arg isa Expr
+            flag_symbol, parser_symbol = arg.args[2:end] # 第一个是「=>」
+            push!(
+                blk.args,
+                :(Conversion.get_parser_from_flag(::Val{$flag_symbol})::TAbstractParser = $parser_symbol)
+                )
+        end
+    end
+
+    return blk
+
+end
+
+"""
+自动注册解析器在字符串上的flag
+## 例
+
+运行如下代码：
+```julia
+@register_parser_string_flag [
+    :s_expr => SExprParser
+    :pika => PikaParser_alpha
+]
+```
+
+此将扩展JuNarsese的字符串宏，使如下代码可用：
+
+```julia
+nse"(Word A)"s_expr # 使用S-表达式解析器翻译成词语「A」
+nse"A"pika # 使用Pika解析器α翻译成词语「A」
+```
+"""
+macro register_parser_string_flag(expr::Expr)
+    return register_parser_string_flag_macro(expr) |> esc
+end

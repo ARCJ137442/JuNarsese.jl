@@ -4,7 +4,7 @@ if !(@isdefined JuNarsese)
 
     # 自动导入JuNarsese模块
     using JuNarsese
-    using JuNarsese.Util # 【20230821 22:20:42】现在不用特别using其中的「Util」
+    using JuNarsese.Util # 【20230827 13:47:27】使用Util模块是需要使用其中的「预期报错」`@expectedError`宏
 
     # 启用「严格模式」
     JuNarsese.Narsese.use_strict!()

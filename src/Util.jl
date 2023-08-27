@@ -5,7 +5,9 @@ module Util
 
 export UNothing
 export @reverse_dict_content, @redirect_SRS, @expectedError
-export match_first, match_first_view, allproperties, allproperties_generator
+export match_first, match_first_view
+export allproperties, allproperties_generator, allproperties_named, allproperties_named_generator
+export empty_content
 export get_pure_type_string, get_pure_type_symbol, verify_type_expr, assert_type_expr
 export @generate_ifelseif, @rand
 
@@ -105,28 +107,46 @@ allproperties_generator(object::Any) = (
     if isdefined(object, name)
 )
 
+"""
+同`allproperties_generator`：获取对象的所有属性，并返回包含其所有`属性名=>属性值`的生成器
+"""
+allproperties_named_generator(object::Any) = (
+    name => getproperty(object, name)
+    for name::Symbol in propertynames(object)
+    if isdefined(object, name)
+)
+
+"""
+同`allproperties`：获取对象的所有属性，并返回形式为`属性名=属性值`的属性具名元组
+"""
+allproperties_named(object::Any) = NamedTuple(
+    allproperties_named_generator(object)
+)
+
 raw"""
-扩展字符串、字符、正则表达式、符号的empty方法
+字符串、字符、正则表达式、符号的`empty_content`方法
 - ⚠【20230809 10:44:39】注意：实际上Char无「空字符」一说，
     - 为兼容起见，使用「\u200c」零宽无连接符作占位符
 - 返回空字串，「空字符」（\u200c）、「空正则」
 
 【20230815 16:19:31】现在加上括号，便可类型注释✅
 - 参考链接：https://github.com/JuliaLang/julia/issues/21847#issuecomment-301263779
+
+【20230827 13:55:39】为避免类型盗版，现使用独立的函数，而非扩展`Base`包
 """
-(Base.empty(::Union{T, Type{T}})::AbstractString) where {T <: AbstractString} = 
+(empty_content(::Union{T, Type{T}})::AbstractString) where {T <: AbstractString} = 
     ""
-(Base.empty(::Union{T, Type{T}})::AbstractChar) where {T <: AbstractChar} = 
+(empty_content(::Union{T, Type{T}})::AbstractChar) where {T <: AbstractChar} = 
     '\u200c'
-(Base.empty(::Union{T, Type{T}})::Regex) where {T <: Regex} = 
+(empty_content(::Union{T, Type{T}})::Regex) where {T <: Regex} = 
     r""
-(Base.empty(::Union{T, Type{T}})::Symbol) where {T <: Symbol} = 
+(empty_content(::Union{T, Type{T}})::Symbol) where {T <: Symbol} = 
     Symbol()
 
 """
 删除「父模块路径」的正则替换对
 """
-PURE_TYPE_NAME_REGEX::Pair{Regex, String} = r"([^.{}, ]+\.)+" => ""
+const PURE_TYPE_NAME_REGEX::Pair{Regex, String} = r"([^.{}, ]+\.)+" => ""
 
 """
 获取「纯粹的类名」
@@ -179,20 +199,15 @@ assert_type_expr(symbol::Symbol)::Symbol = symbol
 参数：
 - 元组：(条件, 内容)
 """
-function generate_ifelseif_macro(exprs::Vararg{Pair})
-    return generate_ifelseif_macro(nothing, exprs...)
-end
-
-"+默认情况"
-function generate_ifelseif_macro(default, exprs::Vararg{Pair})
-    blk::Expr = Expr(:block)
-    return generate_ifelseif_macro!(blk, default, exprs...)
+function generate_ifelseif_macro(exprs::Vararg{Pair}; default=nothing)
+    return generate_ifelseif_macro!(Expr(:block), exprs...; default)
 end
 
 """
 基于已有的:block表达式，附带默认情况
+- 使用`nothing`开关默认情况
 """
-function generate_ifelseif_macro!(parent::Expr, default, exprs::Vararg{Pair})
+function generate_ifelseif_macro!(parent::Expr, exprs::Vararg{Pair}; default=nothing)
 
     current_args::Vector = parent.args
     is_first::Bool = true
@@ -221,30 +236,22 @@ function generate_ifelseif_macro!(parent::Expr, default, exprs::Vararg{Pair})
 end
 
 """
-基于已有的:block表达式
-"""
-function generate_ifelseif_macro!(parent::Expr, exprs::Vararg{Pair})
-    generate_ifelseif_macro!(parent, nothing, exprs...)
-end
-
-"""
 宏の形式
 注意：传入的每个Pair表达式都是`Expr(:call, :(=>), 前, 后)`的形式
+
+格式：
+
 """
 macro generate_ifelseif(default, exprs::Vararg{Expr})
     # 直接获取第二、第三个参数
     return generate_ifelseif_macro(
-        default,
         (
             expr.args[2] => expr.args[3]
             for expr in exprs
-        )...
+        )...;
+        default
     ) |> esc
 end
-
-d = Dict(
-    1 => 1, 2 => 2, 3 => 3
-)
 
 """
 宏的等价函数
@@ -272,18 +279,18 @@ function rand_macro(exprs...)::Union{Symbol, Expr}
     rand_variable::Symbol = Symbol(":rand_n:")
 
     # 构造代码块
-    blk::Expr = Expr(
-        :block,
-        :(local $rand_variable = rand(1:$n))
-    )
-
-    return generate_ifelseif_expressions!(
-        blk,
+    blk::Expr = generate_ifelseif_macro(
         (
             :($rand_variable == $i) => expr
             for (i, expr) in enumerate(exprs)
-        )...
+        )...;
+        default=nothing
     )
+
+    # 在最前方插入随机数代码，以便复用`generate_ifelseif_macro`
+    pushfirst!(blk.args, :(local $rand_variable = rand(1:$n)))
+
+    return blk
 end
 
 """

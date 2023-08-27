@@ -179,7 +179,7 @@ struct StringParser{Content} <: AbstractParser where {Content <: CONTENT}
                 for copula in copulas
                     startswith(s, copula) && return copula
                 end
-                return empty(Content) # 【20230809 10:55:18】默认返回空文本（详见Util.jl扩展的方法）
+                return empty_content(Content) # 【20230809 10:55:18】默认返回空文本（详见Util.jl扩展的方法）
             end,
             tense_dict,
             Dict( # 自动反转字典: 标点 => 类型

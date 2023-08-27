@@ -75,15 +75,6 @@ const NativeParser_vector::TNativeParser = NativeParser{Vector}
 "用于识别「作为字符串保存的数值」的前导标签"
 const NUMBER_PREFLAG::String = "_NUM_"
 
-"重载「字符串宏の快捷方式」:native"
-Conversion.get_parser_from_flag(::Val{:native})::TAbstractParser = NativeParser
-
-"重载「字符串宏の快捷方式」:native_vector"
-Conversion.get_parser_from_flag(::Val{:native_vector})::TAbstractParser = NativeParser_vector
-
-"重载「字符串宏の快捷方式」:native_dict"
-Conversion.get_parser_from_flag(::Val{:native_dict})::TAbstractParser = NativeParser_dict
-
 """
 定义「Native转换」的「目标类型」
 - 原生对象↔Narsese对象
