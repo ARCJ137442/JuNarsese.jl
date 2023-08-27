@@ -43,8 +43,8 @@
     @test eI == ExtImage(2, A,B,C) # 非唯一性
     @test iI == IntImage(3, C,B,A) # 非唯一性
     @test eI.relation_index == 2 && iI.relation_index == 3
-    @test ExtImage(1, A,B,C) ≠ /(A, ⋄, B, C) == eI == ExtImage(2, A,B,C) ≠ ExtImage(2, A,C,B) # 唯一相等性
-    @test IntImage(1, C,B,A) ≠ \(C, B, ⋄, A) == iI == IntImage(3, C,B,A) ≠ IntImage(3, C,A,B) # 唯一相等性
+    @test ExtImage(4, A,B,C) ≠ /(A, ⋄, B, C) == eI == ExtImage(2, A,B,C) ≠ ExtImage(2, A,C,B) # 唯一相等性
+    @test IntImage(4, C,B,A) ≠ \(C, B, ⋄, A) == iI == IntImage(3, C,B,A) ≠ IntImage(3, C,A,B) # 唯一相等性
 
     # 乘积
 
