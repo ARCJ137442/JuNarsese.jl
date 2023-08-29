@@ -27,8 +27,17 @@ export get_p, get_d, get_q
 """
 abstract type AbstractBudget end
 
-# 别名
+# 别名 #
 const Budget = ABudget = AbstractBudget
+
+# 抽象类方法 #
+
+"获取优先级p"
+get_p(b::Budget) = error("$b: 未实现的`get_p`方法！")
+"获取耐久度d"
+get_d(b::Budget) = error("$b: 未实现的`get_d`方法！")
+"获取质量q"
+get_q(b::Budget) = error("$b: 未实现的`get_q`方法！")
 
 """
 判等の法：相等@p,d,q
@@ -48,6 +57,7 @@ Base.iterate(b::Budget, state=1) = iterate([get_p(b), get_d(b), get_q(b)], state
 "长度恒等于3"
 Base.length(b::Budget) = 3
 
+# 基础结构 #
 
 """
 基础的「预算值」类型

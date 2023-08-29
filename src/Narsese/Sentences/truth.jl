@@ -27,6 +27,13 @@ abstract type AbstractTruth end
 # 别名
 const Truth = ATruth = AbstractTruth
 
+# 抽象类方法 #
+
+"获取频率f"
+get_f(t::Truth) = error("$t: 未实现的`get_f`方法！")
+"获取信度c"
+get_c(t::Truth) = error("$t: 未实现的`get_c`方法！")
+
 """
 判等の法：相等@f,c
 - 判等忽略数值精度
@@ -44,6 +51,7 @@ Base.iterate(t::Truth, state=1) = iterate([get_f(t), get_c(t)], state)
 "长度恒等于2"
 Base.length(t::Truth) = 2
 
+# 基础结构 #
 
 """
 可配置的「真值」类型
