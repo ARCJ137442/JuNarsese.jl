@@ -108,7 +108,7 @@ module Terms
 # 导入:前置 #
 
 # 时态 【20230804 14:20:50】因为「时序蕴含/等价」的存在，需要引入「时间参数」（参考自OpenNARS）
-include("Terms/tense.jl")
+include("tense.jl")
 
 # 导出 #
 
@@ -776,15 +776,15 @@ end
 # 引入:后置 #
 
 # 别名
-include("Terms/aliases.jl")
+include("aliases.jl")
 
 # 方法
-include("Terms/methods.jl")
+include("methods.jl")
 
 # 快捷构造方式
-include("Terms/constructor_shortcuts.jl")
+include("constructor_shortcuts.jl")
 
 # 副系词
-include("Sentences/secondary_copulas.jl")
+include("secondary_copulas.jl")
 
 end # module

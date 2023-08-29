@@ -36,13 +36,13 @@ export parse_default_float, parse_default_int, parse_default_uint
 
 using Reexport
 
-include("Narsese/Terms.jl")
+include("Terms/Terms.jl")
 @reexport using .Terms
 
-include("Narsese/Sentences.jl")
+include("Sentences/Sentences.jl")
 @reexport using .Sentences
 
-include("Narsese/Tasks.jl")
+include("Tasks/Tasks.jl")
 @reexport using .Tasks
 
 # 严格模式 #
@@ -50,7 +50,7 @@ include("Narsese/Tasks.jl")
 """
 严格模式的相关代码
 """
-const _STRICT_CODE::Expr = include("Narsese/use_strict.jl")
+const _STRICT_CODE::Expr = include("use_strict.jl")
 
 """
     use_strict!()

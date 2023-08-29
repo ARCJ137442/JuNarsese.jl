@@ -29,15 +29,15 @@ using ..Terms # 使用「词项」作前置
 import ..Narsese.DEFAULT_FLOAT_PRECISION as DEFAULT_FLOAT_PRECISION
 
 # 真值
-include("Sentences/truth.jl")
+include("truth.jl")
 
 # 标点
-include("Sentences/punctuation.jl")
+include("punctuation.jl")
 
 # 时间戳
-include("Sentences/stamp.jl")
+include("stamp.jl")
 
 # 语句
-include("Sentences/sentence.jl")
+include("sentence.jl")
 
 end # module

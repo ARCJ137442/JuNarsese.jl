@@ -20,7 +20,7 @@ jobs:
           - '1' # Leave this line unchanged. '1' will automatically expand to the latest stable 1.x release of Julia.
           - 'nightly'
         os:
-          # - ubuntu-latest # Temporately disable Ubuntu CI due to `Packages with nested code structure are unable to compiled` and error `SystemError: opening file "/home/runner/work/JuNarsese.jl/JuNarsese.jl/src/Narsese/Terms.jl": No such file or directory`
+          - ubuntu-latest # Temporately disable Ubuntu CI due to `Packages with nested code structure are unable to compiled` and error `SystemError: opening file "/home/runner/work/JuNarsese.jl/JuNarsese.jl/src/Narsese/Terms.jl": No such file or directory`
           - macOS-latest
           - windows-latest
         arch:

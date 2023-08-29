@@ -23,12 +23,12 @@ using Reexport
 # 导入各个文件 #
 
 # 不导出Util
-include("Util.jl")
+include("Util/Util.jl")
 
-include("Narsese.jl")
+include("Narsese/Narsese.jl")
 @reexport using .Narsese
 
-include("Conversion.jl")
+include("Conversion/Conversion.jl")
 @reexport using .Conversion
 
 

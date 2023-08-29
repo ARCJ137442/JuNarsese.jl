@@ -216,7 +216,7 @@ begin "方法集"
     # 【20230815 16:33:51】函数「get_tense」已在「methods.jl」中定义
     import ..Narsese: get_tense
 
-    export get_tense, is_fixed_occurrence_time
+    export is_fixed_occurrence_time
     
     """
     获取时态

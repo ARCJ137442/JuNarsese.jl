@@ -21,14 +21,14 @@ using ..Narsese
 # 各个模块 #
 
 # 模板
-include("Conversion/template.jl")
+include("template.jl")
 
 # 核心
-include("Conversion/core/string.jl")
-include("Conversion/core/ast.jl")
-include("Conversion/core/native.jl")
+include("core/string.jl")
+include("core/ast.jl")
+include("core/native.jl")
 
 # 附加
-include("Conversion/extra/string_shortcut.jl") # 使用eval的字符串
+include("extra/string_shortcut.jl") # 使用eval的字符串
 
 end

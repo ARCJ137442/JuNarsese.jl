@@ -13,12 +13,12 @@ using ..Sentences # 使用「语句」作前置
 import ..Narsese.DEFAULT_FLOAT_PRECISION as DEFAULT_FLOAT_PRECISION
 
 # 预算值
-include("Tasks/budget.jl")
+include("budget.jl")
 
 # 抽象物品
-include("Tasks/item.jl")
+include("item.jl")
 
 # 任务
-include("Tasks/task.jl")
+include("task.jl")
 
 end # module
