@@ -26,16 +26,28 @@ using Reexport
 
 println("ls: ")
 print_path(path) = begin
+    # 不能进入文件
+    isdir(path) || isdir("./$path") || return nothing
+    # 尝试在不同平台进入文件夹
     try
-        cd(path)
-    catch _ return nothing end
+        cd("./$path")
+    catch _ 
+        try
+            cd(path)
+        catch _
+            @error "进入路径$(path)错误！"
+            return nothing
+        end
+    end
+    # 查询，打印
     paths = split(`ls` |> read |> String, "\n")
     try
         @info "path@$path"
         join(paths, "\n") |> println
     catch _ return nothing end
     for path in paths
-        print_path(path)
+        # 避免空路径
+        isempty(path) || print_path(path)
     end
     cd("..")
 end

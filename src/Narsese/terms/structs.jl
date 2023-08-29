@@ -464,7 +464,7 @@ begin "单体词项"
             - 例如：陈述逻辑集只能装陈述
             - 例如：
         """
-        terms::Tuple{Vararg{<:AbstractTerm}}
+        terms::Tuple{Vararg{AbstractTerm}}
 
         """
         统一的内部构造方法
