@@ -26,9 +26,9 @@ using Reexport
 include("Util/Util.jl")
 
 include("Narsese/Narsese.jl")
-@reexport using .Narsese
-
 include("Conversion/Conversion.jl")
+
+@reexport using .Narsese
 @reexport using .Conversion
 
 

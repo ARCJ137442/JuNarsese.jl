@@ -34,15 +34,14 @@ export parse_default_float, parse_default_int, parse_default_uint
 
 # 导入&导出 #
 
+include("Terms/Terms.jl")
+include("Sentences/Sentences.jl")
+include("Tasks/Tasks.jl")
+
 using Reexport
 
-include("Terms/Terms.jl")
 @reexport using .Terms
-
-include("Sentences/Sentences.jl")
 @reexport using .Sentences
-
-include("Tasks/Tasks.jl")
 @reexport using .Tasks
 
 # 严格模式 #
