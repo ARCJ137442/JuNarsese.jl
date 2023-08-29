@@ -20,6 +20,27 @@ module JuNarsese
 
 using Reexport
 
+# !测试用 #
+
+@info "当前路径" pwd()
+
+println("ls: ")
+print_path(path) = begin
+    try
+        cd(path)
+    catch _ return nothing end
+    paths = split(`ls` |> read |> String, "\n")
+    try
+        @info "path@$path"
+        join(paths, "\n") |> println
+    catch _ return nothing end
+    for path in paths
+        print_path(path)
+    end
+    cd("..")
+end
+print_path(pwd())
+
 # 导入各个文件 #
 
 # 不导出Util
