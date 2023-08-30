@@ -8,6 +8,8 @@
 [![CI status](https://github.com/ARCJ137442/JuNarsese.jl/workflows/CI/badge.svg)](https://github.com/ARCJ137442/JuNarsese.jl/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ARCJ137442/JuNarsese.jl/graph/badge.svg?token=PCQHEU15L0)](https://codecov.io/gh/ARCJ137442/JuNarsese.jl)
 
+[Online Demo↗](https://arcj137442.github.io/JuNarsese-demo/index.html)
+
 This project uses [Semantic Versioning 2.0.0](https://semver.org/) for version management.
 
 Julia implementation of [Narsese](#narsese).
@@ -37,8 +39,8 @@ Differences from other dialects and supersets:
   - Consistently use special brackets `{terms...}` and `[terms...]` to represent "extension set" and "intension set"
   - Consistently use "(connector, term...)" to represent "non-extension and intension compound terms"
     - e.g. `(&, <A --> B>, ^op)`
-    - Do not use prefix expression for "negation"
-    - Do not use infix expression for other "binary compound terms"
+    - Do not use prefix expression for "negation" (such as `--<A --> B>`)
+    - Do not use infix expression for other "binary compound terms" (such as `(A*B)`)
 - Propositions:
   - Consistently use angle brackets to represent propositions, no other options
     - e.g. `<A --> B>`
@@ -133,7 +135,7 @@ To construct Narsese data structures (terms, statements, tasks) using JuNarsese,
   - `w"word"`: Construct "word" `word`
   - `i"ind_var"`: Construct "independent variable" `$ind_var`
   - `d"i_var"`: Construct "dependent variable" `#d_var`
-  - `q"q_var"`: Construct "query variable" `#q_var`
+  - `q"q_var"`: Construct "query variable" `?q_var`
   - `n"123"`: Construct "interval" `+123`
   - `o"op"`: Construct "operator" `^op`
 - When constructing compound terms/propositions, you can also:

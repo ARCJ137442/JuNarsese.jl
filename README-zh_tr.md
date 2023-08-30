@@ -8,6 +8,8 @@
 [![CI status](https://github.com/ARCJ137442/JuNarsese.jl/workflows/CI/badge.svg)](https://github.com/ARCJ137442/JuNarsese.jl/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ARCJ137442/JuNarsese.jl/graph/badge.svg?token=PCQHEU15L0)](https://codecov.io/gh/ARCJ137442/JuNarsese.jl)
 
+[在缐演示↗](https://arcj137442.github.io/JuNarsese-demo/index.html)
+
 該項目使用[語意化版本 2.0.0](https://semver.org/)進行版號管理。
 
 [Narsese](#narsese) 的 [Julia](https://github.com/JuliaLang/julia) 實現
@@ -37,8 +39,8 @@ NARS 的知識表示語言
   - 一律使用特殊括弧 `{詞項...}`、`[詞項...]` 表示「外延集」「內涵集」
   - 一律使用「圓括號+前綴表達式」`(連接符, 詞項...)` 形式表示「非外延集、內涵集的複合詞項」
     - 如 `(&, <A --> B>, ^op)`
-    - 對「否定」不使用前綴表達式
-    - 對其它「二元複合詞項」不使用中綴表達式
+    - 對「否定」不使用前綴表達式（如`--<A --> B>`）
+    - 對其它「二元複合詞項」不使用中綴表達式（如`(A*B)`）
 - 陳述:
   - 一律使用尖括號表示陳述，沒有其他選項
     - 如 `<A --> B>`
@@ -133,7 +135,7 @@ Pkg.add(url="https://github.com/ARCJ137442/JuNarsese.jl")
   - `w"word"`:構造「詞語」`word`
   - `i"ind_var"`:構造「獨立變量」`$ind_var`
   - `d"i_var"`:構造「非獨變量」`#d_var`
-  - `q"q_var"`:構造「非獨變量」`#q_var`
+  - `q"q_var"`:構造「查詢變量」`?q_var`
   - `n"123"`:構造「間隔」`+123`
   - `o"op"`:構造「操作符」`^op`
 - 在構造複合詞項/陳述時，亦可:

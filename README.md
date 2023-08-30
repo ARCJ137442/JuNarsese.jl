@@ -8,6 +8,8 @@
 [![CI status](https://github.com/ARCJ137442/JuNarsese.jl/workflows/CI/badge.svg)](https://github.com/ARCJ137442/JuNarsese.jl/actions/workflows/ci.yml)
 [![codecov](https://codecov.io/gh/ARCJ137442/JuNarsese.jl/graph/badge.svg?token=PCQHEU15L0)](https://codecov.io/gh/ARCJ137442/JuNarsese.jl)
 
+[在线演示↗](https://arcj137442.github.io/JuNarsese-demo/index.html)
+
 该项目使用[语义化版本 2.0.0](https://semver.org/)进行版本号管理。
 
 [Narsese](#narsese)的[Julia](https://github.com/JuliaLang/julia)实现
