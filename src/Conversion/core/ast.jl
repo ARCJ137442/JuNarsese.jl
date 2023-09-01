@@ -194,7 +194,7 @@ const AST_PARSE_TARGETS::Type = DEFAULT_PARSE_TARGETS
 const AST_PRESERVED_HEAD::Symbol = Symbol(":preserved:")
 
 "目标类型：词项/语句"
-parse_target_types(::TASTParser) = STRING_PARSE_TARGETS
+parse_target_types(::TASTParser) = DEFAULT_PARSE_TARGETS
 
 "数据类型：Julia的Expr对象"
 Base.eltype(::TASTParser)::Type = Expr

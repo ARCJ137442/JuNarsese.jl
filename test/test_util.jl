@@ -14,6 +14,12 @@ import JuNarsese.Util: @expectedError, check_tuple_equal, number_value_eq
 
 @testset "Util" begin
 
+    # 反转字典
+    d = Dict{String,Integer}("a" => 1, "b" => 2, "c" => 3)
+    @test Dict{Integer,String}(
+        @reverse_dict_content d
+    ) == Dict(1 => "a", 2 => "b", 3 => "c")
+
     # Pair的属性：first、second
     @test allproperties(1=>2) == (1, 2)
     @test allproperties_named(1=>2) == (first=1, second=2)

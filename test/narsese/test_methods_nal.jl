@@ -1,4 +1,4 @@
-(@isdefined JuNarsese) || include("commons.jl") # 已在此中导入JuNarsese、Test
+(@isdefined JuNarsese) || include("../commons.jl") # 已在此中导入JuNarsese、Test
 
 @testset "methods/NAL" begin
 
@@ -162,8 +162,11 @@
     for t in test_set.tasks, method_name in [:get_p, :get_d, :get_q]
         @test @eval $method_name($t) == $method_name(get_budget($t))
     end
-    for t in test_set.sentences, method_name in [:get_syntactic_complexity]
-        @test @eval $method_name($t) == $method_name(get_term($t))
+    for t in test_set.sentences
+        for method_name in [:get_syntactic_complexity]
+            @test @eval $method_name($t) == $method_name(get_term($t))
+        end
+        get_syntactic_simplicity(t, 1) == get_syntactic_simplicity(get_term(t), 1)
     end
 
 end

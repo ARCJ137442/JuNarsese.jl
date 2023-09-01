@@ -1,4 +1,4 @@
-(@isdefined JuNarsese) || include("commons.jl") # 已在此中导入JuNarsese、Test
+(@isdefined JuNarsese) || include("../commons.jl") # 已在此中导入JuNarsese、Test
 
 @testset "Narsese/methods" begin
 

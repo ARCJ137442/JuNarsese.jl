@@ -1,4 +1,4 @@
-(@isdefined JuNarsese) || include("commons.jl") # 已在此中导入JuNarsese、Test
+(@isdefined JuNarsese) || include("../commons.jl") # 已在此中导入JuNarsese、Test
 
 # 词项接口：用于后续扩展自定义词项/语句/任务 #
 @testset "Narsese/API" begin

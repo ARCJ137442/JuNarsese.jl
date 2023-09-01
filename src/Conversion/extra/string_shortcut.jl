@@ -14,11 +14,14 @@ abstract type ShortcutParser <: AbstractParser end
 "类型の短别名"
 const TSCParser::Type = Type{ShortcutParser}
 
-"目标类型：默认"
-const SHORTCUT_PARSE_TARGETS::Type = Conversion.DEFAULT_PARSE_TARGETS
+"目标类型：只有词项"
+const SHORTCUT_PARSE_TARGETS::Type = AbstractTerm
 
 "数据类型：以代码表示的字符串"
 Base.eltype(::TSCParser)::Type = String
+
+"目标类型"
+parse_target_types(::TSCParser) = SHORTCUT_PARSE_TARGETS
 
 """
 翻译其中会导致「变量未定义」错误的符号
@@ -33,14 +36,9 @@ end
 - ！问题：遇到没有语法对应的「词项」无法处理
 """
 function data2narsese(::TSCParser, ::Conversion.TYPE_TERMS, s::AbstractString)
-    try # 尝试解析
-        expr::Expr = s |> Meta.parse
-        # TODO: 替换其中的符号，使原子词项正常显示
-        return expr |> _translate_words! |> Narsese.eval # ⚠直接使用eval，危险！
-    catch e
-        @error e
-        return nothing
-    end
+    expr::Expr = s |> Meta.parse
+    # TODO: 替换其中的符号，使原子词项正常显示
+    return expr |> _translate_words! |> Narsese.eval # ⚠直接使用eval，危险！
 end
 
 """

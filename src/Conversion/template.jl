@@ -87,7 +87,7 @@ Base.eltype(::TAbstractParser)::ErrorException = error("未注册「数据类型
 解析器的「目标类型」：一般是词项/语句
 - 未注册→报错
 """
-parse_target_types(::Any)::ErrorException = error("未注册「目标类型」！")
+parse_target_types(parser::TAbstractParser)::ErrorException = error("$parser: 未注册「目标类型」！")
 
 """
 纳思语→数据 声明
@@ -227,9 +227,9 @@ function (parser::Type{TParser})(
     TargetType::Type = Any, # 只有「数据→目标」时使用（默认为「Term」即「解析成任意目标」）
     ) where {TParser <: AbstractParser}
     if target isa eltype(parser)
-        return data2narsese(parser, TargetType, target)
+        return data2narsese(parser, TargetType, target)::parse_target_types(parser)
     else
-        return narsese2data(parser, target)#::eltype(parser) # 莫乱用断言
+        return narsese2data(parser, target)::eltype(parser) # 莫乱用断言
     end
 end
 

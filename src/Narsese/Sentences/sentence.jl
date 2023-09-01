@@ -54,20 +54,6 @@ end
 end
 
 """
-外部构造方法：提供顺序默认值
-"""
-@inline function SentenceJudgement(
-    term::Term, # 下面无顺序，作为可选参数
-    tense::Type, # 把「只有一个参数」的情况交给上面
-    truth::ATruth = Truth64(1.0, 0.5),
-    )
-    SentenceJudgement(
-        term; # 基于「可选参数」版本
-        truth, tense
-    )
-end
-
-"""
 目标 <: 语句{目标}：词项+时间戳+欲望值(以真值的形式实现)
 """
 struct SentenceGoal <: AbstractSentence{Goal}
@@ -89,20 +75,6 @@ end
         term, 
         stamp,
         truth, 
-    )
-end
-
-"""
-外部构造方法：提供顺序默认值
-"""
-@inline function SentenceGoal(
-    term::Term, # 下面无顺序，作为可选参数
-    tense::Type, # 把「只有一个参数」的情况交给上面
-    desire::ATruth = Truth64(1.0, 0.5),
-    )
-    SentenceGoal(
-        term; # 基于「可选参数」版本
-        desire, tense
     )
 end
 

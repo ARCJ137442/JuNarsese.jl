@@ -15,15 +15,15 @@
     @test Narsese.parse_default_uint("0x1") == 0x0000000000000001
 
     # 构造 #
-    include("test_construction.jl")
+    include("narsese/test_construction.jl")
 
     # 类型 #
-    include("test_types.jl")
+    include("narsese/test_types.jl")
     
     # API #
-    include("test_narsese_api.jl")
+    include("narsese/test_api.jl")
 
     # 词项与数组等可迭代对象的联动方法 #
-    include("test_methods.jl")
+    include("narsese/test_methods.jl")
 
 end

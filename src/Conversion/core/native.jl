@@ -79,10 +79,10 @@ const NUMBER_PREFLAG::String = "_NUM_"
 定义「Native转换」的「目标类型」
 - 原生对象↔Narsese对象
 """
-const Native_PARSE_TARGETS::Type = Conversion.DEFAULT_PARSE_TARGETS
+const NATIVE_PARSE_TARGETS::Type = Conversion.DEFAULT_PARSE_TARGETS
 
 "目标类型：Narsese对象"
-Conversion.parse_target_types(::TNativeParser) = Native_PARSE_TARGETS
+Conversion.parse_target_types(::TNativeParser) = NATIVE_PARSE_TARGETS
 
 "数据类型：向量/字典"
 Base.eltype(::TNativeParser)::Type = Native_VTypes
@@ -123,9 +123,6 @@ begin "基础方法集"
     "字符串⇒自身"
     native_preparse(::Type, s::String)::String = s
 
-    "符号⇒字符串(不会还原)"
-    native_preparse(::Type, s::Symbol)::String = string(s)
-
     """
     预解析：字典⇒表达式|数值
     - 针对数值这一特殊类型，需要特别进行parse而非直接调用构造函数
@@ -164,13 +161,13 @@ end
 begin "具体转换实现"
     
     "Native字符串⇒表达式⇒Narsese对象"
-    function data2narsese(parser::TNativeParser, ::Type, obj::Native_VTypes)::Native_PARSE_TARGETS
+    function data2narsese(parser::TNativeParser, ::Type, obj::Native_VTypes)::NATIVE_PARSE_TARGETS
         expr::Expr = native_preparse(parser, obj)
         return data2narsese(ASTParser, Any, expr)
     end
     
     "Narsese对象⇒表达式⇒Native字符串"
-    function narsese2data(parser::TNativeParser, t::Native_PARSE_TARGETS)::Native_VTypes
+    function narsese2data(parser::TNativeParser, t::NATIVE_PARSE_TARGETS)::Native_VTypes
         expr::Expr = narsese2data(ASTParser, t)
         return native_preprocess(parser, expr)
     end
