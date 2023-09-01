@@ -7,12 +7,19 @@
 
     @show w i d q o
 
+    p = PlaceHolder()
     @test w == Word(:词项)::Word
     @test i == IVar(:独立变量)::Variable{VTIndependent}
     @test d == DVar(:非独变量)::Variable{VTDependent}
     @test q == QVar(:查询变量)::Variable{VTQuery}
+    @test p == PlaceHolder()::PlaceHolder
     @test o == Operator(:操作)::Operator
     @test n == Interval(+137)::Interval
+
+    # 像占位符
+    @test p == placeholder
+    @test nameof(p) == Symbol()
+    @test nameof_string(p) == ""
 
     # 词项集
     exSet = ⩀(w, d, o)

@@ -15,12 +15,19 @@
         (A→B) in terms_ && (B→C) in terms_ &&
         ((A→B)⇒(B→C)) in terms_
 
+    # 获取所有索引
+    t = ExtSet(A,B,C)
+    @test eachindex(t) == Base.OneTo(3)
+    @test nextind(t, 1) == 2
+    @test prevind(t, 2) == 1
+
     # 是否可交换 #
     @test !is_commutative(StatementTypeInheritance)
     @test !is_commutative(StatementTypeImplication)
     @test is_commutative(StatementTypeSimilarity)
     @test is_commutative(StatementTypeEquivalence)
-
+    
+    @test !is_commutative(Term) # 默认不可交换
     @test !is_commutative(TermProduct)
     @test !is_commutative(ExtImage)
     @test !is_commutative(IntDiff)
@@ -42,6 +49,7 @@
 
     # 是否可重复：默认是`!(是否可交换)`，但**不用于判断陈述** #
 
+    @test is_repeatable(Term) # 默认可重复
     @test is_repeatable(TermProduct)
     @test is_repeatable(ExtImage)
     @test is_repeatable(SeqConjunction)
@@ -126,5 +134,36 @@
     # 回顾性等价 = 预测性等价
 
     @test EquivalenceRetrospective(A→B, B→A) == EquivalencePredictive(B→A, A→B)
+
+    # 语句&任务 #
+
+    # 时间戳 #
+
+    sb = StampBasic()
+    sp1 = StampPythonic()
+
+    @test sb == sp1 # 默认值应该相等
+    @test sb !== sp1 # 不全等
+
+    sp2 = StampPythonic(occurrence_time = 1)
+    # 相对时序
+    @test get_tense(sp2) == Eternal # 默认永恒
+    @test get_tense(sp2, 0) == Future  # sp2 是 0 的未来
+    @test get_tense(sp2, 1) == Present # sp2 是 1 的现在
+    @test get_tense(sp2, 2) == Past    # sp2 是 2 的过去
+
+    @test sp2 == deepcopy(sp2)
+    @test sp1 != sp2
+
+    # 方法重定向
+    for t in test_set.tasks, method_name in [:get_term, :get_stamp, :get_tense, :get_punctuation, :get_truth, :get_syntactic_complexity]
+        @test @eval $method_name($t) == $method_name(get_sentence($t))
+    end
+    for t in test_set.tasks, method_name in [:get_p, :get_d, :get_q]
+        @test @eval $method_name($t) == $method_name(get_budget($t))
+    end
+    for t in test_set.sentences, method_name in [:get_syntactic_complexity]
+        @test @eval $method_name($t) == $method_name(get_term($t))
+    end
 
 end

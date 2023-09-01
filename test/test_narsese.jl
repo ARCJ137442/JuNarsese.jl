@@ -19,6 +19,9 @@
 
     # 类型 #
     include("test_types.jl")
+    
+    # API #
+    include("test_narsese_api.jl")
 
     # 词项与数组等可迭代对象的联动方法 #
     include("test_methods.jl")

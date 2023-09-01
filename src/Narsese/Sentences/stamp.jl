@@ -9,7 +9,8 @@
 # 导出
 export STAMP_TIME_TYPE, TIME_ETERNAL
 export AbstractStamp, Stamp
-export StampBasic
+export StampBasic, StampPythonic
+export get_evidential_base, get_creation_time, get_put_in_time, get_occurrence_time
 
 
 """
@@ -60,6 +61,26 @@ const STAMP_TIME_TYPE::DataType = UInt # 根据PyNARS的语法要求，改为「
 """
 TIME_ETERNAL::STAMP_TIME_TYPE = typemin(STAMP_TIME_TYPE)
 
+# 方法集 #
+
+"各个抽象Getter"
+get_evidential_base(s::Stamp) = error("$(typeof(s)): 未实现的`get_evidential_base`方法！")
+get_creation_time(s::Stamp)   = error("$(typeof(s)): 未实现的`get_creation_time`方法！")
+get_put_in_time(s::Stamp)     = error("$(typeof(s)): 未实现的`get_put_in_time`方法！")
+get_occurrence_time(s::Stamp) = error("$(typeof(s)): 未实现的`get_occurrence_time`方法！")
+
+"重定向运算符"
+@inline Base.:(==)(s1::Stamp, s2::Stamp) = Base.isequal(s1, s2)
+"判等の法：各个属性相等"
+@inline Base.isequal(s1::Stamp, s2::Stamp) = (
+    get_tense(s1)           == get_tense(s2) && # 时态相等
+    get_evidential_base(s1) == get_evidential_base(s2) &&
+    get_creation_time(s1)   == get_creation_time(s2) &&
+    get_put_in_time(s1)     == get_put_in_time(s2) &&
+    get_occurrence_time(s1) == get_occurrence_time(s2)
+)
+
+# 具体实现
 
 """
 源：OpenNARS
@@ -120,6 +141,11 @@ struct StampBasic{tense <: AbstractTense} <: AbstractStamp
         )
     end
 end
+
+get_evidential_base(s::StampBasic) = s.evidential_base
+get_creation_time(s::StampBasic)   = s.creation_time
+get_put_in_time(s::StampBasic)     = s.put_in_time
+get_occurrence_time(s::StampBasic) = s.occurrence_time
 
 "类型参数の默认值：无时态⇒「永恒」时态"
 StampBasic(args...) = StampBasic{Eternal}(args...)
@@ -211,6 +237,12 @@ struct StampPythonic <: AbstractStamp
     end
 end
 
+get_evidential_base(s::StampPythonic) = s.evidential_base
+get_creation_time(s::StampPythonic)   = s.creation_time
+get_put_in_time(s::StampPythonic)     = s.put_in_time
+get_occurrence_time(s::StampPythonic) = s.occurrence_time
+
+
 begin "方法集"
 
     # 【20230815 16:33:51】函数「get_tense」已在「methods.jl」中定义
@@ -221,7 +253,9 @@ begin "方法集"
     """
     获取时态
     """
-    @inline get_tense(s::StampBasic{S}) where {S} = S
+    @inline (get_tense(::StampBasic{T})::TTense) where {T} = T
+    "Python化的「绝对时态」总是「永恒」"
+    @inline get_tense(s::StampPythonic)::TTense = TenseEternal
     "Python化的「相对时态」：与「发生时间」对比"
     @inline get_tense(s::StampPythonic, reference_time::STAMP_TIME_TYPE)::TTense = (
         reference_time == s.occurrence_time ? 
@@ -231,6 +265,8 @@ begin "方法集"
                     TenseFuture
             )
     )
+    "类型自动转换"
+    @inline get_tense(s::StampPythonic, reference_time::Integer)::TTense = get_tense(s, STAMP_TIME_TYPE(reference_time))
 
     """
     （用于「基础时间戳」）是否是由「固定时刻」
@@ -243,26 +279,5 @@ begin "方法集"
     )
     "【20230815 23:45:19】Python版的暂且恒为true，因为并无「固定的时态」一说"
     @inline is_fixed_occurrence_time(s::StampPythonic) = true
-
-    """
-    判等の法：相等@各个属性
-    """
-    @inline Base.:(==)(s1::StampBasic, s2::StampBasic)::Bool = (
-        typeof(s1)          == typeof(s2) && # 时态相等
-        s1.evidential_base  == s2.evidential_base &&
-        s1.creation_time    == s2.creation_time &&
-        s1.put_in_time      == s2.put_in_time &&
-        s1.occurrence_time  == s2.occurrence_time
-    )
-
-    """
-    判等の法：相等@各个属性
-    """
-    @inline Base.:(==)(s1::StampPythonic, s2::StampPythonic)::Bool = (
-        s1.evidential_base  == s2.evidential_base &&
-        s1.creation_time    == s2.creation_time &&
-        s1.put_in_time      == s2.put_in_time &&
-        s1.occurrence_time  == s2.occurrence_time
-    )
     
 end

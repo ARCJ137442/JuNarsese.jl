@@ -30,9 +30,9 @@ const Truth = ATruth = AbstractTruth
 # 抽象类方法 #
 
 "获取频率f"
-get_f(t::Truth) = error("$t: 未实现的`get_f`方法！")
+get_f(t::Truth) = error("$(typeof(t)): 未实现的`get_f`方法！")
 "获取信度c"
-get_c(t::Truth) = error("$t: 未实现的`get_c`方法！")
+get_c(t::Truth) = error("$(typeof(t)): 未实现的`get_c`方法！")
 
 """
 判等の法：相等@f,c

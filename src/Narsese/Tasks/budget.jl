@@ -33,11 +33,11 @@ const Budget = ABudget = AbstractBudget
 # 抽象类方法 #
 
 "获取优先级p"
-get_p(b::Budget) = error("$b: 未实现的`get_p`方法！")
+get_p(b::Budget) = error("$(typeof(b)): 未实现的`get_p`方法！")
 "获取耐久度d"
-get_d(b::Budget) = error("$b: 未实现的`get_d`方法！")
+get_d(b::Budget) = error("$(typeof(b)): 未实现的`get_d`方法！")
 "获取质量q"
-get_q(b::Budget) = error("$b: 未实现的`get_q`方法！")
+get_q(b::Budget) = error("$(typeof(b)): 未实现的`get_q`方法！")
 
 """
 判等の法：相等@p,d,q

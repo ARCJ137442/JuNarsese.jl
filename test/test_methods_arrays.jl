@@ -11,7 +11,7 @@
     @test length(A) == 1
 
     # 测试原子的索引函数
-    @test getindex(A) == A[] == :A
+    @test getindex(A) == A[] == A[typemax(Int)] == A[typemin(Int)] == :A
 
     # 测试除差、像以外的所有复合词项
     for compoundType::Type in [TermProduct, ExtSet, IntSet, ExtIntersection, IntIntersection]

@@ -54,4 +54,14 @@
     @test @expectedError ParConjunction(A→B, C→D, A↔D, D→o, B→C, w)
     @test @expectedError SeqConjunction(A→B, D→o, B→C, A↔D, C→D, w)
 
+    # 所有词项的「可解释🆚非解释」「内部🆚外部」严格性应该相互等价
+    for term::Term in test_set.terms
+        @test (
+            check_valid(term) == 
+            !(@hasError check_valid_explainable(term)) == 
+            check_valid_external(term) == 
+            !(@hasError check_valid_external_explainable(term))
+        )
+    end
+
 end

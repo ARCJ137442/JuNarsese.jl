@@ -4,7 +4,7 @@
 module Util
 
 export UNothing
-export @reverse_dict_content, @redirect_SRS, @expectedError
+export @reverse_dict_content, @redirect_SRS, @hasError, @expectedError
 export match_first, match_first_view
 export allproperties, allproperties_generator, allproperties_named, allproperties_named_generator
 export empty_content
@@ -33,6 +33,21 @@ end
 "重定向从string到repr到show"
 macro redirect_SRS(para::Expr, code::Expr)
     return redirect_SRS(para, code)
+end
+
+"【用于调试】判断「是否出错」（仿官方库show语法）"
+macro hasError(exs...)
+    Expr(:block, [ # 生成一个block，并使用列表推导式自动填充args
+        quote
+            try
+                $(esc(ex))
+                false
+            catch e
+                true
+            end
+        end
+        for ex in exs
+    ]...) # 别忘展开
 end
 
 "【用于调试】判断「期望出错」（仿官方库show语法）"

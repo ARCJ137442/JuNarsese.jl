@@ -52,7 +52,9 @@ end
 # 临时定义陈述合法性：改变「内联合法性检查」逻辑
 "继承&相似⇒是否为「一等公民」"
 @inline function check_valid(t::Statement{<:TermBasedSTs})
-    ϕ1(t) ≠ ϕ2(t) && ϕ1(t) isa FOTerm && ϕ2(t) isa FOTerm
+    ϕ1(t) ≠ ϕ2(t) &&
+    ϕ1(t) isa FOTerm &&
+    ϕ2(t) isa FOTerm
 end
 
 "继承&相似⇒是否为「一等公民」"
@@ -65,7 +67,9 @@ end
 
 "蕴含&等价⇒是否为「陈述词项」"
 @inline function check_valid(t::Statement{<:StatementBasedSTs})
-    ϕ1(t) ≠ ϕ2(t) && ϕ1(t) isa AbstractStatement && ϕ2(t) isa AbstractStatement
+    ϕ1(t) ≠ ϕ2(t) && 
+    ϕ1(t) isa StatementLike && 
+    ϕ2(t) isa StatementLike
 end
 
 "蕴含&等价⇒是否为「陈述词项」"
@@ -79,7 +83,8 @@ end
 
 "陈述逻辑集、陈述时序集：词项数>1 && 不支持「非陈述词项」"
 @inline function check_valid(t::ACompound{<:StatementBasedCTs})
-    length(t) > 1 && all(term isa StatementLike for term in t)
+    length(t) > 1 && 
+    all(term isa StatementLike for term in t)
 end
 "陈述逻辑集、陈述时序集：词项数>1 && 不支持「非陈述词项」"
 @inline function check_valid_explainable(t::ACompound{<:StatementBasedCTs})
