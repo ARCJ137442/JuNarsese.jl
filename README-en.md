@@ -27,26 +27,43 @@ Knowledge representation language of NARS
 ### ***CommonNarsese***
 
 - Defined by [Narsese Grammar (IO Format)](https://github.com/opennars/opennars/wiki/Narsese-Grammar-(Input-Output-Format))
-- Among various NARS (Narsese) implementations
-- The first generated specification that is most widely accepted syntax
+- Among the various NARS(Narsese) implementations, the first to produce specifications and the most widely accepted syntax
+- is basically an intersection of the Narsese syntax of the various NARS implementations
 
 Differences from other dialects and supersets:
 
-- Atomic terms:
-  - Consistently use `$`, `#`, `?`, `^` to distinguish "independent variable", "dependent variable", "query variable", "operator"
-  - Consistently use separate `_` to represent "placeholders"
-- Compound terms:
-  - Consistently use special brackets `{terms...}` and `[terms...]` to represent "extension set" and "intension set"
-  - Consistently use "(connector, term...)" to represent "non-extension and intension compound terms"
-    - e.g. `(&, <A --> B>, ^op)`
-    - Do not use prefix expression for "negation" (such as `--<A --> B>`)
-    - Do not use infix expression for other "binary compound terms" (such as `(A*B)`)
-- Propositions:
-  - Consistently use angle brackets to represent propositions, no other options
-    - e.g. `<A --> B>`
-  - Do not use retrospective equivalence "<\\>"
-    - Consistently use predictive equivalence "</>" with equivalent representational capability instead
-    - e.g. `<A <\> B>` will be expressed as `<B </> A>`
+#### Atomic term
+
+- Consistently use `$`, `#`, `?`, `^` to distinguish "independent variable", "dependent variable", "query variable", "operator"
+- Consistently use separate `_` to represent "placeholders"
+
+#### Compound term
+
+- Consistently use special brackets `{terms...}` and `[terms...]` to represent "extension set" and "intension set"
+- Consistently use "(connector, term...)" to represent "non-extension and intension compound terms"
+  - e.g. `(&, <A --> B>, ^op)`
+  - Do not use prefix expression for "negation" (such as `--<A --> B>`)
+  - Do not use infix expression for other "binary compound terms" (such as `(A*B)`)
+
+#### Statement
+
+- Consistently use angle brackets to represent propositions, no other options
+  - e.g. `<A --> B>`
+- Not use retrospective equivalence "<\\>"
+  - Consistently use predictive equivalence "</>" with equivalent representational capability instead
+  - e.g. `<A <\> B>` will be expressed as `<B </> A>`
+
+#### Sentence
+
+- Truth default: No part of the truth value can be entered during statement parsing
+  - Such truth values will be completed when entering a specific NARS implementation
+    - e.g. OpenNARS 'Default truth' `%1.0; 0.9%`
+      - e.g. OpenJunars 'Default truth' `%1.0; 0.5%`
+  - Specific form
+    - Single default (single truth value) : f is specified, and c is missing
+      - Such as `A. %1.0%`
+    - Full default (null true value) : neither f nor c is specified
+      - Such as `A`
 
 ## Code Map
 
