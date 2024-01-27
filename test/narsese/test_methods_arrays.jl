@@ -1,4 +1,4 @@
-(@isdefined JuNarsese) || include("../commons.jl") # 已在此中导入JuNarsese、Test
+(@isdefined JuNarsese) || include("../test_commons.jl") # 已在此中导入JuNarsese、Test
 
 @testset "methods/arrays" begin
     
@@ -80,6 +80,18 @@
         # 测试陈述的倒转函数
         @test reverse(statementType(A, B)) == statementType(B, A)
 
+    end
+
+    # 测试真值
+    begin # 测试空真值
+        @test length(truth_null) == 0
+        @test collect(truth_null) |> isempty
+    end
+    # 测试单真值
+    for T in [TruthSingle16, TruthSingle32, TruthSingle64, TruthSingleBig]
+        local t = T(0.5)
+        @test length(t) == 1
+        @test collect(t) == [0.5]
     end
 
 end

@@ -1,4 +1,4 @@
-(@isdefined JuNarsese) || include("../commons.jl") # 已在此中导入JuNarsese、Test
+(@isdefined JuNarsese) || include("../test_commons.jl") # 已在此中导入JuNarsese、Test
 
 # 词项构建测试 #
 @testset "construction" begin
@@ -154,17 +154,38 @@
 
     # 真值/欲望值/预算值越界
 
-    @test @expectedError SentenceJudgement(
-        s5,
-        StampBasic(),
-        Truth64(1.1, 0.9), # f越界
-    )
+    # 空真值
+    @test TruthNull() isa TruthNull # 无需参数
+    @test TruthNull() === TruthNull() === truth_null # 单例模式
+    @test @expectedError TruthNull(1.0) # 参数过多
+    @test @expectedError TruthNull(0.1, 0.9) # 参数过多
+    @test @expectedError get_f(truth_null) # 非法获取f值
+    @test @expectedError get_c(truth_null) # 非法获取c值
 
-    @test @expectedError SentenceGoal(
-        s5,
-        StampBasic(),
-        Truth64(0, -1.0), # c越界
-    )
+    @test isempty(string(truth_null)) # 本身为「字符串缺省」而设计
+    @test !contains(string(nse"A."), ';') # 本身为「字符串缺省」而设计
+    @test get_truth(nse"A.") === truth_null # 缺省占位符@判断
+    @test get_truth(nse"<{SELF} --> [good]>!") === truth_null # 缺省占位符@目标
+
+    # 单真值
+    for T in [TruthSingle16, TruthSingle32, TruthSingle64, TruthSingleBig]
+        @test @expectedError T(0.1, 0.9) # 参数过多
+        @test @expectedError T(1.1) # f越界@大于一
+        @test @expectedError T(-0.1) # f越界@负数
+        @test @expectedError get_c(T(0.5)) # 非法获取c值
+
+        @test !contains(string(nse"A. %0.5%"), ';') # 本身为「字符串缺省」而设计
+        @test get_truth(nse"A. %0.5%") isa TruthSingle # 缺省占位符@判断
+        @test get_truth(nse"<{SELF} --> [good]>! %0.5%") isa TruthSingle # 缺省占位符@目标
+    end
+
+    # 双真值
+    for T in [Truth16, Truth32, Truth64, TruthBig]
+        @test @expectedError T(1.1, 0.9) # f越界@大于一
+        @test @expectedError T(-0.1, 0.9) # f越界@负数
+        @test @expectedError T(0, 1.1) # c越界@大于一
+        @test @expectedError T(0, -1.0) # c越界@负数
+    end
 
     # 合法情况
     @test BudgetBasic(1, 1.0, 0.1) isa Budget

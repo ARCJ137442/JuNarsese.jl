@@ -1,4 +1,4 @@
-(@isdefined JuNarsese) || include("../commons.jl") # 已在此中导入JuNarsese、Test
+(@isdefined JuNarsese) || include("../test_commons.jl") # 已在此中导入JuNarsese、Test
 
 begin "报错debug专用"
     # 测试@原生对象

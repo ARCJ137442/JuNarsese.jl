@@ -44,7 +44,7 @@ end
 @inline function SentenceJudgement(
     term::Term; # 下面无顺序，作为可选参数
     stamp::Stamp = StampBasic(),
-    truth::ATruth = Truth64(1.0, 0.5),
+    truth::ATruth = truth_null, # !【2024-01-27 16:29:04】现在默认为空真值（未指定状态）
     )
     SentenceJudgement(
         term, 
@@ -69,7 +69,7 @@ end
 @inline function SentenceGoal(
     term::Term; # 下面无顺序，作为可选参数
     stamp::Stamp = StampBasic(),
-    truth::ATruth = Truth64(1.0, 0.5),
+    truth::ATruth = truth_null, # !【2024-01-27 16:29:04】现在默认为空真值（未指定状态）
     )
     SentenceGoal(
         term, 
@@ -93,7 +93,7 @@ end
 @inline function SentenceQuestion(
     term::Term; # 下面无顺序，作为可选参数
     stamp::Stamp = StampBasic(),
-    truth::UNothing{TruthBasic} = nothing # 📝Julia: 可选参数中不能省略参数变量名，会导致「畸形表达式」错误
+    truth::UNothing{ATruth} = nothing # 📝Julia: 可选参数中不能省略参数变量名，会导致「畸形表达式」错误
     )
     SentenceQuestion(
         term,
@@ -115,7 +115,7 @@ end
 @inline function SentenceQuest(
     term::Term; # 下面无顺序，作为可选参数
     stamp::Stamp = StampBasic(), # 将「只有一个参数」的情况交给上面
-    truth::UNothing{TruthBasic} = nothing
+    truth::UNothing{ATruth} = nothing
     )
     SentenceQuest(
         term,

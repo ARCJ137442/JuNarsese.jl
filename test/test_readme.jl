@@ -1,4 +1,4 @@
-(@isdefined JuNarsese) || include("commons.jl") # 已在此中导入JuNarsese、Test
+(@isdefined JuNarsese) || include("test_commons.jl") # 已在此中导入JuNarsese、Test
 
 # 测试README中的实例
 @testset "README" begin
