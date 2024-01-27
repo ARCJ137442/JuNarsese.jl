@@ -5,3 +5,6 @@
 /.dist
 /.vscode
 *.log
+
+# 本地化配置
+Manifest.toml
