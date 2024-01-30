@@ -1,4 +1,4 @@
-(@isdefined JuNarsese) || include("../commons.jl") # 已在此中导入JuNarsese、Test
+(@isdefined JuNarsese) || include("../test_commons.jl") # 已在此中导入JuNarsese、Test
 
 # 判等/比大小逻辑 #
 @testset "methods/validity" begin

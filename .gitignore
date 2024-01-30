@@ -6,9 +6,9 @@
 /.vscode
 *.log
 
+# 本地化配置
+Manifest.toml
+
 # 文档
 docs/build
 docs/site
-
-# 本地化配置
-Manifest.toml

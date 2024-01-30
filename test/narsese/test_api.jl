@@ -1,4 +1,4 @@
-(@isdefined JuNarsese) || include("../commons.jl") # 已在此中导入JuNarsese、Test
+(@isdefined JuNarsese) || include("../test_commons.jl") # 已在此中导入JuNarsese、Test
 
 # 词项接口：用于后续扩展自定义词项/语句/任务 #
 @testset "Narsese/API" begin
@@ -16,8 +16,8 @@
 
     @test @expectedError get_syntactic_complexity(t)
     
-    @test @expectedError get_f(tt)
-    @test @expectedError get_c(tt)
+    @test @expectedError get_f(tt) # 未定义
+    @test @expectedError get_c(tt) # 未定义
 
     @test @expectedError get_p(tb)
     @test @expectedError get_d(tb)

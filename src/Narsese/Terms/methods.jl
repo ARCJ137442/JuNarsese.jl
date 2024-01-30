@@ -60,7 +60,7 @@ begin "NAL信息支持"
     - 等价于：虚方法/抽象方法
     - 需要被子类实现
     """
-    @inline get_syntactic_complexity(t::Term) = error("$(typeof(t))未定义的计算！")
+    @inline get_syntactic_complexity(t::Term) = error("$(typeof(t)): 未定义的计算！")
 
     """
     （默认）原子の复杂度 = 1

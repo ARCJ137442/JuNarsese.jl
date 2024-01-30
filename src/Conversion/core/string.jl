@@ -772,13 +772,16 @@ end
 
 begin "语句相关"
 
-    "真值→字符串"
+    "真值→字符串（通用@单真值、双真值）"
     narsese2data(parser::StringParser, t::ATruth) = form_truth!budget(
         parser.truth_brackets..., parser.truth_separator,
         collect(t)
     )
 
-    "真值→字符串"
+    "真值→字符串（空真值）"
+    narsese2data(parser::StringParser, ::TruthNull) = ""
+
+    "预算值→字符串"
     narsese2data(parser::StringParser, b::ABudget) = form_truth!budget(
         parser.budget_brackets..., parser.budget_separator,
         collect(b)
@@ -875,6 +878,7 @@ begin "语句相关"
         parser::StringParser, ::Type{Truth}, s::AbstractString,
         stripped::Bool = false
         )
+        # 未剥皮⇒剥皮 #
         if !stripped
             left::String, right::String = parser.truth_brackets
             return data2narsese(
@@ -883,7 +887,16 @@ begin "语句相关"
                 true # 标示已经剥皮
             )
         end
-        # 剥皮后
+        # 剥皮后⇒尝试分隔，分为「无真值、单真值与双真值」 #
+        # 空字串⇒空真值
+        isempty(s) && return TruthNull()
+        # 无分隔符⇒单真值
+        if !contains(s, parser.truth_separator) # 无分隔符
+            return Narsese.default_precision_truth(
+                Narsese.parse_default_float(s)
+            )
+        end
+        # 最终⇒双真值
         f_str::AbstractString, c_str::AbstractString = split(
             s, # 已剥皮，待分割
             parser.truth_separator # 分隔符
