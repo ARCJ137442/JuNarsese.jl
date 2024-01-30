@@ -1,0 +1,39 @@
+# Code Concept Map | 代码概念地图 #
+
+# 文档 # ! 这些只是可选的，实际使用时并不需要，也不应要求下载
+[code_concept_map_md]
+lazy = true
+git-tree-sha1 = "db0f1cd3680232b7e3725b88b1e440ec3105fe76"
+
+[[code_concept_map_md.download]]
+url = "https://github.com/ARCJ137442/JuNarsese.jl/raw/main/docs/code_concept_map/code_concept_map.md"
+
+# XMind思维导图
+[code_concept_map_xmind]
+lazy = true
+git-tree-sha1 = "db0f1cd3680232b7e3725b88b1e440ec3105fe76"
+
+[[code_concept_map_xmind.download]]
+url = "https://github.com/ARCJ137442/JuNarsese.jl/raw/main/docs/code_concept_map/code_concept_map.xmind"
+
+# 配图
+[code_concept_map_png_alias]
+lazy = true
+git-tree-sha1 = "db0f1cd3680232b7e3725b88b1e440ec3105fe76"
+
+[[code_concept_map_png_alias.download]]
+url = "https://github.com/ARCJ137442/JuNarsese.jl/raw/main/docs/code_concept_map/images/alias.png"
+
+[code_concept_map_png_narsese]
+git-tree-sha1 = "db0f1cd3680232b7e3725b88b1e440ec3105fe76"
+lazy = true
+
+[[code_concept_map_png_narsese.download]]
+url = "https://github.com/ARCJ137442/JuNarsese.jl/raw/main/docs/code_concept_map/images/narsese.png"
+
+[code_concept_map_png_parser]
+git-tree-sha1 = "db0f1cd3680232b7e3725b88b1e440ec3105fe76"
+lazy = true
+
+[[code_concept_map_png_parser.download]]
+url = "https://github.com/ARCJ137442/JuNarsese.jl/raw/main/docs/code_concept_map/images/parser.png"
