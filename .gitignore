@@ -5,3 +5,10 @@
 /.dist
 /.vscode
 *.log
+
+# 文档
+docs/build
+docs/site
+
+# 本地化配置
+Manifest.toml
