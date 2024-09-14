@@ -1,16 +1,25 @@
 # JuNarsese
 
-[简体中文](https://github.com/ARCJ137442/JuNarsese.jl/blob/main/README.md) | **繁體中文** | [English](https://github.com/ARCJ137442/JuNarsese.jl/blob/main/README-en.md)
+|[简体中文](README.md) | **繁體中文** | [English](README-en.md)|
+|:---:|:---:|:---:|
 
-[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?logo=conventionalcommits&logoColor=white)](https://conventionalcommits.org)
-[![Static Badge](https://img.shields.io/badge/julia-package?logo=julia&label=1.8%2B)](https://julialang.org/)
+![GitHub License](https://img.shields.io/github/license/ARCJ137442/JuNarsese.jl?style=for-the-badge&color=a270ba)
+![Code Size](https://img.shields.io/github/languages/code-size/ARCJ137442/JuNarsese.jl?style=for-the-badge&color=a270ba)
+![Lines of Code](https://www.aschey.tech/tokei/github.com/ARCJ137442/JuNarsese.jl?style=for-the-badge&color=a270ba)
+[![Language](https://img.shields.io/badge/language-Julia%201.8+-purple?style=for-the-badge&color=a270ba)](https://cn.julialang.org/)
 
-[![CI status](https://github.com/ARCJ137442/JuNarsese.jl/workflows/CI/badge.svg)](https://github.com/ARCJ137442/JuNarsese.jl/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/ARCJ137442/JuNarsese.jl/graph/badge.svg?token=PCQHEU15L0)](https://codecov.io/gh/ARCJ137442/JuNarsese.jl)
+開發狀態：
 
-[在缐演示↗](https://arcj137442.github.io/JuNarsese-demo/index.html)
+[![CI status](https://img.shields.io/github/actions/workflow/status/ARCJ137442/JuNarsese.jl/ci.yml?style=for-the-badge)](https://github.com/ARCJ137442/JuNarsese.jl/actions/workflows/ci.yml)
+[![Codecov](https://img.shields.io/codecov/c/github/ARCJ137442/JuNarsese.jl?style=for-the-badge)](https://codecov.io/gh/ARCJ137442/JuNarsese.jl)
 
-該項目使用[語意化版本 2.0.0](https://semver.org/)進行版號管理。
+![Created At](https://img.shields.io/github/created-at/ARCJ137442/JuNarsese.jl?style=for-the-badge)
+![Last Commit](https://img.shields.io/github/last-commit/ARCJ137442/JuNarsese.jl?style=for-the-badge)
+
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-%23FE5196?style=for-the-badge)](https://conventionalcommits.org)
+![GitHub commits since latest release](https://img.shields.io/github/commits-since/ARCJ137442/JuNarsese.jl/latest?style=for-the-badge)
+
+## 簡介
 
 [Narsese](#narsese) 的 [Julia](https://github.com/JuliaLang/julia) 實現
 
